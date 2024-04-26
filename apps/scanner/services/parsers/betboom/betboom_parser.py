@@ -1,9 +1,10 @@
 import asyncio
+import json
+
 import aiohttp
 import logging
 import requests
 import pprint
-
 
 logger = logging.getLogger('Xperiment2.apps.scanner.betboom.betboom_parser')
 CONNECTION_ATTEMPTS = 20
@@ -68,6 +69,7 @@ PARAMS_PREMATCH_CHAMP_EVENTS = {
     'countryCode': '',
 }
 
+
 PARAMS_EVENT = {
     'eventId': '18117592',
     'isLive': 'false',
@@ -97,15 +99,186 @@ CHAMPS_LIST_URL = 'https://sport.betboom.ru/Prematch/GetChampsList'
 
 #### GET URL ####
 PREMATCH_CHAMP_EVENTS_URL = 'https://sport.betboom.ru/prematch/geteventslist'
+EVENT_URL = 'https://sport.betboom.ru/common/getevent'
 LIVE_URL = 'https://sport.betboom.ru/Live/GetLiveEvents'
 
-# res = requests.get(url=COUNTRYS_URL, params=PARAMS_PREMATCH, headers=HEADERS)
-# print(res)
-# r = res.json()
-# pprint.pprint(len(r))
 
-res_post = requests.post(url=COUNTRY_LIST_URL, headers=HEADERS_POST, json=json_data_countries)
-print(len(res_post.json()))
-# answer = res_post.get("replies")
-# print(*answer)
-#pprint.pprint(len(r))
+
+class BetboomParser:
+    """
+        Класс получения данных букмекера Betboom
+        Входные параметры:
+        1. game_type (тип игры): 1 (Soccer), 4 (Basketball), 10 (IceHockey)
+        2. betline (стадия игры): inplay, prematch
+        3. market (тип раннера): Исход (Победитель), Тотал, Фора
+    """
+
+    def __init__(self, game_type, betline, market):
+        self.__game_type = game_type
+        self.__betline = betline
+        self.__market = market
+
+    async def start_parse(self):
+        """Запуск асинхронного парсинга, обработки результатов и получения списка данных по каждому событию (матчу)"""
+
+        async with aiohttp.ClientSession() as session:
+            params_with_countries_id = await asyncio.create_task(self.__get_params_with_countries_id(session))
+
+            tasks = []
+            for params_with_country_id in params_with_countries_id:
+                task = asyncio.create_task(self.__get_params_with_champs_id(session, params_with_country_id))
+                tasks.append(task)
+            params_with_champs_id = await asyncio.gather(*tasks)
+
+            tasks = []
+            for params_with_champ_id in params_with_champs_id:
+                task = asyncio.create_task(self.__get_params_with_events_id(session, params_with_champ_id))
+                tasks.append(task)
+            params_with_events_id = await asyncio.gather(*tasks)
+
+            tasks = []
+            for params_with_event_id in params_with_events_id:
+                task = asyncio.create_task(self.__get_events_data(session, params_with_event_id))
+                tasks.append(task)
+            events_data = await asyncio.gather(*tasks)
+            #pprint.pprint(events_data)
+
+        # async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+        #     await asyncio.create_task(self.__get_countries_params(session))
+
+        # async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+        #     tasks = []
+        #     for league_api_url in leagues_api_urls:
+        #         task = asyncio.create_task(self.__get_events_urls(session, league_api_url))
+        #         tasks.append(task)
+        #     events_api_urls = await asyncio.gather(*tasks)
+        #     events_api_urls = [x for y in events_api_urls for x in y]
+        #
+        # async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+        #     tasks = []
+        #     for event_api_url in events_api_urls:
+        #         task = asyncio.create_task(self.__get_events_data(session, event_api_url))
+        #         tasks.append(task)
+        #     all_events_data = await asyncio.gather(*tasks)
+        #
+        # return self.__process_parse_data(all_events_data)
+
+    async def __get_params_with_countries_id(self, session: aiohttp.ClientSession) -> list:
+        """Получение параметров с id стран для POST-запроса"""
+
+        for attempt in range(CONNECTION_ATTEMPTS):
+            try:
+                async with session.post(url=COUNTRY_LIST_URL, json=json_data_countries, headers=HEADERS_POST) as r:
+                    async for line in r.content:
+                        countries_list = json.loads(line)
+
+                params_with_countries_id = []
+                for country in countries_list:
+                    params_with_country_id = {
+                        'countryId': country.get('Id'),
+                        'timeFilter': 0,
+                        'langId': 1,
+                        'partnerId': 147,
+                        'countryCode': None,
+                    }
+                    params_with_countries_id.append(params_with_country_id)
+                return params_with_countries_id
+
+            except Exception as ex:
+                if attempt == 20:
+                    logger.info(f'Критическая ошибка соединения (более 20 попыток).Событие пропущено.{ex}')
+                    return []
+                else:
+                    continue
+
+    async def __get_params_with_champs_id(self, session: aiohttp.ClientSession, params_with_country_id: list) -> list:
+        """Получение параметров с id чампионатов каждой страны для POST-запроса"""
+
+        for attempt in range(CONNECTION_ATTEMPTS):
+            try:
+                async with session.post(url=CHAMPS_LIST_URL, json=params_with_country_id, headers=HEADERS_POST) as r:
+                    async for line in r.content:
+                        champs_list = json.loads(line)
+
+                params_with_champs_id = []
+                for champ in champs_list:
+                    params_with_champ_id = {
+                        'champId': str(champ.get('Id')),
+                        'timeFilter': '0',
+                        'langId': '1',
+                        'partnerId': '147',
+                        'countryCode': '',
+                    }
+                    params_with_champs_id.append(params_with_champ_id)
+                return params_with_champs_id
+
+            except Exception as ex:
+                if attempt == 20:
+                    logger.info(f'Критическая ошибка соединения (более 20 попыток).Событие пропущено.{ex}')
+                    return []
+                else:
+                    continue
+
+    async def __get_params_with_events_id(self, session: aiohttp.ClientSession, params_with_champ_id: list) -> list:
+        """Получение параметров с id событий каждого чампионата для GET-запроса"""
+
+        for attempt in range(CONNECTION_ATTEMPTS):
+            try:
+                print('flag1')
+                async with session.get(url=PREMATCH_CHAMP_EVENTS_URL, params=params_with_champ_id, headers=HEADERS_GET) as r:
+                    async for line in r.content:
+                        events_list = json.loads(line)
+                    print('flag2')
+
+                    print(events_list)
+                params_with_events_id = []
+                for event in events_list:
+                    params_with_event_id = {
+                        'champId': str(event.get('Id')),
+                        'timeFilter': '0',
+                        'langId': '1',
+                        'partnerId': '147',
+                        'countryCode': '',
+                    }
+                    params_with_events_id.append(params_with_event_id)
+                return params_with_events_id
+
+            except Exception as ex:
+                if attempt == 20:
+                    logger.info(f'Критическая ошибка соединения (более 20 попыток).Событие пропущено.{ex}')
+                    return []
+                else:
+                    continue
+
+    async def __get_events_data(self, session: aiohttp.ClientSession, params_with_event_id: list) -> list:
+        """Получение параметров с id событий каждого чампионата для GET-запроса"""
+
+        for attempt in range(CONNECTION_ATTEMPTS):
+            try:
+                async with session.get(url=EVENT_URL, params=params_with_event_id, headers=HEADERS_GET) as r:
+                    events_data = await r.json()
+                    return events_data
+
+            except Exception as ex:
+                if attempt == 20:
+                    logger.info(f'Критическая ошибка соединения (более 20 попыток).Событие пропущено.{ex}')
+                    return []
+                else:
+                    continue
+
+
+if __name__ == '__main__':
+
+    parser = BetboomParser(game_type=1, betline='prematch', market='Исход')
+    asyncio.run(parser.start_parse())
+
+    # res = requests.get(url=COUNTRYS_URL, params=PARAMS_PREMATCH, headers=HEADERS)
+    # print(res)
+    # r = res.json()
+    # pprint.pprint(len(r))
+
+    #res_post = requests.post(url=COUNTRY_LIST_URL, headers=HEADERS_POST, json=json_data_countries)
+    #print(res_post)
+    # answer = res_post.get("replies")
+    # print(*answer)
+    #pprint.pprint(res_post.json())

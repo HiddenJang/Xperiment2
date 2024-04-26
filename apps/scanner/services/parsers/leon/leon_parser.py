@@ -54,7 +54,6 @@ class LeonParser:
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
             leagues_api_urls = await asyncio.create_task(self.__get_leagues_urls(session))
 
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
             tasks = []
             for league_api_url in leagues_api_urls:
                 task = asyncio.create_task(self.__get_events_urls(session, league_api_url))
@@ -62,7 +61,6 @@ class LeonParser:
             events_api_urls = await asyncio.gather(*tasks)
             events_api_urls = [x for y in events_api_urls for x in y]
 
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
             tasks = []
             for event_api_url in events_api_urls:
                 task = asyncio.create_task(self.__get_events_data(session, event_api_url))
