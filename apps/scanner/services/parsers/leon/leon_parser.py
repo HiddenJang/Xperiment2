@@ -3,7 +3,9 @@ import aiohttp
 import logging
 
 logger = logging.getLogger('Xperiment2.apps.scanner.leon.leon_parser')
-BASE_URL = 'https://leon.ru/api-2/betline/sports?ctag=ru-RU&flags=urlv2'
+CONNECTION_ATTEMPTS = 20
+
+########### HEADERS ##############
 HEADERS = {
         'authority': 'leon.ru',
         'accept': '*/*',
@@ -31,7 +33,11 @@ HEADERS = {
         'x-app-theme': 'DARK',
         'x-app-version': '6.54.0',
     }
-CONNECTION_ATTEMPTS = 20
+
+#### GET URL's ####
+COUNTRY_LIST_URL = 'https://leon.ru/api-2/betline/sports?ctag=ru-RU&flags=urlv2'
+LEAGUE_URL = 'https://leon.ru/api-2/betline/changes/all?ctag=ru-RU&vtag=9c2cd386-31e1-4ce9-a140-28e9b63a9300&league_id=%d&hideClosed=true&flags=reg,urlv2,mm2,rrc,nodup'
+EVENT_URL = 'https://leon.ru/api-2/betline/event/all?ctag=ru-RU&eventId=%d&flags=reg,urlv2,mm2,rrc,nodup,smg,outv2'
 
 
 class LeonParser:
@@ -74,23 +80,21 @@ class LeonParser:
 
         for attempt in range(CONNECTION_ATTEMPTS):
             try:
-                async with session.get(BASE_URL, headers=HEADERS) as r:
+                async with session.get(COUNTRY_LIST_URL, headers=HEADERS) as r:
                     common_data = await r.json()
                     leagues_urls = set()
                     for sport_type_data in common_data:
                         if sport_type_data and sport_type_data["family"] == self.__game_type:
                             for region in sport_type_data["regions"]:
                                 for league in region["leagues"]:
-                                    leagues_urls.add(f'https://leon.ru/api-2/betline/changes/all?ctag=ru-RU&vtag=9c2cd386-31e1-4ce9-a140-28e9b63a9300&league_id={league["id"]}&hideClosed=true&flags=reg,urlv2,mm2,rrc,nodup')
+                                    leagues_urls.add(LEAGUE_URL % league["id"])
                             break
                     return leagues_urls
+            except Exception:
+                continue
 
-            except Exception as ex:
-                if attempt == 20:
-                    logger.info(f'Критическая ошибка соединения (более 20 попыток).Событие пропущено.{ex}')
-                    return set()
-                else:
-                    continue
+        logger.info(f'Критическая ошибка соединения')
+        return set()
 
     async def __get_events_urls(self, session: aiohttp.ClientSession, league_api_url: str) -> list:
         """Получение списка URL API всех событий лиги"""
@@ -102,15 +106,13 @@ class LeonParser:
                     events_urls = []
                     for event_data in common_data["data"]:
                         if event_data["betline"] == self.__betline:
-                            events_urls.append(f'https://leon.ru/api-2/betline/event/all?ctag=ru-RU&eventId={event_data["id"]}&flags=reg,urlv2,mm2,rrc,nodup,smg,outv2')
+                            events_urls.append(EVENT_URL % event_data["id"])
                     return events_urls
+            except Exception:
+                continue
 
-            except Exception as ex:
-                if attempt == 20:
-                    logger.info(f'Критическая ошибка соединения (более 20 попыток).Событие пропущено.{ex}')
-                    return []
-                else:
-                    continue
+        logger.info(f'Критическая ошибка соединения')
+        return []
 
     async def __get_events_data(self, session: aiohttp.ClientSession, event_api_url: str) -> dict:
         """Получение данных события от API"""
@@ -119,21 +121,19 @@ class LeonParser:
             try:
                 async with session.get(event_api_url, headers=HEADERS) as r:
                     return await r.json()
-            except Exception as ex:
-                if attempt == 20:
-                    logger.info(
-                        f'Критическая ошибка соединения (более 20 попыток). Событие пропущено.{ex}')
-                    return {}
-                else:
-                    continue
+            except Exception:
+                continue
 
+        logger.info(f'Критическая ошибка соединения')
+        return {}
 
     def __process_parse_data(self, all_events_data: dict) -> list:
         """Обработка данных парсинга и фомирование выходных данных в требуемом формате"""
 
-        start = time.time()
         output_data = []
         for event_data in all_events_data:
+            if not event_data:
+                continue
             processed_event_data = self.__get_markets(event_data)
             if not processed_event_data['runners']:
                 continue
@@ -148,25 +148,29 @@ class LeonParser:
 
             processed_event_data['url'] = event_url
             output_data.append(processed_event_data)
-        work_time = time.time() - start
-        print(f'work_time_processing={work_time}')
         return output_data
 
     def __get_markets(self, event_data: dict) -> dict:
+        """Получение требуемых данных событий"""
+
+        runners_table = {
+            'teams': 'closed',
+            'market': 'closed',
+            'runners': {}
+        }
 
         if self.__market == 'Победитель':
-            return self.__get_markets_winner(event_data)
+            return self.__get_markets_winner(event_data, runners_table)
         elif self.__market == 'Тотал':
-            return self.__get_markets_total(event_data)
+            return self.__get_markets_total(event_data, runners_table)
         elif self.__market == 'Фора':
-            return self.__get_markets_handicap(event_data)
+            return self.__get_markets_handicap(event_data, runners_table)
         else:
             return {}
 
-    def __get_markets_winner(self, event_data: dict) -> dict:
+    def __get_markets_winner(self, event_data: dict, runners_table: dict) -> dict:
         """Отбор коэффициентов на ставку типа 'Победитель' (1Х2)"""
 
-        runners_table = {'teams': 'closed', 'market': 'closed', 'runners': {}}
         if 'markets' in event_data:
             for market in event_data['markets']:
                 if (market.get('name') == 'Победитель') and market.get('open'):
@@ -182,10 +186,9 @@ class LeonParser:
                             runners_table['runners']['away'] = runner.get('price')
         return runners_table
 
-    def __get_markets_total(self, event_data: dict) -> dict:
+    def __get_markets_total(self, event_data: dict, runners_table: dict) -> dict:
         """Отбор коэффициентов на ставку типа 'Тотал' """
 
-        runners_table = {'teams': 'closed', 'market': 'closed', 'runners': {}}
         if 'markets' in event_data:
             for market in event_data.get('markets'):
                 if (market.get('name') == 'Тотал') and market.get('open'):
@@ -201,10 +204,9 @@ class LeonParser:
                             runners_table['runners'][handicap]['over'] = runner.get('price')
         return runners_table
 
-    def __get_markets_handicap(self, event_data: dict) -> dict:
+    def __get_markets_handicap(self, event_data: dict, runners_table: dict) -> dict:
         """Отбор коэффициентов на ставку типа 'Фора' """
 
-        runners_table = {'teams': 'closed', 'market': 'closed', 'runners': {}}
         if 'markets' in event_data:
             for market in event_data.get('markets'):
                 if (market.get('name') == 'Фора') and market.get('open'):
@@ -213,7 +215,7 @@ class LeonParser:
                     for runner in market.get('runners'):
                         handicap = runner.get('handicap')
                         if handicap == '0' and handicap in runners_table['runners'].keys():
-                            handicap = '+0'
+                            handicap = '-0'
                         if runner.get('tags')[0] == "HOME":
                             runners_table['runners'][handicap] = {'home': runner.get('price')}
                         elif runner.get('tags')[0] == "AWAY":
@@ -224,11 +226,12 @@ class LeonParser:
 if __name__ == '__main__':
     import time
     import pprint
-    leon_parser = LeonParser(game_type="Soccer", betline="prematch", market="Тотал")
+    leon_parser = LeonParser(game_type="Soccer", betline="prematch", market="Фора")
     for i in range(10):
         start = time.time()
         events_data = asyncio.run(leon_parser.start_parse())
         work_time = time.time() - start
         print(work_time)
+        #print(events_data)
         print(len(events_data))
         #pprint.pprint(events_data)
