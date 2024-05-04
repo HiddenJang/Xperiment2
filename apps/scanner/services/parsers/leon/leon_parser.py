@@ -66,12 +66,12 @@ class LeonParser:
         self.__region = region
         self.__league = league
 
-
     async def start_parse(self):
         """Запуск асинхронного парсинга, обработки результатов и получения списка данных по каждому событию (матчу)"""
 
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
-            leagues_data = await asyncio.create_task(self.get_leagues_data(session))
+            leagues_data = await asyncio.create_task(self.get_all_leagues_data(session))
+            leagues_data = [x for y in leagues_data['leon'].values() for x in y]
 
             tasks = []
             for league_data in leagues_data:
@@ -88,63 +88,66 @@ class LeonParser:
 
         return self.__process_parse_data(all_events_data)
 
-    async def get_countries_list(self, session: aiohttp.ClientSession) -> list:
-        """Получение списка стран заданного вида спорта"""
+    async def get_regions_list(self, session: aiohttp.ClientSession) -> dict:
+
+        """Получение данных всех чемпионатов всех региональных лиг (имя и id для дальнейшего GET-запроса событий)"""
 
         for attempt in range(CONNECTION_ATTEMPTS):
             try:
                 async with session.get(COUNTRY_LIST_URL, headers=HEADERS) as r:
                     common_data = await r.json()
-
-                countries_list = []
-                for sport_type_data in common_data:
-                    if sport_type_data and sport_type_data["family"] == self.__game_type:
-                        for region in sport_type_data["regions"]:
-                            if region.get('name'):
-                                country_data = {'country_name': region.get('name')}
-                                countries_list.append(country_data)
-                return countries_list
-
-            except Exception:
-                continue
-
-        logger.info(f'Критическая ошибка соединения')
-        return []
-
-    async def get_leagues_data(self, session: aiohttp.ClientSession) -> list:
-        """Получение списка URL API всех лиг заданного вида спорта"""
-
-        for attempt in range(CONNECTION_ATTEMPTS):
-            try:
-                async with session.get(COUNTRY_LIST_URL, headers=HEADERS) as r:
-                    common_data = await r.json()
-                    leagues_data = []
+                    countries_data = {'leon': {}}
                     for sport_type_data in common_data:
                         if sport_type_data and sport_type_data["family"] == self.__game_type:
                             for region in sport_type_data["regions"]:
-                                if region.get('name') and (self.__region == 'all' or self.__region == region.get('name')):
-                                    for league in region["leagues"]:
-                                        if self.__league == 'all' or self.__league == league.get('name'):
-                                            league_data = {'league_name': league.get('name'), 'league_url': LEAGUE_URL % league["id"]}
-                                            leagues_data.append(league_data)
-
-                                            if self.__league == league.get('name'):
-                                                return leagues_data
+                                if region.get('name') and (self.__region == 'all' or self.__region == region['name']):
+                                    countries_data['leon'][region['name']] = [region['id']]
 
                             break
-                    return leagues_data
+                    return countries_data
             except Exception:
                 continue
 
         logger.info(f'Критическая ошибка соединения')
-        return []
+        return {}
+
+    async def get_all_leagues_data(self, session: aiohttp.ClientSession) -> dict:
+        """Получение данных всех чемпионатов всех региональных лиг (имя и id для дальнейшего GET-запроса событий)"""
+
+        for attempt in range(CONNECTION_ATTEMPTS):
+            try:
+                async with session.get(COUNTRY_LIST_URL, headers=HEADERS) as r:
+                    common_data = await r.json()
+                    leagues_data = {'leon': {}}
+                    for sport_type_data in common_data:
+                        if sport_type_data and sport_type_data["family"] == self.__game_type:
+                            for region in sport_type_data["regions"]:
+                                if region.get('name') and (self.__region == 'all' or self.__region == region['name']):
+                                    leagues_data['leon'][region['name']] = []
+                                    for league in region["leagues"]:
+                                        if league.get('name') and (self.__league == 'all' or self.__league == league['name']):
+                                            league_data = {
+                                                'league_name': league['name'],
+                                                'league_id': league["id"]
+                                            }
+                                            leagues_data['leon'][region['name']].append(league_data)
+
+                                            if self.__league == league['name']:
+                                                return leagues_data
+                            break
+                    return leagues_data
+            except Exception as ex:
+                continue
+
+        logger.info(f'Критическая ошибка соединения')
+        return {}
 
     async def __get_events_urls(self, session: aiohttp.ClientSession, league_data: dict) -> list:
         """Получение списка URL API всех событий лиги"""
 
         for attempt in range(CONNECTION_ATTEMPTS):
             try:
-                async with session.get(league_data['league_url'], headers=HEADERS) as r:
+                async with session.get(LEAGUE_URL % league_data['league_id'], headers=HEADERS) as r:
                     common_data = await r.json()
                     events_urls = []
                     for event_data in common_data["data"]:
@@ -163,7 +166,9 @@ class LeonParser:
         for attempt in range(CONNECTION_ATTEMPTS):
             try:
                 async with session.get(event_api_url, headers=HEADERS) as r:
-                    return await r.json()
+                    event_data = await r.json()
+                    #print(event_data)
+                    return event_data
             except Exception:
                 continue
 
@@ -277,7 +282,7 @@ class LeonParser:
 if __name__ == '__main__':
     import time
     import pprint
-    leon_parser = LeonParser(game_type="IceHockey", betline="prematch", market="Фора", region='США', league='НХЛ')
+    leon_parser = LeonParser(game_type="Soccer", betline="prematch", market="Тотал", region='Танзания')
     for i in range(1):
         start = time.time()
         events_data = asyncio.run(leon_parser.start_parse())
