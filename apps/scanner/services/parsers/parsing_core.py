@@ -32,6 +32,7 @@ async def get_regions_and_leagues(game_type: str):
     return await asyncio.gather(task_leon, task_betboom)
 
 async def get_events(game_type: str, betline: str, market: str, regions_map: dict):
+
     for region_data in regions_map.values():
         region_leon = list(region_data.get('leon').keys())[0]
         region_betboom = list(region_data.get('betboom').keys())[0]
@@ -42,16 +43,12 @@ async def get_events(game_type: str, betline: str, market: str, regions_map: dic
         yield events_map
 
 async def task_starter(regions_map: dict):
+    total_events = 0
     async for value in get_events(game_type="Soccer", betline='prematch', market='Победитель', regions_map=regions_map):
-        pass
+        total_events += value
 
+    return total_events
 
-    # tasks = []
-    # for region_data in regions_map.values():
-    #     task = asyncio.create_task(get_events(game_type="Soccer", betline='prematch', market='Тотал', region_data=region_data))
-    #     tasks.append(task)
-    #     event = await task
-        #print(event)
 
 if __name__ == '__main__':
     import time
@@ -61,11 +58,11 @@ if __name__ == '__main__':
         start_time = time.time()
         regions_data = asyncio.run(get_regions_and_leagues(game_type="Soccer"))
         regions_map = get_regions_map(regions_data)
-        print(regions_map)
+        #print(regions_map)
         print('regions mapping is done!')
         events = asyncio.run(task_starter(regions_map))
-
         stop_time = time.time() - start_time
+        print(f'len events={events}')
         print(len(regions_map))
         print(stop_time)
 
