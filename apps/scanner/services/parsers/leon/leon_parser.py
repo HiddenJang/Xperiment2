@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger('Xperiment2.apps.scanner.leon.leon_parser')
 CONNECTION_ATTEMPTS = 20
+CONNECTION_TIMEOUT = aiohttp.ClientTimeout(total=None, sock_connect=0.5, sock_read=1.5)
 
 ########### HEADERS ##############
 HEADERS = {
@@ -46,7 +47,7 @@ class LeonParser:
         Свойства:
         1. game_type (тип игры): Soccer, Basketball, IceHockey
         2. betline (стадия игры): inplay, prematch
-        3. market (тип раннера): Победитель, Тотал, Фора
+        3. market (тип ставки): Победитель, Тотал, Фора
         4. region (страна): country_name(lang=ru, exp: 'Россия') или all
         5. league (региональная лига): league_name(lang=ru, exp: 'NHL. Плей-офф') или all
     """
@@ -69,7 +70,7 @@ class LeonParser:
     async def start_parse(self):
         """Запуск асинхронного парсинга, обработки результатов и получения списка данных по каждому событию (матчу)"""
 
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), timeout=CONNECTION_TIMEOUT) as session:
             leagues_data = await asyncio.create_task(self.get_all_leagues_data(session))
             leagues_data = [x for y in leagues_data['leon'].values() for x in y]
 
@@ -126,28 +127,23 @@ class LeonParser:
                                     leagues_data['leon'][region['name']] = []
                                     for league in region["leagues"]:
                                         if league.get('name') and (self.__league == 'all' or self.__league == league['name']):
-                                            league_data = {
-                                                'league_name': league['name'],
-                                                'league_id': league["id"]
-                                            }
-                                            leagues_data['leon'][region['name']].append(league_data)
-
+                                            leagues_data['leon'][region['name']].append(league["id"])
                                             if self.__league == league['name']:
                                                 return leagues_data
                             break
                     return leagues_data
-            except Exception as ex:
+            except Exception:
                 continue
 
         logger.info(f'Критическая ошибка соединения')
         return {}
 
-    async def __get_events_urls(self, session: aiohttp.ClientSession, league_data: dict) -> list:
+    async def __get_events_urls(self, session: aiohttp.ClientSession, league_id: dict) -> list:
         """Получение списка URL API всех событий лиги"""
 
         for attempt in range(CONNECTION_ATTEMPTS):
             try:
-                async with session.get(LEAGUE_URL % league_data['league_id'], headers=HEADERS) as r:
+                async with session.get(LEAGUE_URL % league_id, headers=HEADERS) as r:
                     common_data = await r.json()
                     events_urls = []
                     for event_data in common_data["data"]:
@@ -202,6 +198,7 @@ class LeonParser:
         """Получение требуемых данных событий"""
 
         runners_table = {
+            'bookmaker': 'leon',
             'region': 'closed',
             'league': 'closed',
             'teams': 'closed',
@@ -282,12 +279,12 @@ class LeonParser:
 if __name__ == '__main__':
     import time
     import pprint
-    leon_parser = LeonParser(game_type="Soccer", betline="prematch", market="Тотал", region='Танзания')
-    for i in range(1):
+    leon_parser = LeonParser(game_type="Soccer", betline="prematch", market="Тотал")
+    for _ in range(10):
         start = time.time()
         events_data = asyncio.run(leon_parser.start_parse())
         work_time = time.time() - start
-        print(work_time)
         print(events_data)
         print(len(events_data))
+        print(work_time)
         #pprint.pprint(events_data)

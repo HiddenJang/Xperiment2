@@ -5,6 +5,7 @@ import json
 
 logger = logging.getLogger('Xperiment2.apps.scanner.betboom.betboom_parser')
 CONNECTION_ATTEMPTS = 20
+CONNECTION_TIMEOUT = aiohttp.ClientTimeout(total=None, sock_connect=0.5, sock_read=1.5)
 
 ########### HEADERS ##############
 
@@ -43,7 +44,7 @@ class BetboomParser:
         Свойства:
         1. game_type (тип игры): Soccer (1), Basketball (4), IceHockey (10), etc...
         2. betline (стадия игры): inplay, prematch
-        3. market (тип раннера): Исход (Победитель), Тотал, Фора
+        3. market (тип ставки): Исход (Победитель), Тотал, Фора
         4. region (страна): country_name(lang=ru, exp: 'Россия') или all
         5. league (региональная лига): league_name(lang=ru, exp: 'NHL. Плей-офф') или all
     """
@@ -65,8 +66,12 @@ class BetboomParser:
                 self.__game_type = 4
             case "IceHockey":
                 self.__game_type = 10
+        match market:
+            case "Победитель" | "Исход":
+                self.__market = "Исход"
+            case _:
+                self.__market = market
         self.__betline = betline
-        self.__market = market
         self.__region = region
         self.__league = league
 
@@ -74,17 +79,17 @@ class BetboomParser:
         """Запуск асинхронного парсинга, обработки результатов и получения списка данных по каждому событию (матчу)"""
 
         if self.__betline == 'inplay':
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(timeout=CONNECTION_TIMEOUT) as session:
                 all_events_data = await asyncio.create_task(self.__get_live_events_data(session))
 
         elif self.__betline == 'prematch':
-            async with aiohttp.ClientSession() as session:
-                champs_data_list = await asyncio.create_task(self.get_all_leagues_data(session))
-                champs_data_list = [x for y in champs_data_list['betboom'].values() for x in y]
+            async with aiohttp.ClientSession(timeout=CONNECTION_TIMEOUT) as session:
+                champs_data_list = await self.get_all_leagues_data(session)
+                champs_id_list = [x for y in champs_data_list['betboom'].values() for x in y]
 
                 tasks = []
-                for champ_data in champs_data_list:
-                    task = asyncio.create_task(self.__get_events_id(session, champ_data))
+                for champ_id in champs_id_list:
+                    task = asyncio.create_task(self.__get_events_id(session, champ_id))
                     tasks.append(task)
                 events_id = await asyncio.gather(*tasks)
                 events_id = [x for y in events_id for x in y]
@@ -101,140 +106,131 @@ class BetboomParser:
         return self.__process_parse_data(all_events_data)
 
     async def get_all_leagues_data(self, session: aiohttp.ClientSession) -> dict:
-        """Получение данных всех чемпионатов всех региональных лиг (имя и id для дальнейшего GET-запроса событий)"""
+        """Получение списка id национальных лиг каждого региона (имя страны и параметры с id для дальнейшего POST-запроса) """
 
-        countries_data_list = await asyncio.create_task(self.get_regions_list(session))
+        countries_data_list = await asyncio.create_task(self.__get_regions_list(session))
 
         tasks = []
-        for country_data in countries_data_list['betboom'].items():
+        for country_data in countries_data_list.items():
             task = asyncio.create_task(self.__get_leagues_data(session, country_data))
             tasks.append(task)
         champs_data_list = await asyncio.gather(*tasks)
-        champs_data_list = {x: z for y in champs_data_list for x, z in zip(y.keys(), y.values())}
-        return {'betboom': champs_data_list}
+        champs_data_list = {'betboom': {x: z for y in champs_data_list for x, z in zip(y.keys(), y.values())}}
+        return champs_data_list
 
-    async def get_regions_list(self, session: aiohttp.ClientSession) -> dict:
-        """Получение списка данных национальных лиг (имя страны и параметры с id для дальнейшего POST-запроса) """
+    async def __get_regions_list(self, session: aiohttp.ClientSession) -> dict:
+        """Получение списка регионов (имя страны и параметры с id для дальнейшего POST-запроса лиг каждого региона) """
 
-        for attempt in range(CONNECTION_ATTEMPTS):
-            try:
-                json_data = {
-                    'sportId': self.__game_type,
-                    'timeFilter': 0,
-                    'langId': 1,
-                    'partnerId': 147,
-                    'countryCode': None,
-                }
-                async with session.post(url=COUNTRY_LIST_URL, json=json_data, headers=HEADERS) as r:
-                    countries_list = await r.text()
+        try:
+            json_data = {
+                'sportId': self.__game_type,
+                'timeFilter': 0,
+                'langId': 1,
+                'partnerId': 147,
+                'countryCode': None,
+            }
+            async with session.post(url=COUNTRY_LIST_URL, json=json_data, headers=HEADERS) as r:
+                countries_list = await r.text()
 
-                countries_data_list = {'betboom': {}}
-                for country in json.loads(countries_list):
-                    if country.get('N') and (self.__region == 'all' or self.__region == country.get('N')):
-                        req_params = {
-                            'countryId': country.get('Id'),
-                            'timeFilter': 0,
-                            'langId': 1,
-                            'partnerId': 147,
-                            'countryCode': None,
-                        }
-                        countries_data_list['betboom'][country.get('N')] = req_params
-                        if self.__region == country.get('N'):
-                            return countries_data_list
+            countries_data_list = {}
+            for country in json.loads(countries_list):
+                if country.get('N') and (self.__region == 'all' or self.__region == country.get('N')):
+                    req_params = {
+                        'countryId': country.get('Id'),
+                        'timeFilter': 0,
+                        'langId': 1,
+                        'partnerId': 147,
+                        'countryCode': None,
+                    }
+                    countries_data_list[country.get('N')] = req_params
+                    if self.__region == country.get('N'):
+                        return countries_data_list
 
-                return countries_data_list
+            return countries_data_list
 
-            except Exception:
-                continue
+        except Exception:
+            logger.info(f'Критическая ошибка соединения')
+            return {'betboom': {}}
 
-        logger.info(f'Критическая ошибка соединения')
-        return {'betboom': {}}
+
 
     async def __get_leagues_data(self, session: aiohttp.ClientSession, country_data: dict) -> dict:
         """Получение данных чемпионата (имя чемпионата и id для дальнейшего GET-запроса событий)"""
 
         country_name = country_data[0]
         params = country_data[1]
-        for attempt in range(CONNECTION_ATTEMPTS):
-            try:
-                async with session.post(url=CHAMPS_LIST_URL, json=params, headers=HEADERS) as r:
-                    champs_list = await r.text()
 
-                champs_data_list = {country_name: []}
-                for champ in json.loads(champs_list):
-                    if champ.get('N') and (self.__league == 'all' or self.__league == champ.get('N')):
-                        league_data = {'league_name': champ.get('N'), 'league_id': champ.get('Id')}
-                        champs_data_list[country_name].append(league_data)
-                        if self.__league == champ.get('N'):
-                            return champs_data_list
-                return champs_data_list
+        try:
+            async with session.post(url=CHAMPS_LIST_URL, json=params, headers=HEADERS) as r:
+                champs_list = await r.text()
 
-            except Exception:
-                continue
+            champs_data_list = {country_name: []}
+            for champ in json.loads(champs_list):
+                if champ.get('N') and (self.__league == 'all' or self.__league == champ.get('N')):
+                    champs_data_list[country_name].append(champ.get('Id'))
+                    if self.__league == champ.get('N'):
+                        return champs_data_list
+            return champs_data_list
 
-        logger.info(f'Критическая ошибка соединения')
-        return {}
+        except Exception:
+            logger.info(f'Критическая ошибка соединения')
+            return {}
 
-    async def __get_events_id(self, session: aiohttp.ClientSession, champ_data: dict) -> list:
+
+
+    async def __get_events_id(self, session: aiohttp.ClientSession, champ_id: dict) -> list:
         """Получение id событий каждого чемпионата для дальнейшего GET-запроса данных по каждому событию"""
 
-        for attempt in range(CONNECTION_ATTEMPTS):
-            try:
-                async with session.get(url=PREMATCH_CHAMP_URL % champ_data.get('league_id'), headers=HEADERS) as r:
-                    events_list = await r.text()
+        try:
+            async with session.get(url=PREMATCH_CHAMP_URL % champ_id, headers=HEADERS) as r:
+                events_list = await r.text()
 
-                events_id = []
-                for event in json.loads(events_list):
-                    if event.get('Id'):
-                        events_id.append(event.get('Id'))
-                return events_id
+            events_id = []
+            for event in json.loads(events_list):
+                if event.get('Id'):
+                    events_id.append(event.get('Id'))
+            return events_id
 
-            except Exception:
-                continue
+        except Exception:
+            logger.info(f'Критическая ошибка соединения')
+            return []
 
-        logger.info(f'Критическая ошибка соединения')
-        return []
+
 
     async def __get_event_data(self, session: aiohttp.ClientSession, event_id: list) -> list:
         """Получение данных prematch события по id"""
 
-        for attempt in range(CONNECTION_ATTEMPTS):
-            try:
-                async with session.get(url=PREMATCH_EVENT_URL % event_id, headers=HEADERS) as r:
-                    common_event_data = await r.text()
-                for event_data in json.loads(common_event_data):
-                    if event_data.get("PN") == "":
-                        return event_data
-                return []
+        try:
+            async with session.get(url=PREMATCH_EVENT_URL % event_id, headers=HEADERS) as r:
+                common_event_data = await r.text()
+            for event_data in json.loads(common_event_data):
+                if event_data.get("PN") == "":
+                    return event_data
+            return []
 
-            except Exception:
-                continue
-
-        logger.info(f'Критическая ошибка соединения')
-        return []
+        except Exception:
+            logger.info(f'Критическая ошибка соединения')
+            return []
 
     async def __get_live_events_data(self, session: aiohttp.ClientSession) -> list:
         """Получение данных всех LIVE-событий"""
 
-        for attempt in range(CONNECTION_ATTEMPTS):
-            try:
-                async with session.get(url=LIVE_EVENTS_URL % self.__game_type, headers=HEADERS) as r:
-                    countries_data = await r.text()
+        try:
+            async with session.get(url=LIVE_EVENTS_URL % self.__game_type, headers=HEADERS) as r:
+                countries_data = await r.text()
 
-                events_data = []
-                for country_data in json.loads(countries_data).get('CNT'):
-                    if country_data.get('N') == self.__region or self.__region == 'all':
-                        for champs_data in country_data.get("CL"):
-                            if champs_data.get('N') == self.__league or self.__league == 'all':
-                                for event_data in champs_data.get("E"):
-                                    events_data.append(event_data)
-                return events_data
+            events_data = []
+            for country_data in json.loads(countries_data).get('CNT'):
+                if country_data.get('N') == self.__region or self.__region == 'all':
+                    for champs_data in country_data.get("CL"):
+                        if champs_data.get('N') == self.__league or self.__league == 'all':
+                            for event_data in champs_data.get("E"):
+                                events_data.append(event_data)
+            return events_data
 
-            except Exception:
-                continue
-
-        logger.info(f'Критическая ошибка соединения')
-        return []
+        except Exception:
+            logger.info(f'Критическая ошибка соединения')
+            return []
 
     def __process_parse_data(self, all_events_data: list) -> list:
         """Обработка данных парсинга и фомирование выходных данных в требуемом формате"""
@@ -253,6 +249,7 @@ class BetboomParser:
         """Получение требуемых данных событий"""
 
         runners_table = {
+            'bookmaker': 'betboom',
             'region': 'closed',
             'league': 'closed',
             'teams': 'closed',
@@ -336,9 +333,9 @@ if __name__ == '__main__':
     import pprint
     import time
 
-    for _ in range(1):
+    for _ in range(10):
         start_time = time.time()
-        parser = BetboomParser(game_type=10, betline='prematch', market='Тотал')
+        parser = BetboomParser(game_type=1, betline='prematch', market='Тотал')
         result = asyncio.run(parser.start_parse())
         work_time = time.time() - start_time
         print(work_time)

@@ -2,7 +2,7 @@ from transliterate import translit
 import pprint
 
 def get_regions_map(regions_data: list) -> dict:
-
+    print(regions_data)
     mapping_table = {}
     if regions_data[0] and regions_data[1]:
         first_bookmkr = list(regions_data[0].keys())[0]
