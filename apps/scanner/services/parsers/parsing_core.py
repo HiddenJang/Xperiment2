@@ -1,70 +1,98 @@
 import asyncio
-import aiohttp
+import logging
 
 from leon.leon_parser import LeonParser
 from betboom.betboom_parser import BetboomParser
 
-from regions_map import get_regions_map
 from events_map import get_events_map
+from runner_analysis import RunnersAnalysis
 
-CONNECTION_TIMEOUT = aiohttp.ClientTimeout(total=None, sock_connect=0.5, sock_read=1.5)
+logger = logging.getLogger('Xperiment2.apps.scanner.parsers.parsing_core')
 
-######################## leon ##########################
-async def get_regions_and_leagues_list_leon(game_type: str) -> dict:
-    async with aiohttp.ClientSession(timeout=CONNECTION_TIMEOUT) as session:
-        return await LeonParser(game_type=game_type).get_all_leagues_data(session)
 
-async def get_region_events_leon(game_type: str, betline: str, market: str, region: str) -> dict:
-    return await LeonParser(game_type=game_type, betline=betline, market=market, region=region).start_parse()
+async def get_events_data(first_bkmkr_parser, second_bkmkr_parser) -> list:
+    """Получение всех событий двух букмекеров"""
 
-######################## betboom ##########################
-async def get_regions_and_leagues_list_betboom(game_type: str) -> dict:
-    async with aiohttp.ClientSession(timeout=CONNECTION_TIMEOUT) as session:
-        return await BetboomParser(game_type=game_type).get_all_leagues_data(session)
+    task_first = asyncio.create_task(first_bkmkr_parser.start_parse())
+    task_second = asyncio.create_task(second_bkmkr_parser.start_parse())
+    return await asyncio.gather(task_first, task_second)
 
-async def get_region_events_betboom(game_type: str, betline: str, market: str, region: str) -> dict:
-    return await BetboomParser(game_type=game_type, betline=betline, market=market, region=region).start_parse()
 
-######## starters ############
-async def get_regions_and_leagues(game_type: str):
-    task_leon = asyncio.create_task(get_regions_and_leagues_list_leon(game_type=game_type))
-    task_betboom = asyncio.create_task(get_regions_and_leagues_list_betboom(game_type=game_type))
-    return await asyncio.gather(task_leon, task_betboom)
+def start_scan(
+        first_bkmkr: str="leon",
+        second_bkmkr: str="betboom",
+        game_type: str ="Soccer",
+        betline: str ="prematch",
+        market: str ="Тотал",
+        region: str="all",
+        league: str="all"
+) -> list:
+    """
+    Запуск сканирования по паре букмекеров в соответствии с заданными настройками
+        Допустимые параметры:
+        1. first_bkmkr (первый букмекер): leon, betboom
+        2. second_bkmkr (второй букмекер): leon, betboom
+        3. game_type (тип игры): Soccer, Basketball, IceHockey
+        4. betline (стадия игры): inplay, prematch
+        5. market (тип ставки): Победитель, Тотал, Фора
+        6. region (страна): country_name(lang=ru, exp: 'Россия') или all
+        7. league (региональная лига): league_name(lang=ru, exp: 'NHL. Плей-офф') или all
+    """
 
-async def get_events(game_type: str, betline: str, market: str, regions_map: dict):
+    leon_parser = LeonParser(
+                game_type=game_type,
+                betline=betline,
+                market=market,
+                region=region,
+                league=league
+            )
+    betboom_parser = BetboomParser(
+                game_type=game_type,
+                betline=betline,
+                market=market,
+                region=region,
+                league=league
+            )
 
-    for region_data in regions_map.values():
-        region_leon = list(region_data.get('leon').keys())[0]
-        region_betboom = list(region_data.get('betboom').keys())[0]
-        task_leon = asyncio.create_task(get_region_events_leon(game_type=game_type, betline=betline, market=market, region=region_leon))
-        task_betboom = asyncio.create_task(get_region_events_betboom(game_type=game_type, betline=betline, market=market, region=region_betboom))
-        region_events_data = await asyncio.gather(task_leon, task_betboom)
-        events_map = get_events_map(region_events_data)
-        yield events_map
+    match first_bkmkr:
+        case "leon":
+            first_bkmkr_parser = leon_parser
+        case "betboom":
+            first_bkmkr_parser = betboom_parser
+        case _:
+            logger.error(f"Недопустимое название букмекера - {first_bkmkr}!")
+            return []
 
-async def task_starter(regions_map: dict):
-    total_events = 0
-    async for value in get_events(game_type="Soccer", betline='prematch', market='Победитель', regions_map=regions_map):
-        total_events += value
+    match second_bkmkr:
+        case "leon":
+            second_bkmkr_parser = leon_parser
+        case "betboom":
+            second_bkmkr_parser = betboom_parser
+        case _:
+            logger.error(f"Недопустимое название букмекера - {second_bkmkr}!")
+            return []
 
-    return total_events
+    start_time = time.time()
+
+    all_events_data = asyncio.run(get_events_data(first_bkmkr_parser, second_bkmkr_parser))
+
+    stop_time = time.time() - start_time
+    print(stop_time)
+
+    events_map = get_events_map(all_events_data)
+    analyzer = RunnersAnalysis()
+    total_forks = analyzer.find_totals_forks(events_map, 1.93, 1.93, 0)
+
+    stop_time = time.time() - start_time
+    print(f'events map len={len(events_map)}')
+    print(f'total forks amount={len(total_forks)}')
+    print(total_forks)
+    print(stop_time)
+
 
 
 if __name__ == '__main__':
     import time
-    import pprint
-    ###### countries
-    for _ in range(1):
-        start_time = time.time()
-        regions_data = asyncio.run(get_regions_and_leagues(game_type="Soccer"))
-        regions_map = get_regions_map(regions_data)
-        #print(regions_map)
-        print('regions mapping is done!')
-        events = asyncio.run(task_starter(regions_map))
-        stop_time = time.time() - start_time
-        print(f'len events={events}')
-        print(len(regions_map))
-        print(stop_time)
 
-
-
+    for _ in range(10):
+        start_scan()

@@ -1,10 +1,15 @@
 import asyncio
 import aiohttp
 import logging
+from apps.scanner.services.parsers import parse_settings
 
 logger = logging.getLogger('Xperiment2.apps.scanner.leon.leon_parser')
 CONNECTION_ATTEMPTS = 20
-CONNECTION_TIMEOUT = aiohttp.ClientTimeout(total=None, sock_connect=0.5, sock_read=1.5)
+CONNECTION_TIMEOUT = aiohttp.ClientTimeout(
+    total=None,
+    sock_connect=parse_settings.CONNECTION_TIMEOUT["sock_connect"],
+    sock_read=parse_settings.CONNECTION_TIMEOUT["sock_read"]
+)
 
 ########### HEADERS ##############
 HEADERS = {
