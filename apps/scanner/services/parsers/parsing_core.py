@@ -81,12 +81,12 @@ def start_scan(
 
     events_map = get_events_map(all_events_data)
     analyzer = RunnersAnalysis()
-    total_forks = analyzer.find_totals_forks(events_map, 1.93, 1.93, 0)
+    forks = analyzer.find_winner_forks(events_map, 3.0, 3.0, 3.0)
 
     stop_time = time.time() - start_time
     print(f'events map len={len(events_map)}')
-    print(f'total forks amount={len(total_forks)}')
-    print(total_forks)
+    print(f'forks amount={len(forks)}')
+    print(forks)
     print(stop_time)
 
 
@@ -95,4 +95,4 @@ if __name__ == '__main__':
     import time
 
     for _ in range(10):
-        start_scan()
+        start_scan(market="Победитель")

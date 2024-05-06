@@ -1,6 +1,8 @@
 import asyncio
 import aiohttp
 import logging
+from datetime import datetime
+
 from apps.scanner.services.parsers import parse_settings
 
 logger = logging.getLogger('Xperiment2.apps.scanner.leon.leon_parser')
@@ -168,7 +170,6 @@ class LeonParser:
             try:
                 async with session.get(event_api_url, headers=HEADERS) as r:
                     event_data = await r.json()
-                    #print(event_data)
                     return event_data
             except Exception:
                 continue
@@ -208,6 +209,7 @@ class LeonParser:
             'league': 'closed',
             'teams': 'closed',
             'market': 'closed',
+            'date': datetime.fromtimestamp(event_data['kickoff']/1000).strftime('%Y-%m-%d'),
             'runners': {}
         }
 

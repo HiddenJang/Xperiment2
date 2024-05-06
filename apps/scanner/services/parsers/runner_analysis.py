@@ -63,6 +63,57 @@ class RunnersAnalysis:
 
         return total_forks
 
+    @staticmethod
+    def find_winner_forks(
+            events_data: list,
+            min_k_home: float,
+            min_k_draw: float,
+            min_k_away: float,
+    ) -> list:
+        """Поиск вилок в ставках типа Победитель"""
+
+        winner_forks = []
+        for event_data in events_data:
+            first_bkmkr_runners = event_data[0].get("runners")
+            second_bkmkr_runners = event_data[1].get("runners")
+            if first_bkmkr_runners and second_bkmkr_runners:
+                k_first_bkmkr_home = first_bkmkr_runners['home']
+                k_first_bkmkr_away = first_bkmkr_runners['away']
+                k_first_bkmkr_draw = first_bkmkr_runners['draw']
+                k_second_bkmkr_home = second_bkmkr_runners['home']
+                k_second_bkmkr_away = second_bkmkr_runners['away']
+                k_second_bkmkr_draw = second_bkmkr_runners['draw']
+
+                first_bkmkr_data = copy.deepcopy(event_data[0])
+                second_bkmkr_data = copy.deepcopy(event_data[1])
+
+                if (
+                        max(k_second_bkmkr_home, k_first_bkmkr_home) >= min_k_home
+                ) and (
+                        max(k_second_bkmkr_draw, k_first_bkmkr_draw) >= min_k_draw
+                ) and (
+                        max(k_second_bkmkr_away, k_first_bkmkr_away) >= min_k_away
+                ):
+
+                    if k_second_bkmkr_home <= k_first_bkmkr_home >= min_k_home:
+                        del second_bkmkr_data['runners']['home']
+                    elif k_first_bkmkr_home <= k_second_bkmkr_home >= min_k_home:
+                        del first_bkmkr_data['runners']['home']
+
+                    if k_second_bkmkr_draw <= k_first_bkmkr_draw >= min_k_draw:
+                        del second_bkmkr_data['runners']['draw']
+                    elif k_first_bkmkr_draw <= k_second_bkmkr_draw >= min_k_draw:
+                        del first_bkmkr_data['runners']['draw']
+
+                    if k_second_bkmkr_away <= k_first_bkmkr_away >= min_k_away:
+                        del second_bkmkr_data['runners']['away']
+                    elif k_first_bkmkr_away <= k_second_bkmkr_away >= min_k_away:
+                        del first_bkmkr_data['runners']['away']
+
+                    winner_forks.append([first_bkmkr_data, second_bkmkr_data])
+
+        return winner_forks
+
 
 if __name__ == '__main__':
     pass
@@ -84,3 +135,11 @@ if __name__ == '__main__':
 #                                  3.5: {'under': 1.18, 'over': 4.92}, 4: {'under': 1.05, 'over': 10.13},
 #                                  4.5: {'under': 1.04, 'over': 11.15}},
 #   'url': 'https://betboom.ru/sport/EventView/18326640'}]
+
+### events_data (Winner) example ##
+# [{'bookmaker': 'leon', 'region': 'Россия', 'league': 'Премьер-лига', 'teams': 'ЦСКА - Рубин',
+#   'market': 'Победитель', 'runners': {'home': 1.93, 'draw': 3.45, 'away': 4.1},
+#   'url': 'https://leon.ru/bets/soccer/russia/premier-league/1970324843892744-cska-moscow-fc-rubin-kazan'},
+#  {'bookmaker': 'betboom', 'region': 'Россия', 'league': 'Россия. Премьер-лига', 'teams': 'ЦСКА М - Рубин',
+#   'market': 'Исход', 'runners': {'home': 1.84, 'draw': 3.47, 'away': 4.73},
+#   'url': 'https://betboom.ru/sport/EventView/18326616'}]

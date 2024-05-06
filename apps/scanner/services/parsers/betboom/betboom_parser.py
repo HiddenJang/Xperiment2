@@ -261,6 +261,7 @@ class BetboomParser:
             'teams': 'closed',
             'market': 'closed',
             'runners': {},
+            'date': event_data.get('D').split('T')[0],
             'url': SELENIUM_URL % event_data['Id']
         }
 
