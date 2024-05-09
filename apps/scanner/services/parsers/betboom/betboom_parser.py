@@ -91,7 +91,7 @@ class BetboomParser:
         elif self.__betline == 'prematch':
             async with aiohttp.ClientSession(timeout=CONNECTION_TIMEOUT) as session:
                 champs_data_list = await self.get_all_leagues_data(session)
-                champs_id_list = [x for y in champs_data_list['betboom'].values() for x in y]
+                champs_id_list = [x for y in champs_data_list.values() for x in y]
 
                 tasks = []
                 for champ_id in champs_id_list:
@@ -121,7 +121,7 @@ class BetboomParser:
             task = asyncio.create_task(self.__get_leagues_data(session, country_data))
             tasks.append(task)
         champs_data_list = await asyncio.gather(*tasks)
-        champs_data_list = {'betboom': {x: z for y in champs_data_list for x, z in zip(y.keys(), y.values())}}
+        champs_data_list = {x: z for y in champs_data_list for x, z in zip(y.keys(), y.values())}
         return champs_data_list
 
     async def __get_regions_list(self, session: aiohttp.ClientSession) -> dict:
@@ -156,9 +156,7 @@ class BetboomParser:
 
         except Exception:
             logger.info(f'Критическая ошибка соединения')
-            return {'betboom': {}}
-
-
+            return {}
 
     async def __get_leagues_data(self, session: aiohttp.ClientSession, country_data: dict) -> dict:
         """Получение данных чемпионата (имя чемпионата и id для дальнейшего GET-запроса событий)"""
@@ -284,7 +282,7 @@ class BetboomParser:
                     runners_table['league'] = event_data.get('CN')
                     runners_table['teams'] = event_data.get('N')
                     runners_table['market'] = market.get('N')
-                    runners_table['runners'] = {'home': 'closed', 'draw': 'closed', 'away': 'closed'}
+                    runners_table['runners'] = {'home': 0, 'draw': 0, 'away': 0}
                     for runner in market.get('Stakes'):
                         if runner.get('N') == 'П1' and runner.get("IsA"):
                             runners_table['runners']['home'] = runner.get('F')
@@ -326,12 +324,12 @@ class BetboomParser:
                     runners_table['market'] = market.get('N')
                     for runner in market.get('Stakes'):
                         handicap = runner.get('A')
-                        if handicap == 0 and handicap in runners_table['runners'].keys():
-                            handicap = '-0'
+                        if not runners_table['runners'].get(handicap):
+                            runners_table['runners'][handicap] = {'home': 'closed', 'away': 'closed'}
                         if "Фора1" in runner.get('N') and runner.get("IsA"):
-                            runners_table['runners'][handicap] = {'home': runner.get('F')}
+                            runners_table['runners'][handicap]['home'] = runner.get('F')
                         elif "Фора2" in runner.get('N') and runner.get("IsA"):
-                            runners_table['runners'][handicap] = {'away': runner.get('F')}
+                            runners_table['runners'][handicap]['away'] = runner.get('F')
 
         return runners_table
 
@@ -342,7 +340,7 @@ if __name__ == '__main__':
 
     for _ in range(10):
         start_time = time.time()
-        parser = BetboomParser(game_type=1, betline='prematch', market='Тотал')
+        parser = BetboomParser(game_type=1, betline='prematch', market='Фора')
         result = asyncio.run(parser.start_parse())
         work_time = time.time() - start_time
         print(work_time)

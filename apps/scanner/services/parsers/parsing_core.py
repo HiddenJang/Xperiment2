@@ -81,7 +81,7 @@ def start_scan(
 
     events_map = get_events_map(all_events_data)
     analyzer = RunnersAnalysis()
-    forks = analyzer.find_winner_forks(events_map, 3.0, 3.0, 3.0)
+    forks = analyzer.find_winner_forks(events_map, 2.8, 3.0, 3.0)
 
     stop_time = time.time() - start_time
     print(f'events map len={len(events_map)}')

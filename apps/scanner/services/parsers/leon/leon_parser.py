@@ -232,7 +232,7 @@ class LeonParser:
                     runners_table['league'] = event_data.get('league')['name']
                     runners_table['teams'] = event_data.get('name')
                     runners_table['market'] = market.get('name')
-                    runners_table['runners'] = {'home': 'closed', 'draw': 'closed', 'away': 'closed'}
+                    runners_table['runners'] = {'home': 0, 'draw': 0, 'away': 0}
                     for runner in market.get('runners'):
                         if runner.get('tags') == ['HOME'] and runner.get('name') == '1':
                             runners_table['runners']['home'] = runner.get('price')
@@ -274,19 +274,19 @@ class LeonParser:
                     runners_table['market'] = market.get('name')
                     for runner in market.get('runners'):
                         handicap = runner.get('handicap')
-                        if handicap == '0' and handicap in runners_table['runners'].keys():
-                            handicap = '-0'
+                        if not runners_table['runners'].get(handicap):
+                            runners_table['runners'][handicap] = {'home': 'closed', 'away': 'closed'}
                         if runner.get('tags')[0] == "HOME":
-                            runners_table['runners'][handicap] = {'home': runner.get('price')}
+                            runners_table['runners'][handicap]['home'] = runner.get('price')
                         elif runner.get('tags')[0] == "AWAY":
-                            runners_table['runners'][handicap] = {'away': runner.get('price')}
+                            runners_table['runners'][handicap]['away'] = runner.get('price')
         return runners_table
 
 
 if __name__ == '__main__':
     import time
     import pprint
-    leon_parser = LeonParser(game_type="Soccer", betline="prematch", market="Тотал")
+    leon_parser = LeonParser(game_type="Soccer", betline="prematch", market="Фора")
     for _ in range(10):
         start = time.time()
         events_data = asyncio.run(leon_parser.start_parse())
