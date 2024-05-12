@@ -1,9 +1,6 @@
 import asyncio
-import random
-
 import aiohttp
 import logging
-import json
 from datetime import datetime
 
 from apps.scanner.services.parsers import parse_settings
@@ -161,11 +158,9 @@ class OlimpParser:
 
     def __get_markets(self, event_data: dict) -> dict:
         """Получение требуемых данных событий"""
+
         region = event_data['competitionName'].split('.')[0]
-        if '.' in event_data['competitionName']:
-            league = event_data['competitionName'].replace(' ', '').split('.')[1]
-        else:
-            league = None
+        league = event_data['competitionName']
         teams = event_data['name']
         date = datetime.fromtimestamp(event_data['startDateTime']).strftime('%Y-%m-%d')
         url = SELENIUM_URL % (event_data['sportId'], event_data['competitionId'], event_data['id'])

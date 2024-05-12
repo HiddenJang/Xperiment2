@@ -208,13 +208,18 @@ class LeonParser:
     def __get_markets(self, event_data: dict) -> dict:
         """Получение требуемых данных событий"""
 
+        region = event_data.get('league')['region']['name']
+        league = event_data.get('league')['name']
+        teams = event_data.get('name')
+        date = datetime.fromtimestamp(event_data['kickoff']/1000).strftime('%Y-%m-%d')
+
         runners_table = {
             'bookmaker': 'leon',
-            'region': 'closed',
-            'league': 'closed',
-            'teams': 'closed',
-            'market': 'closed',
-            'date': datetime.fromtimestamp(event_data['kickoff']/1000).strftime('%Y-%m-%d'),
+            'region': region,
+            'league': league,
+            'teams': teams,
+            'market': None,
+            'date': date,
             'runners': {}
         }
 
@@ -234,11 +239,9 @@ class LeonParser:
         if 'markets' in event_data:
             for market in event_data['markets']:
                 if (market.get('name') == 'Победитель') and market.get('open'):
-                    runners_table['region'] = event_data.get('league')['region']['name']
-                    runners_table['league'] = event_data.get('league')['name']
-                    runners_table['teams'] = event_data.get('name')
-                    runners_table['market'] = market.get('name')
-                    runners_table['runners'] = {'home': 0, 'draw': 0, 'away': 0}
+                    if not runners_table['market']:
+                        runners_table['market'] = market.get('name')
+                        runners_table['runners'] = {'home': 0, 'draw': 0, 'away': 0}
                     for runner in market.get('runners'):
                         if runner.get('tags') == ['HOME'] and runner.get('name') == '1':
                             runners_table['runners']['home'] = runner.get('price')
@@ -255,10 +258,8 @@ class LeonParser:
         if 'markets' in event_data:
             for market in event_data.get('markets'):
                 if (market.get('name') == 'Тотал') and market.get('open'):
-                    runners_table['region'] = event_data.get('league')['region']['name']
-                    runners_table['league'] = event_data.get('league')['name']
-                    runners_table['teams'] = event_data.get('name')
-                    runners_table['market'] = market.get('name')
+                    if not runners_table['market']:
+                        runners_table['market'] = market.get('name')
                     for runner in market.get('runners'):
                         handicap = runner.get('handicap')
                         if not runners_table['runners'].get(handicap):
@@ -276,10 +277,8 @@ class LeonParser:
         if 'markets' in event_data:
             for market in event_data.get('markets'):
                 if (market.get('name') == 'Фора') and market.get('open'):
-                    runners_table['region'] = event_data.get('league')['region']['name']
-                    runners_table['league'] = event_data.get('league')['name']
-                    runners_table['teams'] = event_data.get('name')
-                    runners_table['market'] = market.get('name')
+                    if not runners_table['market']:
+                        runners_table['market'] = market.get('name')
                     for runner in market.get('runners'):
                         handicap = runner.get('handicap')
                         if not runners_table['runners'].get(handicap):

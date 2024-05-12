@@ -244,15 +244,21 @@ class BetboomParser:
     def __get_markets(self, event_data: dict) -> dict:
         """Получение требуемых данных событий"""
 
+        region = event_data.get('CtN')
+        league = event_data.get('CN')
+        teams = event_data.get('N')
+        date = event_data.get('D').split('T')[0]
+        url = SELENIUM_URL % event_data['Id']
+
         runners_table = {
             'bookmaker': 'betboom',
-            'region': 'closed',
-            'league': 'closed',
-            'teams': 'closed',
-            'market': 'closed',
+            'region': region,
+            'league': league,
+            'teams': teams,
+            'market': None,
             'runners': {},
-            'date': event_data.get('D').split('T')[0],
-            'url': SELENIUM_URL % event_data['Id']
+            'date': date,
+            'url': url
         }
 
         if self.__market == 'Победитель':
@@ -271,11 +277,9 @@ class BetboomParser:
         if 'StakeTypes' in event_data:
             for market in event_data['StakeTypes']:
                 if market.get('N') == 'Исход':
-                    runners_table['region'] = event_data.get('CtN')
-                    runners_table['league'] = event_data.get('CN')
-                    runners_table['teams'] = event_data.get('N')
-                    runners_table['market'] = market.get('N')
-                    runners_table['runners'] = {'home': 0, 'draw': 0, 'away': 0}
+                    if not runners_table['market']:
+                        runners_table['market'] = market.get('N')
+                        runners_table['runners'] = {'home': 0, 'draw': 0, 'away': 0}
                     for runner in market.get('Stakes'):
                         if runner.get('N') == 'П1' and runner.get("IsA"):
                             runners_table['runners']['home'] = runner.get('F')
@@ -292,10 +296,8 @@ class BetboomParser:
         if 'StakeTypes' in event_data:
             for market in event_data['StakeTypes']:
                 if market.get('N') == 'Тотал':
-                    runners_table['region'] = event_data.get('CtN')
-                    runners_table['league'] = event_data.get('CN')
-                    runners_table['teams'] = event_data.get('N')
-                    runners_table['market'] = market.get('N')
+                    if not runners_table['market']:
+                        runners_table['market'] = market.get('N')
                     for runner in market.get('Stakes'):
                         handicap = runner.get('A')
                         if not runners_table['runners'].get(handicap):
@@ -313,10 +315,8 @@ class BetboomParser:
         if 'StakeTypes' in event_data:
             for market in event_data['StakeTypes']:
                 if market.get('N') == 'Фора':
-                    runners_table['region'] = event_data.get('CtN')
-                    runners_table['league'] = event_data.get('CN')
-                    runners_table['teams'] = event_data.get('N')
-                    runners_table['market'] = market.get('N')
+                    if not runners_table['market']:
+                        runners_table['market'] = market.get('N')
                     for runner in market.get('Stakes'):
                         handicap = runner.get('A')
                         if not runners_table['runners'].get(handicap):
@@ -335,7 +335,7 @@ if __name__ == '__main__':
 
     for _ in range(10):
         start_time = time.time()
-        parser = BetboomParser(game_type=1, betline='inplay', market='Фора')
+        parser = BetboomParser(game_type=1, betline='prematch', market='Фора')
         result = asyncio.run(parser.start_parse())
         work_time = time.time() - start_time
         print(work_time)
