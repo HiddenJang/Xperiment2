@@ -37,10 +37,10 @@ HEADERS = {
 REGIONS_AND_LEAGUES_LIST_URL = 'https://www.olimp.bet/api/v4/0/line/sports-with-categories-with-competitions?vids%5B%5D='
 EVENTS_TOP_LIST_URL = 'https://www.olimp.bet/api/v4/0/line/top/sports-with-competitions-with-events?vids%5B%5D='
 LEAGUES_EVENTS_LIST_URL = 'https://www.olimp.bet/api/v4/0/line/sports-with-competitions-with-events?vids%5B%5D={sport_type}%3A'
+LIVE_LEAGUES_EVENTS_LIST_URL = 'https://www.olimp.bet/api/v4/0/live/sports-with-competitions-with-events?vids%5B%5D={sport_type}%3A'
 
 #### URL FOR SELENIUM ####
 SELENIUM_URL = 'https://www.olimp.bet/line/%s/%s/%s'
-con_amount = 0
 
 class OlimpParser:
     """
@@ -74,24 +74,31 @@ class OlimpParser:
         self.__region = region
         self.__league = league
 
-    async def start_parse(self):
+    async def start_parse(self) -> list | None:
         """Запуск асинхронного парсинга, обработки результатов и получения списка данных по каждому событию (матчу)"""
 
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), timeout=CONNECTION_TIMEOUT) as session:
-            task_top_events = asyncio.create_task(
-                self.__get_events_data(session, EVENTS_TOP_LIST_URL)
-            )
-            task_leagues_events = asyncio.create_task(
-                self.__get_events_data(session, LEAGUES_EVENTS_LIST_URL.format(sport_type=self.__game_type))
-            )
-            all_events_data = await asyncio.gather(task_top_events, task_leagues_events)
 
-            if all_events_data:
+            if self.__betline == 'inplay':
+                all_events_data = await asyncio.create_task(
+                    self.__get_events_data(session, LIVE_LEAGUES_EVENTS_LIST_URL.format(sport_type=self.__game_type))
+                )
+
+            elif self.__betline == 'prematch':
+                task_top_events = asyncio.create_task(
+                    self.__get_events_data(session, EVENTS_TOP_LIST_URL)
+                )
+                task_leagues_events = asyncio.create_task(
+                    self.__get_events_data(session, LEAGUES_EVENTS_LIST_URL.format(sport_type=self.__game_type))
+                )
+                all_events_data = await asyncio.gather(task_top_events, task_leagues_events)
                 all_events_data = [x for y in all_events_data if y for x in y]
+
             else:
                 return
 
-        return self.__process_parse_data(all_events_data)
+        if all_events_data:
+            return self.__process_parse_data(all_events_data)
 
     async def get_regions_and_leagues_list(self, session: aiohttp.ClientSession) -> dict:
         """Получение названий регионов и всех чемпионатов всех региональных лиг (имя и id)"""
@@ -246,7 +253,7 @@ if __name__ == '__main__':
     #         leagues = await asyncio.create_task(olimp_parser.get_regions_and_leagues_list(session))
     #     return leagues
 
-    olimp_parser = OlimpParser(game_type="Soccer", betline="prematch", market="Фора")
+    olimp_parser = OlimpParser(game_type="Soccer", betline="inplay", market="Фора")
     for _ in range(1):
         start = time.time()
         events_data = asyncio.run(olimp_parser.start_parse())
