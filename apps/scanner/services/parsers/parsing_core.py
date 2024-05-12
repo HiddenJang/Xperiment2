@@ -3,6 +3,7 @@ import logging
 
 from leon.leon_parser import LeonParser
 from betboom.betboom_parser import BetboomParser
+from olimp.olimp_parser import OlimpParser
 
 from events_map import get_events_map
 from runner_analysis import RunnersAnalysis
@@ -30,8 +31,8 @@ def start_scan(
     """
     Запуск сканирования по паре букмекеров в соответствии с заданными настройками
         Допустимые параметры:
-        1. first_bkmkr (первый букмекер): leon, betboom
-        2. second_bkmkr (второй букмекер): leon, betboom
+        1. first_bkmkr (первый букмекер): leon, betboom, olimp
+        2. second_bkmkr (второй букмекер): leon, betboom, olimp
         3. game_type (тип игры): Soccer, Basketball, IceHockey
         4. betline (стадия игры): inplay, prematch
         5. market (тип ставки): Победитель, Тотал, Фора
@@ -54,11 +55,21 @@ def start_scan(
                 league=league
             )
 
+    olimp_parser = OlimpParser(
+                game_type=game_type,
+                betline=betline,
+                market=market,
+                region=region,
+                league=league
+            )
+
     match first_bkmkr:
         case "leon":
             first_bkmkr_parser = leon_parser
         case "betboom":
             first_bkmkr_parser = betboom_parser
+        case "olimp":
+            first_bkmkr_parser = olimp_parser
         case _:
             logger.error(f"Недопустимое название букмекера - {first_bkmkr}!")
             return []
@@ -68,6 +79,8 @@ def start_scan(
             second_bkmkr_parser = leon_parser
         case "betboom":
             second_bkmkr_parser = betboom_parser
+        case "olimp":
+            second_bkmkr_parser = olimp_parser
         case _:
             logger.error(f"Недопустимое название букмекера - {second_bkmkr}!")
             return []
@@ -86,13 +99,14 @@ def start_scan(
     stop_time = time.time() - start_time
     print(f'events map len={len(events_map)}')
     print(f'forks amount={len(forks)}')
-    print(forks)
+    pprint.pprint(forks)
     print(stop_time)
 
 
 
 if __name__ == '__main__':
     import time
+    import pprint
 
     for _ in range(10):
-        start_scan(market="Победитель")
+        start_scan(first_bkmkr="leon", second_bkmkr="olimp", market="Победитель")

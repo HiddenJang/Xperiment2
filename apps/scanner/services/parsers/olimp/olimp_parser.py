@@ -130,9 +130,12 @@ class OlimpParser:
             for sport_type_data in common_data:
                 if sport_type_data and sport_type_data["payload"].get("id") == self.__game_type:
                     for league in sport_type_data["payload"].get("competitionsWithEvents"):
+                        if league.get('competition') and 'Статистика' in league['competition']['name']:
+                            continue
                         if self.__region == 'all' and self.__league == 'all':
                             all_events_data_list.extend(league['events'])
-                        elif self.__region == league['competition']['name'].split('.')[0] and self.__league == 'all':
+                        elif self.__region == league['competition']['name'].split('.')[0] and \
+                                self.__league == 'all' :
                             all_events_data_list.extend(league['events'])
                         elif self.__league != 'all' and \
                                 '.' in league['competition']['name'] and \
@@ -196,11 +199,11 @@ class OlimpParser:
                         runners_table['runners'] = {'home': 0, 'draw': 0, 'away': 0}
                     match runner.get('shortName'):
                         case 'П1':
-                            runners_table['runners']['home'] = runner.get('probability')
+                            runners_table['runners']['home'] = float(runner.get('probability'))
                         case 'Х':
-                            runners_table['runners']['draw'] = runner.get('probability')
+                            runners_table['runners']['draw'] = float(runner.get('probability'))
                         case 'П2':
-                            runners_table['runners']['away'] = runner.get('probability')
+                            runners_table['runners']['away'] = float(runner.get('probability'))
         return runners_table
 
     def __get_markets_total(self, event_data: dict, runners_table: dict) -> dict:
@@ -215,9 +218,9 @@ class OlimpParser:
                     if not runners_table['runners'].get(handicap):
                         runners_table['runners'][handicap] = {'under': 'closed', 'over': 'closed'}
                     if "мен" in runner.get('unprocessedName'):
-                        runners_table['runners'][handicap]['under'] = runner.get('probability')
+                        runners_table['runners'][handicap]['under'] = float(runner.get('probability'))
                     elif "бол" in runner.get('unprocessedName'):
-                        runners_table['runners'][handicap]['over'] = runner.get('probability')
+                        runners_table['runners'][handicap]['over'] = float(runner.get('probability'))
 
         return runners_table
 
@@ -233,9 +236,9 @@ class OlimpParser:
                     if not runners_table['runners'].get(handicap):
                         runners_table['runners'][handicap] = {'home': 'closed', 'away': 'closed'}
                     if "Ф1К" in runner.get('shortName'):
-                        runners_table['runners'][handicap]['home'] = runner.get('probability')
+                        runners_table['runners'][handicap]['home'] = float(runner.get('probability'))
                     elif "Ф2К" in runner.get('shortName'):
-                        runners_table['runners'][handicap]['away'] = runner.get('probability')
+                        runners_table['runners'][handicap]['away'] = float(runner.get('probability'))
         return runners_table
 
 
@@ -248,7 +251,7 @@ if __name__ == '__main__':
     #         leagues = await asyncio.create_task(olimp_parser.get_regions_and_leagues_list(session))
     #     return leagues
 
-    olimp_parser = OlimpParser(game_type="Soccer", betline="inplay", market="Фора")
+    olimp_parser = OlimpParser(game_type="Soccer", betline="prematch", market="Фора")
     for _ in range(1):
         start = time.time()
         events_data = asyncio.run(olimp_parser.start_parse())
