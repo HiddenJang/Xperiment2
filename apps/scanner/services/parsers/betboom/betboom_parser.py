@@ -44,6 +44,7 @@ LIVE_EVENTS_URL = 'https://sport.betboom.ru/live/getliveevents?sportId=%d&checkI
 #### URL FOR SELENIUM ####
 SELENIUM_URL = 'https://betboom.ru/sport/EventView/%d'
 
+
 class BetboomParser:
     """
         Класс получения данных букмекера Betboom
@@ -59,7 +60,7 @@ class BetboomParser:
             self, 
             game_type: int | str,
             betline: str ='prematch', 
-            market: str ='Исход', 
+            market: str ='Победитель',
             region: str ='all', 
             league: str ='all'
     ):
@@ -72,33 +73,35 @@ class BetboomParser:
                 self.__game_type = 4
             case "IceHockey":
                 self.__game_type = 10
-        match market:
-            case "Победитель" | "Исход":
-                self.__market = "Исход"
-            case _:
-                self.__market = market
+        self.__market = market
         self.__betline = betline
         self.__region = region
         self.__league = league
 
-    async def start_parse(self):
+    async def start_parse(self) -> list | None:
         """Запуск асинхронного парсинга, обработки результатов и получения списка данных по каждому событию (матчу)"""
 
-        if self.__betline == 'inplay':
-            async with aiohttp.ClientSession(timeout=CONNECTION_TIMEOUT) as session:
+        async with aiohttp.ClientSession(timeout=CONNECTION_TIMEOUT) as session:
+
+            if self.__betline == 'inplay':
                 all_events_data = await asyncio.create_task(self.__get_live_events_data(session))
 
-        elif self.__betline == 'prematch':
-            async with aiohttp.ClientSession(timeout=CONNECTION_TIMEOUT) as session:
+            elif self.__betline == 'prematch':
                 champs_data_list = await self.get_all_leagues_data(session)
-                champs_id_list = [x for y in champs_data_list.values() for x in y]
+                if champs_data_list:
+                    champs_id_list = [x for y in champs_data_list.values() if y for x in y]
+                else:
+                    return
 
                 tasks = []
                 for champ_id in champs_id_list:
                     task = asyncio.create_task(self.__get_events_id(session, champ_id))
                     tasks.append(task)
                 events_id = await asyncio.gather(*tasks)
-                events_id = [x for y in events_id for x in y]
+                if events_id:
+                    events_id = [x for y in events_id if y for x in y]
+                else:
+                    return
 
                 tasks = []
                 for event_id in events_id:
@@ -106,23 +109,27 @@ class BetboomParser:
                     tasks.append(task)
                 all_events_data = await asyncio.gather(*tasks)
 
-        else:
-            return []
+            else:
+                all_events_data = None
 
-        return self.__process_parse_data(all_events_data)
+        if all_events_data:
+            return self.__process_parse_data(all_events_data)
 
     async def get_all_leagues_data(self, session: aiohttp.ClientSession) -> dict:
         """Получение списка id национальных лиг каждого региона (имя страны и параметры с id для дальнейшего POST-запроса) """
 
-        countries_data_list = await asyncio.create_task(self.__get_regions_list(session))
+        try:
+            countries_data_list = await asyncio.create_task(self.__get_regions_list(session))
 
-        tasks = []
-        for country_data in countries_data_list.items():
-            task = asyncio.create_task(self.__get_leagues_data(session, country_data))
-            tasks.append(task)
-        champs_data_list = await asyncio.gather(*tasks)
-        champs_data_list = {x: z for y in champs_data_list for x, z in zip(y.keys(), y.values())}
-        return champs_data_list
+            tasks = []
+            for country_data in countries_data_list.items():
+                task = asyncio.create_task(self.__get_leagues_data(session, country_data))
+                tasks.append(task)
+            champs_data_list = await asyncio.gather(*tasks)
+            champs_data_list = {x: z for y in champs_data_list if y for x, z in zip(y.keys(), y.values())}
+            return champs_data_list
+        except Exception as ex:
+            logger.info(f'Ошибка выполнения запроса, {ex}')
 
     async def __get_regions_list(self, session: aiohttp.ClientSession) -> dict:
         """Получение списка регионов (имя страны и параметры с id для дальнейшего POST-запроса лиг каждого региона) """
@@ -151,20 +158,16 @@ class BetboomParser:
                     countries_data_list[country.get('N')] = req_params
                     if self.__region == country.get('N'):
                         return countries_data_list
-
             return countries_data_list
-
-        except Exception:
-            logger.info(f'Критическая ошибка соединения')
-            return {}
+        except Exception as ex:
+            logger.info(f'Ошибка выполнения запроса, {ex}')
 
     async def __get_leagues_data(self, session: aiohttp.ClientSession, country_data: dict) -> dict:
         """Получение данных чемпионата (имя чемпионата и id для дальнейшего GET-запроса событий)"""
 
-        country_name = country_data[0]
-        params = country_data[1]
-
         try:
+            country_name = country_data[0]
+            params = country_data[1]
             async with session.post(url=CHAMPS_LIST_URL, json=params, headers=HEADERS) as r:
                 champs_list = await r.text()
 
@@ -175,14 +178,11 @@ class BetboomParser:
                     if self.__league == champ.get('N'):
                         return champs_data_list
             return champs_data_list
+        except Exception as ex:
+            logger.info(f'Ошибка выполнения запроса, {ex}')
 
-        except Exception:
-            logger.info(f'Критическая ошибка соединения')
-            return {}
-
-
-
-    async def __get_events_id(self, session: aiohttp.ClientSession, champ_id: dict) -> list:
+    @staticmethod
+    async def __get_events_id(session: aiohttp.ClientSession, champ_id: dict) -> list:
         """Получение id событий каждого чемпионата для дальнейшего GET-запроса данных по каждому событию"""
 
         try:
@@ -194,14 +194,11 @@ class BetboomParser:
                 if event.get('Id'):
                     events_id.append(event.get('Id'))
             return events_id
+        except Exception as ex:
+            logger.info(f'Ошибка выполнения запроса, {ex}')
 
-        except Exception:
-            logger.info(f'Критическая ошибка соединения')
-            return []
-
-
-
-    async def __get_event_data(self, session: aiohttp.ClientSession, event_id: list) -> list:
+    @staticmethod
+    async def __get_event_data(session: aiohttp.ClientSession, event_id: list) -> list:
         """Получение данных prematch события по id"""
 
         try:
@@ -210,11 +207,8 @@ class BetboomParser:
             for event_data in json.loads(common_event_data):
                 if event_data.get("PN") == "":
                     return event_data
-            return []
-
-        except Exception:
-            logger.info(f'Критическая ошибка соединения')
-            return []
+        except Exception as ex:
+            logger.info(f'Ошибка выполнения запроса, {ex}')
 
     async def __get_live_events_data(self, session: aiohttp.ClientSession) -> list:
         """Получение данных всех LIVE-событий"""
@@ -231,10 +225,8 @@ class BetboomParser:
                             for event_data in champs_data.get("E"):
                                 events_data.append(event_data)
             return events_data
-
-        except Exception:
-            logger.info(f'Критическая ошибка соединения')
-            return []
+        except Exception as ex:
+            logger.info(f'Ошибка выполнения запроса, {ex}')
 
     def __process_parse_data(self, all_events_data: list) -> list:
         """Обработка данных парсинга и фомирование выходных данных в требуемом формате"""
@@ -263,7 +255,7 @@ class BetboomParser:
             'url': SELENIUM_URL % event_data['Id']
         }
 
-        if self.__market == 'Исход':
+        if self.__market == 'Победитель':
             return self.__get_markets_winner(event_data, runners_table)
         elif self.__market == 'Тотал':
             return self.__get_markets_total(event_data, runners_table)
@@ -272,7 +264,8 @@ class BetboomParser:
         else:
             return {}
 
-    def __get_markets_winner(self, event_data: dict, runners_table: dict) -> dict:
+    @staticmethod
+    def __get_markets_winner(event_data: dict, runners_table: dict) -> dict:
         """Отбор коэффициентов на ставку типа 'Исход' (1Х2)"""
 
         if 'StakeTypes' in event_data:
@@ -292,7 +285,8 @@ class BetboomParser:
                             runners_table['runners']['away'] = runner.get('F')
         return runners_table
 
-    def __get_markets_total(self, event_data: dict, runners_table: dict) -> dict:
+    @staticmethod
+    def __get_markets_total(event_data: dict, runners_table: dict) -> dict:
         """Отбор коэффициентов на ставку типа 'Тотал' """
 
         if 'StakeTypes' in event_data:
@@ -312,7 +306,8 @@ class BetboomParser:
                             runners_table['runners'][handicap]['over'] = runner.get('F')
         return runners_table
 
-    def __get_markets_handicap(self, event_data: dict, runners_table: dict) -> dict:
+    @staticmethod
+    def __get_markets_handicap(event_data: dict, runners_table: dict) -> dict:
         """Отбор коэффициентов на ставку типа 'Фора' """
 
         if 'StakeTypes' in event_data:
@@ -340,7 +335,7 @@ if __name__ == '__main__':
 
     for _ in range(10):
         start_time = time.time()
-        parser = BetboomParser(game_type=1, betline='prematch', market='Фора')
+        parser = BetboomParser(game_type=1, betline='inplay', market='Фора')
         result = asyncio.run(parser.start_parse())
         work_time = time.time() - start_time
         print(work_time)

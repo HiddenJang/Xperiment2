@@ -64,11 +64,7 @@ class XstavkaParser:
                 self.__game_type = 3
             case "IceHockey":
                 self.__game_type = 2
-        match market:
-            case "Победитель" | "Исход":
-                self.__market = "Исход"
-            case _:
-                self.__market = market
+        self.__market = market
         self.__betline = betline
         self.__region = region
         self.__league = league
@@ -154,25 +150,25 @@ class XstavkaParser:
             logger.info(f'Критическая ошибка соединения')
             return {}
 
-    async def __get_live_events_data(self, session: aiohttp.ClientSession) -> list:
-        """Получение данных всех LIVE-событий"""
-
-        try:
-            async with session.get(url=LIVE_EVENTS_URL % self.__game_type, headers=HEADERS) as r:
-                countries_data = await r.text()
-
-            events_data = []
-            for country_data in json.loads(countries_data).get('CNT'):
-                if country_data.get('N') == self.__region or self.__region == 'all':
-                    for champs_data in country_data.get("CL"):
-                        if champs_data.get('N') == self.__league or self.__league == 'all':
-                            for event_data in champs_data.get("E"):
-                                events_data.append(event_data)
-            return events_data
-
-        except Exception:
-            logger.info(f'Критическая ошибка соединения')
-            return []
+    # async def __get_live_events_data(self, session: aiohttp.ClientSession) -> list:
+    #     """Получение данных всех LIVE-событий"""
+    #
+    #     try:
+    #         async with session.get(url=LIVE_EVENTS_URL % self.__game_type, headers=HEADERS) as r:
+    #             countries_data = await r.text()
+    #
+    #         events_data = []
+    #         for country_data in json.loads(countries_data).get('CNT'):
+    #             if country_data.get('N') == self.__region or self.__region == 'all':
+    #                 for champs_data in country_data.get("CL"):
+    #                     if champs_data.get('N') == self.__league or self.__league == 'all':
+    #                         for event_data in champs_data.get("E"):
+    #                             events_data.append(event_data)
+    #         return events_data
+    #
+    #     except Exception:
+    #         logger.info(f'Критическая ошибка соединения')
+    #         return []
 
     def __process_parse_data(self, all_events_data: list) -> list:
         """Обработка данных парсинга и фомирование выходных данных в требуемом формате"""
@@ -210,7 +206,7 @@ class XstavkaParser:
             'date': datetime.fromtimestamp(event_data['S']).strftime('%Y-%m-%d'),
         }
 
-        if self.__market == 'Исход':
+        if self.__market == 'Победитель':
             return self.__get_markets_winner(event_data, runners_table)
         elif self.__market == 'Тотал':
             return self.__get_markets_total(event_data, runners_table)
