@@ -1,12 +1,12 @@
 import asyncio
 import logging
 
-from leon.leon_parser import LeonParser
-from betboom.betboom_parser import BetboomParser
-from olimp.olimp_parser import OlimpParser
+from .leon.leon_parser import LeonParser
+from .betboom.betboom_parser import BetboomParser
+from .olimp.olimp_parser import OlimpParser
 
-from events_map import get_events_map
-from runner_analysis import RunnersAnalysis
+from .events_map import get_events_map
+from .runner_analysis import RunnersAnalysis
 
 logger = logging.getLogger('Xperiment2.apps.scanner.parsers.parsing_core')
 

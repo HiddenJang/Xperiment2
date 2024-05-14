@@ -2,5 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('scanner/', views.scanner_page, name='scanner_page'),
+    path('scanner', views.scan_page, name='scan_page'),
+    path('api/v1/start/', views.run_scanning),
 ]

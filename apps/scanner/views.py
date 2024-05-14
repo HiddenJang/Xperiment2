@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view
 
 
 #_____________Page render views______________#
-def start_scan_page(request):
+def scan_page(request):
     return render(request, 'scan_page.html')
 
 
