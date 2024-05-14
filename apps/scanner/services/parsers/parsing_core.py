@@ -85,23 +85,23 @@ def start_scan(
             logger.error(f"Недопустимое название букмекера - {second_bkmkr}!")
             return []
 
-    start_time = time.time()
+    # start_time = time.time()
 
     all_events_data = asyncio.run(get_events_data(first_bkmkr_parser, second_bkmkr_parser))
 
-    stop_time = time.time() - start_time
-    print(stop_time)
+    # stop_time = time.time() - start_time
+    # print(stop_time)
 
     events_map = get_events_map(all_events_data)
     analyzer = RunnersAnalysis()
-    forks = analyzer.find_winner_forks(events_map, 2.8, 3.0, 3.0)
+    forks = analyzer.find_totals_forks(events_map, 1.9, 1.9, 0)
 
-    stop_time = time.time() - start_time
-    print(f'events map len={len(events_map)}')
-    print(f'forks amount={len(forks)}')
-    pprint.pprint(forks)
-    print(stop_time)
-
+    # stop_time = time.time() - start_time
+    # print(f'events map len={len(events_map)}')
+    # print(f'forks amount={len(forks)}')
+    # pprint.pprint(forks)
+    # print(stop_time)
+    return forks
 
 
 if __name__ == '__main__':
@@ -109,4 +109,4 @@ if __name__ == '__main__':
     import pprint
 
     for _ in range(10):
-        start_scan(first_bkmkr="leon", second_bkmkr="olimp", market="Победитель")
+        start_scan(first_bkmkr="leon", second_bkmkr="olimp", market="Тотал")
