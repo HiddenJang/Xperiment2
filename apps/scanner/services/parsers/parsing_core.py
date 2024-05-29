@@ -1,12 +1,14 @@
 import asyncio
+import json
 import logging
+import redis
 
 from .leon.leon_parser import LeonParser
 from .betboom.betboom_parser import BetboomParser
 from .olimp.olimp_parser import OlimpParser
-
 from .events_map import get_events_map
 from .runner_analysis import RunnersAnalysis
+
 
 logger = logging.getLogger('Xperiment2.apps.scanner.parsers.parsing_core')
 
@@ -95,6 +97,8 @@ def start_scan(
     events_map = get_events_map(all_events_data)
     analyzer = RunnersAnalysis()
     forks = analyzer.find_totals_forks(events_map, 1.9, 1.9, 0)
+    # redis_client = redis.Redis()
+    # redis_client.set(name='forks', value=json.dumps(forks))
 
     # stop_time = time.time() - start_time
     # print(f'events map len={len(events_map)}')
@@ -107,6 +111,10 @@ def start_scan(
 if __name__ == '__main__':
     import time
     import pprint
-
-    for _ in range(10):
+    from leon.leon_parser import LeonParser
+    from betboom.betboom_parser import BetboomParser
+    from olimp.olimp_parser import OlimpParser
+    from events_map import get_events_map
+    from runner_analysis import RunnersAnalysis
+    for _ in range(1):
         start_scan(first_bkmkr="leon", second_bkmkr="olimp", market="Тотал")

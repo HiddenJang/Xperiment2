@@ -157,7 +157,7 @@ LOGGING = {
             'formatter': 'console'
         },
         'file': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'class': 'logging.FileHandler',
             'formatter': 'file',
             'filename': f'{BASE_DIR}/logs.log'
@@ -171,10 +171,18 @@ LOGGING = {
     }
 }
 
+# Redis settings
+
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = '6379'
+
 # Celery settings
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # URL вашего брокера сообщений
-CELERY_RESULT_BACKEND = 'your_result_backend'  # URL вашего backend'а результатов
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'  # URL брокера сообщений
+CELERY_BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 3600}
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'  # URL backend'а результатов
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60

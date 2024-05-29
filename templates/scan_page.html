@@ -20,18 +20,32 @@
                 url: '/api/v1/start/',
                 headers: {'X-CSRFToken': "{{ csrf_token }}"},
                 success: function (response) {
-                  console.log(response.Success);
+                    console.log(response.Success);
+                    $('#u1_input').text(response.Success);
+                },
+            });
+          });
+        });
+
+        $(document).ready(function() {
+            $('#u2').click(function() {
+              $.ajax({
+                type: 'GET',
+                url: '/api/v1/get-state/',
+                headers: {'X-CSRFToken': "{{ csrf_token }}"},
+                success: function (response) {
+                    console.log(response.Success);
+                    //$('#u1_input').text(response.Success);
                 },
             });
           });
         });
     </script>
-
   </head>
   <body>
     <div id="base" class="">
 
-      <!-- Unnamed (Rectangle) -->
+      <!-- start_scan (Rectangle) -->
       {% csrf_token %}
       <div id="u0" class="ax_default primary_button" data-label="button_start_scan" style="cursor: pointer;">
         <div id="u0_div" class=""></div>
@@ -43,7 +57,16 @@
       <!-- Unnamed (Text Area) -->
       <div id="u1" class="ax_default text_area">
         <div id="u1_div" class=""></div>
-        <textarea id="u1_input" class="u1_input"></textarea>
+        <textarea id="u1_input" class="u1_input" name="inp"></textarea>
+      </div>
+
+      <!-- get_state (Rectangle) -->
+      {% csrf_token %}
+      <div id="u2" class="ax_default primary_button" data-label="button_get_state" style="cursor: pointer;">
+        <div id="u2_div" class=""></div>
+        <div id="u2_text" class="text ">
+          <p><span>GET STATE</span></p>
+        </div>
       </div>
     </div>
   </body>
