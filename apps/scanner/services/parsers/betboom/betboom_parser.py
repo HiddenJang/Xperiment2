@@ -18,9 +18,11 @@ CONNECTION_TIMEOUT = aiohttp.ClientTimeout(
 HEADERS = {
     'authority': 'sport.betboom.ru',
     'accept': '*/*',
+    #'accept-Encoding': 'gzip, deflate, br, zstd',
     'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+    #'content-length': '74',
     'content-type': 'application/json',
-    # 'cookie': '_ga=GA1.2.71020424.1713800846; _gid=GA1.2.123564127.1713800846; supportOnlineTalkID=BV121L6asmSNRtevELwa3vsn2d0vm1Tq; __zzatgib-w-bb=MDA0dC0cTApcfEJcdGswPi17CT4VHThHKHIzd2UrbW0hG0cUI0MTCDJaIhR/JysMOD8UQEorc147ZyZheksbNR0KQ2hSVENdLRtJUBg5Mzk0ZnBXJ2BOWiJMXFN5JyEWfW8fQU5EJ3VUNDpkdCIPaRMjZHhRP0VuWUZpdRUXQzwcew0qQ20tOmo=jtfpqw==; __zzatgib-w-bb=MDA0dC0cTApcfEJcdGswPi17CT4VHThHKHIzd2UrbW0hG0cUI0MTCDJaIhR/JysMOD8UQEorc147ZyZheksbNR0KQ2hSVENdLRtJUBg5Mzk0ZnBXJ2BOWiJMXFN5JyEWfW8fQU5EJ3VUNDpkdCIPaRMjZHhRP0VuWUZpdRUXQzwcew0qQ20tOmo=jtfpqw==; cfidsgib-w-bb=NZ3cuDEjBWx5XptyhUWxEkCQWTtmgMJCiqgRN0BePK67VF4VC2wYH6EM4WCbLnE6O1rqEEyedFc6XxkJTchxF5cZV6kiv9JMjeeebd7TEhhelQh9K3imcHceYI9YbWprILhfObkUOatNNxrZ0B9bOJ6dqe/D7qT/42bgGf0=; cfidsgib-w-bb=tvrDh7m5uwqNpMqh8D3xyLmo0QOmPuMJeeAqscL1YAMLUh+8EhGNPuZFoarJyzC/Rl8z8OkW7Rs7y0DMZFKCPuVvvm6tXS/+urN2FNf9OWAv/Wf5VmhO6RVvf664s9jrpQVinaDU2u1Yj0n8J0JKP28aDMoueFz/FU5a9EA=',
+    # 'cookie': '_ga=GA1.2.71020424.1713800846; supportOnlineTalkID=BV121L6asmSNRtevELwa3vsn2d0vm1Tq; __cf_bm=TZTLg3.nxeJ1QHY6rBxBmtUCkrRIK9kbVKVqf_rDbgo-1718695925-1.0.1.1-x8APwLM0gsFRYFyewoix0WFXU11qkYwYviGN4yKEaHh_tqiTRe2.bTj3N66EKFJphyIsN6EMc5ul9GI.An8cDg; _cfuvid=nz6EIh7ZV8UhxHy1y8CjlarCtl1EnbUPBO27N.LmIZI-1718695925475-0.0.1.1-604800000; __cfruid=187d9888da601a19ceef7851f7607455e242526f-1718696629; cf_clearance=xmnxNUw3Gd0QYnwhJVbqUSTjZVAi94DeRZiABbjfzwE-1718696633-1.0.1.1-tJpn9aZK03AtBmiuBAoU2oaecfGy04bkQZeOG3vBeTW.TDp43TjcHpp0qPCifi1VqCTrV8YU1PR7ueC2fzo0Rg; _gid=GA1.2.1630003002.1718696664; _gat_UA-93149539-8=1; _gat_UA-93149539-1=1; __zzatgib-w-bb=MDA0dC0cTApcfEJcdGswPi17CT4VHThHKHIzd2UrbW0hG0cUI0MTCDJaIhR/JysMOD8UQEorc147ZyZheksbNR0KQ2hSVENdLRtJUBg5Mzk0ZnBXJ2BOWidJXlMIJR4SCHQfQU5EJ3VUNDpkdCIPaRMjZHhRP0VuWUZpdRUXQzwcew0qQ20tOmo=gFWhzw==; __zzatgib-w-bb=MDA0dC0cTApcfEJcdGswPi17CT4VHThHKHIzd2UrbW0hG0cUI0MTCDJaIhR/JysMOD8UQEorc147ZyZheksbNR0KQ2hSVENdLRtJUBg5Mzk0ZnBXJ2BOWidJXlMIJR4SCHQfQU5EJ3VUNDpkdCIPaRMjZHhRP0VuWUZpdRUXQzwcew0qQ20tOmo=gFWhzw==; cfidsgib-w-bb=3Jw0N2nFxQesb9kj7uBxeUalzY/J+U9c29SGD06sCbKJPyqHHA+I2E3TmnUukZnOftj0mXCOFLwLt96x7ssCxM868hz97ZarKo95zKHzZHOjBk55vQJdTchoCREQsbK0qCJuSOBAQ92r9Yz9re22VjcQs5A/twGCi8sR; cfidsgib-w-bb=3Jw0N2nFxQesb9kj7uBxeUalzY/J+U9c29SGD06sCbKJPyqHHA+I2E3TmnUukZnOftj0mXCOFLwLt96x7ssCxM868hz97ZarKo95zKHzZHOjBk55vQJdTchoCREQsbK0qCJuSOBAQ92r9Yz9re22VjcQs5A/twGCi8sR',
     'origin': 'https://sport.betboom.ru',
     'referer': 'https://sport.betboom.ru/',
     'sec-ch-ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
@@ -120,6 +122,8 @@ class BetboomParser:
 
         try:
             countries_data_list = await asyncio.create_task(self.__get_regions_list(session))
+            if not countries_data_list:
+                return {}
 
             tasks = []
             for country_data in countries_data_list.items():
@@ -143,7 +147,9 @@ class BetboomParser:
                 'countryCode': None,
             }
             async with session.post(url=COUNTRY_LIST_URL, json=json_data, headers=HEADERS) as r:
+                print(r)
                 countries_list = await r.text()
+            print('flag04', countries_list)
 
             countries_data_list = {}
             for country in json.loads(countries_list):
@@ -161,6 +167,7 @@ class BetboomParser:
             return countries_data_list
         except Exception as ex:
             logger.info(f'Ошибка выполнения запроса, {ex}')
+
 
     async def __get_leagues_data(self, session: aiohttp.ClientSession, country_data: dict) -> dict:
         """Получение данных чемпионата (имя чемпионата и id для дальнейшего GET-запроса событий)"""
@@ -332,13 +339,25 @@ class BetboomParser:
 if __name__ == '__main__':
     import pprint
     import time
+    import requests
 
     for _ in range(10):
-        start_time = time.time()
-        parser = BetboomParser(game_type=1, betline='prematch', market='Фора')
-        result = asyncio.run(parser.start_parse())
-        work_time = time.time() - start_time
-        print(work_time)
-        pprint.pprint(result)
-        print(len(result))
+        # start_time = time.time()
+        # parser = BetboomParser(game_type=1, betline='inplay', market='Фора')
+        # result = asyncio.run(parser.start_parse())
+        # work_time = time.time() - start_time
+        # print(work_time)
+        # pprint.pprint(result)
+        # print(len(result))
         #pprint.pprint(result)
+        json_data = {
+            'sportId': 1,
+            'timeFilter': 0,
+            'langId': 1,
+            'partnerId': 147,
+            'countryCode': "RU",
+        }
+        url = 'https://sport.betboom.ru/6dd89319-0ee9-4077-9442-db2a408c4473/Prematch/GetCountryList'
+        res = requests.get(url=LIVE_EVENTS_URL % 1, headers=HEADERS)
+        #res = requests.post(url=url, json=json_data, headers=HEADERS)
+        print(res)

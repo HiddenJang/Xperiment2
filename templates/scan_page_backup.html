@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <title>Page 2</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    {% load static %}
+    <link href="{% static 'scan_page/data/styles.css' %}" type="text/css" rel="stylesheet"/>
+    <link href="{% static 'scan_page/files/page_2/styles.css' %}" type="text/css" rel="stylesheet"/>
+    <script src="{% static 'scan_page/resources/scripts/jquery-3.2.1.min.js' %}"></script>
+    <script src="{% static 'scan_page/data/document.js' %}"></script>
+    <script src="{% static 'scan_page/files/page_2/data.js' %}"></script>
+    {% csrf_token %}
+    <!-- Обработчик button START SCAN -->
+    <script>
+        $(document).ready(function() {
+            $('#u0').click(function() {
+              $.ajax({
+                type: 'GET',
+                url: '/api/v1/start/',
+                headers: {'X-CSRFToken': "{{ csrf_token }}"},
+                success: function (response) {
+                    console.log(response.Success);
+                    $('#u1_input').text(response.Success);
+                },
+            });
+          });
+        });
+    </script>
+
+  </head>
+  <body>
+    <div id="base" class="">
+
+      <!-- Unnamed (Rectangle) -->
+      {% csrf_token %}
+      <div id="u0" class="ax_default primary_button" data-label="button_start_scan" style="cursor: pointer;">
+        <div id="u0_div" class=""></div>
+        <div id="u0_text" class="text ">
+          <p><span>START SCAN</span></p>
+        </div>
+      </div>
+
+      <!-- Unnamed (Text Area) -->
+      <div id="u1" class="ax_default text_area">
+        <div id="u1_div" class=""></div>
+        <textarea id="u1_input" class="u1_input"></textarea>
+      </div>
+    </div>
+  </body>
+</html>

@@ -22,18 +22,12 @@ def scan_page(request):
 #_____________API______________#
 class ScannerStarter(View):
     def get(self, request, formant=None):
-        res = start_scan.delay().get()
-        print('task done success', res)
+        start_time = time.time()
+        res = start_scan.apply_async().get()
+        finish_time = time.time()
+        work_time = finish_time - start_time
+        print(f'task {start_time} done success, finish_time={finish_time}, work_time=', work_time)
         return JsonResponse({"Success": f'{res}'}, status=200)
-
-
-class SomeProcess(APIView):
-    def get(self, request):
-        work_time = random.randint(0, 10)
-        print(f'SomeProcess started id={random.randint(1, 1000)} work_time={work_time}')
-        time.sleep(work_time)
-        print(f'SomeProcess done id={random.randint(1, 1000)} work_time={work_time}')
-        return JsonResponse({"Success": f"in progress-{time.time()}"}, status=200)
 
 
 # class TaskStateGetter(APIView):

@@ -1,7 +1,5 @@
 import asyncio
-import json
 import logging
-import redis
 
 from .leon.leon_parser import LeonParser
 from .betboom.betboom_parser import BetboomParser
@@ -116,5 +114,20 @@ if __name__ == '__main__':
     from olimp.olimp_parser import OlimpParser
     from events_map import get_events_map
     from runner_analysis import RunnersAnalysis
-    for _ in range(1):
-        start_scan(first_bkmkr="leon", second_bkmkr="olimp", market="Тотал")
+    # for _ in range(1):
+    #     res = start_scan(first_bkmkr="leon", second_bkmkr="olimp", market="Тотал")
+    #     print(res)
+
+    def start_scanner(
+            first_bkmkr="leon",
+            second_bkmkr="betboom",
+            game_type="Soccer",
+            betline="prematch",
+            market="Тотал",
+            region="all",
+            league="all"
+    ) -> list:
+        return start_scan(first_bkmkr, second_bkmkr, game_type, betline, market, region, league)
+
+    res = start_scanner()
+    print(res)
