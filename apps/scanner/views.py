@@ -23,11 +23,21 @@ def scan_page(request):
 class ScannerStarter(View):
     def get(self, request, formant=None):
         start_time = time.time()
-        res = start_scan.apply_async().get()
+        res = dict(request.GET)
+
+        scan_res = start_scan.apply_async(
+            kwargs={
+                'first_bkmkr': res.get('first_bkmkr')[0],
+                'second_bkmkr': res.get('second_bkmkr')[0],
+                'game_type': res.get('game_type')[0],
+                'betline': res.get('betline')[0],
+                'market': res.get('market')[0],
+            }
+        ).get()
         finish_time = time.time()
         work_time = finish_time - start_time
         print(f'task {start_time} done success, finish_time={finish_time}, work_time=', work_time)
-        return JsonResponse({"Success": f'{res}'}, status=200)
+        return JsonResponse({"Success": f'{scan_res}'}, status=200)
 
 
 # class TaskStateGetter(APIView):

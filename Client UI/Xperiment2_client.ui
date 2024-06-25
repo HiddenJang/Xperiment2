@@ -56,6 +56,9 @@
     <number>1</number>
    </property>
    <widget class="QFrame" name="frame_2">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>15</x>
@@ -74,7 +77,7 @@
      <number>2</number>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>31</x>
@@ -140,17 +143,17 @@
       <widget class="QComboBox" name="comboBox_sportType">
        <item>
         <property name="text">
-         <string>Футбол</string>
+         <string>Soccer</string>
         </property>
        </item>
        <item>
         <property name="text">
-         <string>Баскетбол</string>
+         <string>Basketball</string>
         </property>
        </item>
        <item>
         <property name="text">
-         <string>Хоккей</string>
+         <string>Icehockey</string>
         </property>
        </item>
       </widget>
@@ -164,7 +167,7 @@
        </item>
        <item>
         <property name="text">
-         <string>Inplay (live)</string>
+         <string>Inplay</string>
         </property>
        </item>
       </widget>
@@ -177,7 +180,7 @@
       </widget>
      </item>
      <item row="7" column="1">
-      <widget class="QComboBox" name="comboBox">
+      <widget class="QComboBox" name="comboBox_marketType">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
          <horstretch>0</horstretch>
@@ -267,7 +270,7 @@
      </item>
     </layout>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>31</x>
