@@ -72,13 +72,13 @@ class DesktopApp(QMainWindow):
     def get_elements_states(self) -> dict:
         """Получение состояний всех элементов GUI"""
 
-        states = {}
-        states['first_bkmkr'] = self.ui.comboBox_firstBkmkr.currentText().lower()
-        states['second_bkmkr'] = self.ui.comboBox_secondBkmkr.currentText().lower()
-        states['game_type'] = self.ui.comboBox_sportType.currentText()
-        states['market'] = self.ui.comboBox_marketType.currentText()
-        states['betline'] = self.ui.comboBox_gameStatus.currentText().lower()
-        return states
+        return {
+            'first_bkmkr': self.ui.comboBox_firstBkmkr.currentText().lower(),
+            'second_bkmkr': self.ui.comboBox_secondBkmkr.currentText().lower(),
+            'game_type': self.ui.comboBox_sportType.currentText(),
+            'market': self.ui.comboBox_marketType.currentText(),
+            'betline': self.ui.comboBox_gameStatus.currentText().lower()
+        }
 
     def start_scan(self) -> None:
         """Запуск сканирования"""
@@ -91,7 +91,7 @@ class DesktopApp(QMainWindow):
         self.scanner.moveToThread(self.scanThread)
         self.scanThread.started.connect(self.scanner.start)
         self.scanner.finishSignal.connect(self.scanThread.quit)
-        #self.scanner.finishSignal.connect(self.render_scan_result)
+        self.scanner.finishSignal.connect(self.render_scan_result)
         self.scanThread.start()
 
     def render_scan_result(self, scan_results: dict) -> None:

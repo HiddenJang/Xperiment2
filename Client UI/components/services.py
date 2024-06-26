@@ -2,6 +2,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QObject
 
 import requests
+import json
 
 from . import settings
 
@@ -16,7 +17,11 @@ class Scanner(QObject):
         self.elements_states = elements_states
 
     def start(self):
-        print(self.elements_states)
-        scan_results = requests.get(url=settings.api_url, params=self.elements_states)
-        print(scan_results.text)
-        #self.finishSignal.emit(scan_results.text)
+        with requests.session() as session:
+            session.get(url=settings.api_url)
+            if 'csrftoken' in session.cookies:
+                csrftoken = session.cookies['csrftoken']
+                session.cookies.update({'csrftoken': csrftoken})
+            scan_results = session.post(url=settings.api_url, headers={'X-CSRFToken': csrftoken}, data=json.dumps(self.elements_states))
+        self.finishSignal.emit(scan_results.json())
+

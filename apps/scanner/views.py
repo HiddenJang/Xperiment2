@@ -1,10 +1,11 @@
 import asyncio
-
+import json
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views import View
 from rest_framework.views import APIView
-
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.middleware.csrf import get_token
 from rest_framework.decorators import api_view
 
 from celery.result import AsyncResult
@@ -21,19 +22,14 @@ def scan_page(request):
 
 #_____________API______________#
 class ScannerStarter(View):
-    def get(self, request, formant=None):
-        start_time = time.time()
-        res = dict(request.GET)
 
-        scan_res = start_scan.apply_async(
-            kwargs={
-                'first_bkmkr': res.get('first_bkmkr')[0],
-                'second_bkmkr': res.get('second_bkmkr')[0],
-                'game_type': res.get('game_type')[0],
-                'betline': res.get('betline')[0],
-                'market': res.get('market')[0],
-            }
-        ).get()
+    def get(self, request):
+        csrf = get_token(request)
+        return JsonResponse({"csrftoken": csrf})
+
+    def post(self, request):
+        start_time = time.time()
+        scan_res = start_scan.apply_async(kwargs=json.loads(request.body)).get()
         finish_time = time.time()
         work_time = finish_time - start_time
         print(f'task {start_time} done success, finish_time={finish_time}, work_time=', work_time)
