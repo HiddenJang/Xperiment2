@@ -3,8 +3,11 @@ from PyQt5.QtCore import QObject
 
 import requests
 import json
+import logging
 
 from . import settings
+
+logger = logging.getLogger('Client UI.services')
 
 
 class Scanner(QObject):
@@ -19,9 +22,10 @@ class Scanner(QObject):
     def start(self):
         with requests.session() as session:
             session.get(url=settings.api_url)
-            if 'csrftoken' in session.cookies:
-                csrftoken = session.cookies['csrftoken']
-                session.cookies.update({'csrftoken': csrftoken})
-            scan_results = session.post(url=settings.api_url, headers={'X-CSRFToken': csrftoken}, data=json.dumps(self.elements_states))
+            scan_results = session.post(
+                url=settings.api_url,
+                headers={'X-CSRFToken': session.cookies['csrftoken']},
+                data=json.dumps(self.elements_states)
+            )
         self.finishSignal.emit(scan_results.json())
 

@@ -9,8 +9,8 @@ from PyQt5.QtCore import QThread
 from components import logging_init
 from components.services import Scanner
 
-from Xperiment2_client import Ui_desktopClient
-
+from forms.client_app_template import Ui_desktopClient
+from forms.result_window import ResultWindow
 
 ## Принудительное переключение рабочей директории ##
 file_path = Path(__file__).resolve().parent
@@ -27,6 +27,9 @@ class DesktopApp(QMainWindow):
         self.ui = Ui_desktopClient()
         self.ui.setupUi(self)
 
+        self.result_window = ResultWindow()
+        self.result_window_closed = True
+
         self.add_functions()
 
     def add_functions(self) -> None:
@@ -34,6 +37,22 @@ class DesktopApp(QMainWindow):
 
         self.ui.pushButton_startScan.clicked.connect(self.start_scan)
         self.ui.pushButton_stopScan.clicked.connect(self.stop_scan)
+
+        self.result_window.closeResultWindow.connect(self.result_window_close_slot)
+        self.result_window.openResultWindow.connect(self.result_window_open_slot)
+
+    def result_window_open_slot(self) -> None:
+        """Отображение состояния окна result_window"""
+
+        self.result_window_closed = False
+        print(self.result_window_closed)
+
+    def result_window_close_slot(self) -> None:
+        """Отображение состояния окна result_window"""
+
+        self.result_window.destroy()
+        self.result_window_closed = True
+        print(self.result_window_closed)
 
     def deactivate_elements(self) -> None:
         """Деактивация элементов после начала поиска"""
@@ -80,10 +99,25 @@ class DesktopApp(QMainWindow):
             'betline': self.ui.comboBox_gameStatus.currentText().lower()
         }
 
+    def open_results_window(self) -> None:
+        """Открытие окна вывода результатов сканирования"""
+
+        if self.result_window_closed:
+            self.result_window.show()
+            self.result_window.exec_()
+
+    def render_scan_result(self, scan_results: dict) -> None:
+        """Отрисовка результатов поиска"""
+
+        self.result_window.render_results(scan_results)
+        self.activate_elements()
+        print(scan_results)
+
     def start_scan(self) -> None:
         """Запуск сканирования"""
 
         self.deactivate_elements()
+
         elements_states = self.get_elements_states()
 
         self.scanner = Scanner(elements_states)
@@ -94,15 +128,12 @@ class DesktopApp(QMainWindow):
         self.scanner.finishSignal.connect(self.render_scan_result)
         self.scanThread.start()
 
-    def render_scan_result(self, scan_results: dict) -> None:
-        """Отрисовка результатов поиска"""
-
-        print(scan_results)
-
+        self.open_results_window()
 
     def stop_scan(self) -> None:
         """Останов сканирования"""
 
+        self.scanThread.quit()
         self.activate_elements()
 
 
@@ -112,6 +143,6 @@ if __name__ == "__main__":
         w = DesktopApp()
         w.show()
         sys.exit(app.exec_())
-    except Exception as ex:
+    except BaseException as ex:
         DesktopApp.diagMessagesOutput(f'{time} Модуль LeakScanner, цикл отображения MainWindow, error message: {ex}')
         logger.error(f'Ошибка цикла отображения MainWindow, error message: {ex}')
