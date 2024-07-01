@@ -25,7 +25,7 @@ class ScannerStarter(View):
 
     def get(self, request):
         csrf = get_token(request)
-        return JsonResponse({"csrftoken": csrf})
+        return JsonResponse({"csrftoken": csrf}, status=200)
 
     def post(self, request):
         start_time = time.time()

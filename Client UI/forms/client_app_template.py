@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'Xperiment2.ui'
+# Form implementation generated from reading ui file 'client_app_template.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -14,14 +14,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_desktopClient(object):
     def setupUi(self, desktopClient):
         desktopClient.setObjectName("desktopClient")
-        desktopClient.resize(570, 380)
+        desktopClient.resize(570, 570)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(desktopClient.sizePolicy().hasHeightForWidth())
         desktopClient.setSizePolicy(sizePolicy)
-        desktopClient.setMinimumSize(QtCore.QSize(570, 380))
-        desktopClient.setMaximumSize(QtCore.QSize(570, 380))
+        desktopClient.setMinimumSize(QtCore.QSize(570, 570))
+        desktopClient.setMaximumSize(QtCore.QSize(570, 570))
         self.frame = QtWidgets.QFrame(desktopClient)
         self.frame.setGeometry(QtCore.QRect(5, 5, 560, 370))
         self.frame.setStyleSheet("border-top-color: rgb(0, 0, 0);")
@@ -109,7 +109,7 @@ class Ui_desktopClient(object):
         self.comboBox_firstBkmkr.addItem("")
         self.gridLayout.addWidget(self.comboBox_firstBkmkr, 3, 1, 1, 1)
         self.layoutWidget1 = QtWidgets.QWidget(self.frame)
-        self.layoutWidget1.setGeometry(QtCore.QRect(31, 258, 261, 57))
+        self.layoutWidget1.setGeometry(QtCore.QRect(31, 258, 273, 58))
         self.layoutWidget1.setObjectName("layoutWidget1")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.layoutWidget1)
         self.gridLayout_2.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
@@ -117,8 +117,17 @@ class Ui_desktopClient(object):
         self.gridLayout_2.setHorizontalSpacing(0)
         self.gridLayout_2.setVerticalSpacing(5)
         self.gridLayout_2.setObjectName("gridLayout_2")
-        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.gridLayout_2.addItem(spacerItem2, 0, 2, 1, 1)
+        self.pushButton_startScan = QtWidgets.QPushButton(self.layoutWidget1)
+        self.pushButton_startScan.setEnabled(False)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButton_startScan.sizePolicy().hasHeightForWidth())
+        self.pushButton_startScan.setSizePolicy(sizePolicy)
+        self.pushButton_startScan.setObjectName("pushButton_startScan")
+        self.gridLayout_2.addWidget(self.pushButton_startScan, 0, 1, 1, 1)
+        spacerItem2 = QtWidgets.QSpacerItem(25, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
+        self.gridLayout_2.addItem(spacerItem2, 0, 0, 1, 1)
         self.pushButton_stopScan = QtWidgets.QPushButton(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -130,23 +139,28 @@ class Ui_desktopClient(object):
         self.pushButton_stopScan.setDefault(False)
         self.pushButton_stopScan.setObjectName("pushButton_stopScan")
         self.gridLayout_2.addWidget(self.pushButton_stopScan, 1, 1, 1, 1)
-        spacerItem3 = QtWidgets.QSpacerItem(25, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
-        self.gridLayout_2.addItem(spacerItem3, 0, 0, 1, 1)
-        self.pushButton_startScan = QtWidgets.QPushButton(self.layoutWidget1)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_startScan.sizePolicy().hasHeightForWidth())
-        self.pushButton_startScan.setSizePolicy(sizePolicy)
-        self.pushButton_startScan.setObjectName("pushButton_startScan")
-        self.gridLayout_2.addWidget(self.pushButton_startScan, 0, 1, 1, 1)
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.gridLayout_2.addItem(spacerItem3, 0, 2, 1, 1)
+        self.label_serverStatus = QtWidgets.QLabel(self.frame)
+        self.label_serverStatus.setGeometry(QtCore.QRect(340, 260, 181, 31))
+        self.label_serverStatus.setStyleSheet("border-color: rgb(0, 0, 0);")
+        self.label_serverStatus.setFrameShape(QtWidgets.QFrame.Box)
+        self.label_serverStatus.setLineWidth(2)
+        self.label_serverStatus.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_serverStatus.setObjectName("label_serverStatus")
+        self.listWidget_diagnostics = QtWidgets.QListWidget(desktopClient)
+        self.listWidget_diagnostics.setGeometry(QtCore.QRect(10, 400, 551, 161))
+        self.listWidget_diagnostics.setObjectName("listWidget_diagnostics")
+        self.label_systemInfo = QtWidgets.QLabel(desktopClient)
+        self.label_systemInfo.setGeometry(QtCore.QRect(220, 380, 171, 20))
+        self.label_systemInfo.setObjectName("label_systemInfo")
 
         self.retranslateUi(desktopClient)
         QtCore.QMetaObject.connectSlotsByName(desktopClient)
 
     def retranslateUi(self, desktopClient):
         _translate = QtCore.QCoreApplication.translate
-        desktopClient.setWindowTitle(_translate("desktopClient", "Form"))
+        desktopClient.setWindowTitle(_translate("desktopClient", "Scanner client"))
         self.label_sportType.setText(_translate("desktopClient", "Вид спорта"))
         self.label_marketType.setText(_translate("desktopClient", "Тип ставки"))
         self.comboBox_secondBkmkr.setItemText(0, _translate("desktopClient", "Olimp"))
@@ -166,8 +180,10 @@ class Ui_desktopClient(object):
         self.comboBox_firstBkmkr.setItemText(0, _translate("desktopClient", "Leon"))
         self.comboBox_firstBkmkr.setItemText(1, _translate("desktopClient", "Olimp"))
         self.comboBox_firstBkmkr.setItemText(2, _translate("desktopClient", "Betboom"))
-        self.pushButton_stopScan.setText(_translate("desktopClient", "Остановить сканирование"))
         self.pushButton_startScan.setText(_translate("desktopClient", "Начать сканирование"))
+        self.pushButton_stopScan.setText(_translate("desktopClient", "Остановить сканирование"))
+        self.label_serverStatus.setText(_translate("desktopClient", "Проверка подключения"))
+        self.label_systemInfo.setText(_translate("desktopClient", "Системная информация"))
 
 
 if __name__ == "__main__":

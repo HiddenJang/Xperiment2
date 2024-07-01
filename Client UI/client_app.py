@@ -1,6 +1,7 @@
 import sys
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow
@@ -26,33 +27,47 @@ class DesktopApp(QMainWindow):
         super(DesktopApp, self).__init__()
         self.ui = Ui_desktopClient()
         self.ui.setupUi(self)
+        self._translate = QtCore.QCoreApplication.translate
 
         self.result_window = ResultWindow()
         self.result_window_closed = True
 
         self.add_functions()
+        self.request_server_status()
 
     def add_functions(self) -> None:
         """Добавление функций обработки действий пользователя в GUI"""
 
         self.ui.pushButton_startScan.clicked.connect(self.start_scan)
+        self.ui.pushButton_startScan.clicked.connect(self.open_results_window)
         self.ui.pushButton_stopScan.clicked.connect(self.stop_scan)
 
         self.result_window.closeResultWindow.connect(self.result_window_close_slot)
         self.result_window.openResultWindow.connect(self.result_window_open_slot)
 
+    def request_server_status(self) -> None:
+        """Запрос статуса сервера"""
+
+        self.render_diagnostics("Проверка соединения с сервером")
+
+        self.scanner_status = Scanner({})
+        self.get_status_thread = QThread()
+        self.scanner_status.moveToThread(self.get_status_thread)
+        self.get_status_thread.started.connect(self.scanner_status.get_server_status)
+        self.scanner_status.server_status_signal.connect(self.render_diagnostics)
+        self.scanner_status.server_status_signal.connect(self.render_server_status)
+        self.scanner_status.server_status_signal.connect(self.get_status_thread.quit)
+        self.get_status_thread.start()
+
     def result_window_open_slot(self) -> None:
         """Отображение состояния окна result_window"""
 
         self.result_window_closed = False
-        print(self.result_window_closed)
 
     def result_window_close_slot(self) -> None:
         """Отображение состояния окна result_window"""
 
-        self.result_window.destroy()
         self.result_window_closed = True
-        print(self.result_window_closed)
 
     def deactivate_elements(self) -> None:
         """Деактивация элементов после начала поиска"""
@@ -106,35 +121,58 @@ class DesktopApp(QMainWindow):
             self.result_window.show()
             self.result_window.exec_()
 
-    def render_scan_result(self, scan_results: dict) -> None:
-        """Отрисовка результатов поиска"""
-
-        self.result_window.render_results(scan_results)
-        self.activate_elements()
-        print(scan_results)
-
     def start_scan(self) -> None:
         """Запуск сканирования"""
 
         self.deactivate_elements()
-
         elements_states = self.get_elements_states()
 
         self.scanner = Scanner(elements_states)
         self.scanThread = QThread()
         self.scanner.moveToThread(self.scanThread)
         self.scanThread.started.connect(self.scanner.start)
-        self.scanner.finishSignal.connect(self.scanThread.quit)
-        self.scanner.finishSignal.connect(self.render_scan_result)
+        self.scanner.scan_result_signal.connect(self.scanThread.quit)
+        self.scanner.scan_result_signal.connect(self.render_scan_result)
         self.scanThread.start()
-
-        self.open_results_window()
 
     def stop_scan(self) -> None:
         """Останов сканирования"""
 
-        self.scanThread.quit()
+        if hasattr(self, 'scanThread'):
+            self.scanThread.requestInterruption()
+
         self.activate_elements()
+
+    ###### Rendering #####
+
+    def render_diagnostics(self, info: str) -> None:
+        """Вывод диагностической и системной информации"""
+
+        message = f'{datetime.now().strftime("%d.%m.%y %H:%M:%S")}:  {info}'
+
+        item = QtWidgets.QListWidgetItem()
+        self.ui.listWidget_diagnostics.addItem(item)
+        item = self.ui.listWidget_diagnostics.item(self.ui.listWidget_diagnostics.count()-1)
+        item.setText(self._translate("desktopClient", message))
+
+    def render_server_status(self, info: str) -> None:
+        """Отображение проверки доступности сервера и активация кнопки Начать сканирование"""
+
+        if "Status 200" in info:
+            self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер активен"))
+            self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
+            self.ui.pushButton_startScan.setDisabled(False)
+        else:
+            self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер недоступен"))
+            self.ui.label_serverStatus.setStyleSheet("background-color: rgb(246, 4, 4);border-color: rgb(0, 0, 0);")
+
+    def render_scan_result(self, scan_results: dict) -> None:
+        """Отрисовка результатов поиска"""
+
+        if scan_results:
+            self.result_window.render_results(scan_results)
+            self.activate_elements()
+        print(scan_results)
 
 
 if __name__ == "__main__":
@@ -144,5 +182,5 @@ if __name__ == "__main__":
         w.show()
         sys.exit(app.exec_())
     except BaseException as ex:
-        DesktopApp.diagMessagesOutput(f'{time} Модуль LeakScanner, цикл отображения MainWindow, error message: {ex}')
+        #DesktopApp.diagMessagesOutput(f'{time} Модуль LeakScanner, цикл отображения MainWindow, error message: {ex}')
         logger.error(f'Ошибка цикла отображения MainWindow, error message: {ex}')

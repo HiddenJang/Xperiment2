@@ -27,6 +27,8 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
         self.openResultWindow.emit()
 
     def closeEvent(self, event):
+        self.ui.tableWidget_scanResults.clearContents()
+        self.close()
         self.closeResultWindow.emit()
 
     # def event(self, event):
