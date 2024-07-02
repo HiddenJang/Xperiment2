@@ -129,6 +129,7 @@ class Ui_desktopClient(object):
         spacerItem2 = QtWidgets.QSpacerItem(25, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout_2.addItem(spacerItem2, 0, 0, 1, 1)
         self.pushButton_stopScan = QtWidgets.QPushButton(self.layoutWidget1)
+        self.pushButton_stopScan.setEnabled(False)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)

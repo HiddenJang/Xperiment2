@@ -48,7 +48,7 @@ class DesktopApp(QMainWindow):
     def request_server_status(self) -> None:
         """Запрос статуса сервера"""
 
-        self.render_diagnostics("Проверка соединения с сервером")
+        self.render_diagnostics("Проверка соединения с сервером...")
 
         self.scanner_status = Scanner({})
         self.get_status_thread = QThread()
@@ -57,6 +57,7 @@ class DesktopApp(QMainWindow):
         self.scanner_status.server_status_signal.connect(self.render_diagnostics)
         self.scanner_status.server_status_signal.connect(self.render_server_status)
         self.scanner_status.server_status_signal.connect(self.get_status_thread.quit)
+        self.scanner_status.scan_prohibition_signal.connect(self.ui.pushButton_startScan.setDisabled)
         self.get_status_thread.start()
 
     def result_window_open_slot(self) -> None:
@@ -102,6 +103,7 @@ class DesktopApp(QMainWindow):
         self.ui.label_gameStatus.setDisabled(False)
 
         self.ui.pushButton_startScan.setDisabled(False)
+        self.ui.pushButton_stopScan.setDisabled(True)
 
     def get_elements_states(self) -> dict:
         """Получение состояний всех элементов GUI"""
@@ -125,23 +127,33 @@ class DesktopApp(QMainWindow):
         """Запуск сканирования"""
 
         self.deactivate_elements()
+        self.ui.pushButton_stopScan.setDisabled(False)
         elements_states = self.get_elements_states()
 
         self.scanner = Scanner(elements_states)
         self.scanThread = QThread()
         self.scanner.moveToThread(self.scanThread)
         self.scanThread.started.connect(self.scanner.start)
-        self.scanner.scan_result_signal.connect(self.scanThread.quit)
+
+        self.scanner.server_status_signal.connect(self.render_diagnostics)
+        self.scanner.server_status_signal.connect(self.render_server_status)
+
         self.scanner.scan_result_signal.connect(self.render_scan_result)
+
+        self.scanner.scan_stopped_signal.connect(self.activate_elements)
+        self.scanner.scan_stopped_signal.connect(self.render_diagnostics)
+        self.scanner.scan_stopped_signal.connect(self.scanThread.quit)
+
         self.scanThread.start()
+        self.render_diagnostics("Сканирование запущено...")
 
     def stop_scan(self) -> None:
         """Останов сканирования"""
 
+        self.render_diagnostics("Идет завершение сканирования, ожидайте...")
         if hasattr(self, 'scanThread'):
             self.scanThread.requestInterruption()
-
-        self.activate_elements()
+        self.ui.pushButton_stopScan.setDisabled(True)
 
     ###### Rendering #####
 
@@ -151,9 +163,8 @@ class DesktopApp(QMainWindow):
         message = f'{datetime.now().strftime("%d.%m.%y %H:%M:%S")}:  {info}'
 
         item = QtWidgets.QListWidgetItem()
-        self.ui.listWidget_diagnostics.addItem(item)
-        item = self.ui.listWidget_diagnostics.item(self.ui.listWidget_diagnostics.count()-1)
         item.setText(self._translate("desktopClient", message))
+        self.ui.listWidget_diagnostics.addItem(item)
 
     def render_server_status(self, info: str) -> None:
         """Отображение проверки доступности сервера и активация кнопки Начать сканирование"""
@@ -161,7 +172,6 @@ class DesktopApp(QMainWindow):
         if "Status 200" in info:
             self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер активен"))
             self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
-            self.ui.pushButton_startScan.setDisabled(False)
         else:
             self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер недоступен"))
             self.ui.label_serverStatus.setStyleSheet("background-color: rgb(246, 4, 4);border-color: rgb(0, 0, 0);")
@@ -171,8 +181,6 @@ class DesktopApp(QMainWindow):
 
         if scan_results:
             self.result_window.render_results(scan_results)
-            self.activate_elements()
-        print(scan_results)
 
 
 if __name__ == "__main__":

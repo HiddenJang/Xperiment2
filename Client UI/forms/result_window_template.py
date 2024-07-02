@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ResultWindow.ui'
+# Form implementation generated from reading ui file 'result_window_template.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -88,6 +88,8 @@ class Ui_Form_scanResults(object):
         font.setWeight(75)
         item.setFont(font)
         self.tableWidget_scanResults.setHorizontalHeaderItem(6, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.tableWidget_scanResults.setItem(0, 0, item)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget_scanResults.setItem(0, 1, item)
         item = QtWidgets.QTableWidgetItem()
