@@ -33,7 +33,7 @@ class ScannerStarter(View):
         finish_time = time.time()
         work_time = finish_time - start_time
         print(f'task {start_time} done success, finish_time={finish_time}, work_time=', work_time)
-        return JsonResponse({"Success": f'{scan_res}'}, status=200)
+        return JsonResponse({"Success": scan_res}, status=200)
 
 
 # class TaskStateGetter(APIView):

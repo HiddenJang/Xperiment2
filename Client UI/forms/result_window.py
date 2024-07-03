@@ -23,8 +23,11 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
             self.ui.tableWidget_scanResults.removeRow(row)
         self.ui.tableWidget_scanResults.setRowCount(0)
 
+        for column in (0, 3, 4, 5, 6):
+            self.ui.tableWidget_scanResults.horizontalHeader().setSectionResizeMode(column, QtWidgets.QHeaderView.ResizeToContents)
+
         row_num = 0
-        for fork_data in eval(scan_result["Success"]):
+        for fork_data in scan_result["Success"]:
             for bkmkr_data in fork_data:
                 self.ui.tableWidget_scanResults.insertRow(row_num)
                 item_bookmaker = QtWidgets.QTableWidgetItem()
@@ -70,6 +73,8 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
                 self.ui.tableWidget_scanResults.setItem(row_num, column, item)
 
             row_num += 1
+        for row in range(self.ui.tableWidget_scanResults.rowCount()):
+            self.ui.tableWidget_scanResults.verticalHeader().setSectionResizeMode(row, QtWidgets.QHeaderView.ResizeToContents)
 
     def showEvent(self, event):
         self.openResultWindow.emit()
@@ -78,16 +83,3 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
         self.ui.tableWidget_scanResults.clearContents()
         self.close()
         self.closeResultWindow.emit()
-
-    # def event(self, event):
-    #     if event.type() == QtCore.QEvent.WindowActivate:
-    #         print(f"Oкно стало активным; (WindowActivate).")
-    #     elif event.type() == QtCore.QEvent.WindowDeactivate:
-    #         print(f"Oкно стало НЕактивным; (WindowDeactivate).")
-    #     elif event.type() == QtCore.QEvent.Close:
-    #         print(f"Oкно закрытo (QCloseEvent).")
-    #
-    #     return QtWidgets.QWidget.event(self, event)
-
-## INPUT DATA EXAMPLE ##
-##

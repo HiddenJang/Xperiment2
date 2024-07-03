@@ -26,7 +26,8 @@ def start_scan(
         betline: str ="prematch",
         market: str ="Тотал",
         region: str="all",
-        league: str="all"
+        league: str="all",
+        **kwargs
 ) -> list:
     """
     Запуск сканирования по паре букмекеров в соответствии с заданными настройками
@@ -38,6 +39,13 @@ def start_scan(
         5. market (тип ставки): Победитель, Тотал, Фора
         6. region (страна): country_name(lang=ru, exp: 'Россия') или all
         7. league (региональная лига): league_name(lang=ru, exp: 'NHL. Плей-офф') или all
+        8. **kwargs (optional):
+            8.1 for total: - min_k_first_bkmkr: float
+                           - min_k_second_bkmkr: float
+                           - corridor: float
+            8.2 for winner: - min_k_home: float
+                            - min_k_draw: float
+                            - min_k_away: float
     """
 
     leon_parser = LeonParser(
@@ -94,9 +102,20 @@ def start_scan(
 
     events_map = get_events_map(all_events_data)
     analyzer = RunnersAnalysis()
-    forks = analyzer.find_totals_forks(events_map, 1.9, 1.9, 0)
-    # redis_client = redis.Redis()
-    # redis_client.set(name='forks', value=json.dumps(forks))
+    if market == "Тотал":
+        forks = analyzer.find_totals_forks(
+            events_map,
+            kwargs['min_k_first_bkmkr'],
+            kwargs['min_k_second_bkmkr'],
+            kwargs['corridor']
+        )
+    elif market == "Победитель":
+        forks = analyzer.find_totals_forks(
+            events_map,
+            kwargs['min_k_home'],
+            kwargs['min_k_draw'],
+            kwargs['min_k_away']
+        )
 
     # stop_time = time.time() - start_time
     # print(f'events map len={len(events_map)}')

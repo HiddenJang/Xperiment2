@@ -43,6 +43,7 @@ class DesktopApp(QMainWindow):
         self.ui.pushButton_stopScan.clicked.connect(self.stop_scan)
 
         self.result_window.closeResultWindow.connect(self.result_window_close_slot)
+        self.result_window.closeResultWindow.connect(self.stop_scan)
         self.result_window.openResultWindow.connect(self.result_window_open_slot)
 
     def request_server_status(self) -> None:
@@ -61,12 +62,12 @@ class DesktopApp(QMainWindow):
         self.get_status_thread.start()
 
     def result_window_open_slot(self) -> None:
-        """Отображение состояния окна result_window"""
+        """Состояние окна result_window"""
 
         self.result_window_closed = False
 
     def result_window_close_slot(self) -> None:
-        """Отображение состояния окна result_window"""
+        """Состояние окна result_window"""
 
         self.result_window_closed = True
 
@@ -179,7 +180,7 @@ class DesktopApp(QMainWindow):
     def render_scan_result(self, scan_results: dict) -> None:
         """Отрисовка результатов поиска"""
 
-        if scan_results:
+        if scan_results.get('Success'):
             self.result_window.render_results(scan_results)
 
 
