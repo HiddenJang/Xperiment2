@@ -62,9 +62,9 @@
     <property name="geometry">
      <rect>
       <x>15</x>
-      <y>15</y>
-      <width>365</width>
-      <height>225</height>
+      <y>12</y>
+      <width>441</width>
+      <height>278</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -81,39 +81,12 @@
     <property name="geometry">
      <rect>
       <x>31</x>
-      <y>21</y>
-      <width>335</width>
-      <height>212</height>
+      <y>18</y>
+      <width>409</width>
+      <height>268</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="1">
-      <widget class="QLabel" name="label_sportType">
-       <property name="text">
-        <string>Вид спорта</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="3">
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="6" column="1">
-      <widget class="QLabel" name="label_marketType">
-       <property name="text">
-        <string>Тип ставки</string>
-       </property>
-      </widget>
-     </item>
      <item row="3" column="2">
       <widget class="QComboBox" name="comboBox_secondBkmkr">
        <property name="sizePolicy">
@@ -137,6 +110,69 @@
          <string>Betboom</string>
         </property>
        </item>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="label_sportType">
+       <property name="text">
+        <string>Вид спорта</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>25</width>
+         <height>22</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLabel" name="label_firstBkmkr">
+       <property name="text">
+        <string>Первый букмекер</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="2">
+      <widget class="QDoubleSpinBox" name="doubleSpinBox_minKsecondBkmkr">
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+       <property name="stepType">
+        <enum>QAbstractSpinBox::DefaultStepType</enum>
+       </property>
+       <property name="value">
+        <double>1.900000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="3">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="6" column="1">
+      <widget class="QLabel" name="label_marketType">
+       <property name="text">
+        <string>Тип ставки</string>
+       </property>
       </widget>
      </item>
      <item row="1" column="1">
@@ -172,13 +208,6 @@
        </item>
       </widget>
      </item>
-     <item row="2" column="1">
-      <widget class="QLabel" name="label_firstBkmkr">
-       <property name="text">
-        <string>Первый букмекер</string>
-       </property>
-      </widget>
-     </item>
      <item row="7" column="1">
       <widget class="QComboBox" name="comboBox_marketType">
        <property name="sizePolicy">
@@ -205,36 +234,6 @@
          <string>Фора</string>
         </property>
        </item>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="QLabel" name="label_gameStatus">
-       <property name="text">
-        <string>Стадия игры</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>25</width>
-         <height>22</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="2" column="2">
-      <widget class="QLabel" name="label_secondBkmkr">
-       <property name="text">
-        <string>Второй букмекер</string>
-       </property>
       </widget>
      </item>
      <item row="3" column="1">
@@ -268,13 +267,68 @@
        </item>
       </widget>
      </item>
+     <item row="8" column="2">
+      <widget class="QLabel" name="label_minKsecondBkmkr">
+       <property name="text">
+        <string>Min коэфф. БК2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QLabel" name="label_minKfirstBkmkr">
+       <property name="text">
+        <string>Min коэфф. БК1</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="QLabel" name="label_secondBkmkr">
+       <property name="text">
+        <string>Второй букмекер</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLabel" name="label_gameStatus">
+       <property name="text">
+        <string>Стадия игры</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="QDoubleSpinBox" name="doubleSpinBox_minKfirstBkmkr">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+       <property name="value">
+        <double>1.900000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="3">
+      <widget class="QLabel" name="label_corridor">
+       <property name="text">
+        <string>Коридор</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="3">
+      <widget class="QDoubleSpinBox" name="doubleSpinBox_corridor">
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+      </widget>
+     </item>
     </layout>
    </widget>
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>31</x>
-      <y>258</y>
+      <y>297</y>
       <width>273</width>
       <height>58</height>
      </rect>
@@ -368,7 +422,7 @@
     <property name="geometry">
      <rect>
       <x>340</x>
-      <y>260</y>
+      <y>299</y>
       <width>181</width>
       <height>31</height>
      </rect>
@@ -403,7 +457,7 @@
   <widget class="QLabel" name="label_systemInfo">
    <property name="geometry">
     <rect>
-     <x>220</x>
+     <x>192</x>
      <y>380</y>
      <width>171</width>
      <height>20</height>
@@ -412,6 +466,17 @@
    <property name="text">
     <string>Системная информация</string>
    </property>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>420</y>
+     <width>160</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_3"/>
   </widget>
  </widget>
  <resources/>

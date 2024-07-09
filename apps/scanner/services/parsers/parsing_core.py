@@ -19,19 +19,10 @@ async def get_events_data(first_bkmkr_parser, second_bkmkr_parser) -> list:
     return await asyncio.gather(task_first, task_second)
 
 
-def start_scan(
-        first_bkmkr: str="leon",
-        second_bkmkr: str="betboom",
-        game_type: str ="Soccer",
-        betline: str ="prematch",
-        market: str ="Тотал",
-        region: str="all",
-        league: str="all",
-        **kwargs
-) -> list:
+def start_scan(scan_params: dict) -> list:
     """
     Запуск сканирования по паре букмекеров в соответствии с заданными настройками
-        Допустимые параметры:
+        Допустимые параметры словаря scan_params:
         1. first_bkmkr (первый букмекер): leon, betboom, olimp
         2. second_bkmkr (второй букмекер): leon, betboom, olimp
         3. game_type (тип игры): Soccer, Basketball, IceHockey
@@ -39,7 +30,7 @@ def start_scan(
         5. market (тип ставки): Победитель, Тотал, Фора
         6. region (страна): country_name(lang=ru, exp: 'Россия') или all
         7. league (региональная лига): league_name(lang=ru, exp: 'NHL. Плей-офф') или all
-        8. **kwargs (optional):
+        8. optional:
             8.1 for total: - min_k_first_bkmkr: float
                            - min_k_second_bkmkr: float
                            - corridor: float
@@ -47,6 +38,15 @@ def start_scan(
                             - min_k_draw: float
                             - min_k_away: float
     """
+
+    first_bkmkr = scan_params['first_bkmkr']
+    second_bkmkr = scan_params['second_bkmkr']
+    game_type = scan_params['game_type']
+    betline = scan_params['betline']
+    market = scan_params['market']
+    region = scan_params['region']
+    league = scan_params['league']
+    optional = scan_params['optional']
 
     leon_parser = LeonParser(
                 game_type=game_type,
@@ -105,16 +105,16 @@ def start_scan(
     if market == "Тотал":
         forks = analyzer.find_totals_forks(
             events_map,
-            kwargs['min_k_first_bkmkr'],
-            kwargs['min_k_second_bkmkr'],
-            kwargs['corridor']
+            optional['min_k_first_bkmkr'],
+            optional['min_k_second_bkmkr'],
+            optional['corridor']
         )
     elif market == "Победитель":
         forks = analyzer.find_totals_forks(
             events_map,
-            kwargs['min_k_home'],
-            kwargs['min_k_draw'],
-            kwargs['min_k_away']
+            optional['min_k_home'],
+            optional['min_k_draw'],
+            optional['min_k_away']
         )
 
     # stop_time = time.time() - start_time

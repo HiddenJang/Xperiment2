@@ -80,11 +80,18 @@ class DesktopApp(QMainWindow):
         self.ui.comboBox_marketType.setDisabled(True)
         self.ui.comboBox_gameStatus.setDisabled(True)
 
+        self.ui.doubleSpinBox_minKfirstBkmkr.setDisabled(True)
+        self.ui.doubleSpinBox_minKsecondBkmkr.setDisabled(True)
+        self.ui.doubleSpinBox_corridor.setDisabled(True)
+
         self.ui.label_firstBkmkr.setDisabled(True)
         self.ui.label_secondBkmkr.setDisabled(True)
         self.ui.label_sportType.setDisabled(True)
         self.ui.label_marketType.setDisabled(True)
         self.ui.label_gameStatus.setDisabled(True)
+        self.ui.label_minKfirstBkmkr.setDisabled(True)
+        self.ui.label_minKsecondBkmkr.setDisabled(True)
+        self.ui.label_corridor.setDisabled(True)
 
         self.ui.pushButton_startScan.setDisabled(True)
 
@@ -97,11 +104,18 @@ class DesktopApp(QMainWindow):
         self.ui.comboBox_marketType.setDisabled(False)
         self.ui.comboBox_gameStatus.setDisabled(False)
 
+        self.ui.doubleSpinBox_minKfirstBkmkr.setDisabled(False)
+        self.ui.doubleSpinBox_minKsecondBkmkr.setDisabled(False)
+        self.ui.doubleSpinBox_corridor.setDisabled(False)
+
         self.ui.label_firstBkmkr.setDisabled(False)
         self.ui.label_secondBkmkr.setDisabled(False)
         self.ui.label_sportType.setDisabled(False)
         self.ui.label_marketType.setDisabled(False)
         self.ui.label_gameStatus.setDisabled(False)
+        self.ui.label_minKfirstBkmkr.setDisabled(False)
+        self.ui.label_minKsecondBkmkr.setDisabled(False)
+        self.ui.label_corridor.setDisabled(False)
 
         self.ui.pushButton_startScan.setDisabled(False)
         self.ui.pushButton_stopScan.setDisabled(True)
@@ -114,7 +128,18 @@ class DesktopApp(QMainWindow):
             'second_bkmkr': self.ui.comboBox_secondBkmkr.currentText().lower(),
             'game_type': self.ui.comboBox_sportType.currentText(),
             'market': self.ui.comboBox_marketType.currentText(),
-            'betline': self.ui.comboBox_gameStatus.currentText().lower()
+            'betline': self.ui.comboBox_gameStatus.currentText().lower(),
+            'region': 'all',
+            'league': 'all',
+            'optional': {
+                'min_k_first_bkmkr': self.ui.doubleSpinBox_minKfirstBkmkr.value(),
+                'min_k_second_bkmkr': self.ui.doubleSpinBox_minKsecondBkmkr.value(),
+                'corridor': self.ui.doubleSpinBox_corridor.value(),
+                'min_k_home': 1.9,
+                'min_k_draw': 1.9,
+                'min_k_away': 1.9,
+            }
+
         }
 
     def open_results_window(self) -> None:
