@@ -6,7 +6,7 @@ def get_events_map(all_events_data: list) -> list:
     conf_events_array = []
     first_bkmkr_data = all_events_data[0]
     second_bkmkr_data = all_events_data[1]
-    #print(len(first_bkmkr_data), '-', len(second_bkmkr_data))
+
     if not first_bkmkr_data or not second_bkmkr_data:
         return conf_events_array
 
@@ -21,6 +21,7 @@ def get_events_map(all_events_data: list) -> list:
         first_bkmkr_teams = set(filter(lambda x: len(x) > 2, first_bkmkr_teams.split(' ')))
 
         for second_bkmkr_event_data in second_bkmkr_data:
+
             # преобразование массива второго букмекера для сравнения и поиска соответствия матчей
             second_bkmkr_teams = re.sub(r'[^- \w]|_|\bжен\b|\bWomen\b', '', second_bkmkr_event_data["teams"]).lower()
             # исключение повторяющихся имен из названий команд и исключение слов с диной < 3х символов

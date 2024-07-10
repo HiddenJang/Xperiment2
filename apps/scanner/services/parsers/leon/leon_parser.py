@@ -59,20 +59,12 @@ class LeonParser:
         5. league (региональная лига): league_name(lang=ru, exp: 'NHL. Плей-офф') или all
     """
 
-    def __init__(
-            self,
-            game_type: str,
-            betline: str = 'prematch',
-            market: str = 'Победитель',
-            region: str = 'all',
-            league: str = 'all'
-    ):
-
-        self.__game_type = game_type
-        self.__betline = betline
-        self.__market = market
-        self.__region = region
-        self.__league = league
+    def __init__(self, scan_params: dict):
+        self.__game_type = scan_params['game_type']
+        self.__betline = scan_params['betline']
+        self.__market = scan_params['market']
+        self.__region = scan_params['region']
+        self.__league = scan_params['league']
 
     async def start_parse(self) -> list | None:
         """Запуск асинхронного парсинга, обработки результатов и получения списка данных по каждому событию (матчу)"""
@@ -190,7 +182,7 @@ class LeonParser:
             if not event_data:
                 continue
             processed_event_data = self.__get_markets(event_data)
-            if not processed_event_data['runners']:
+            if not processed_event_data.get('runners'):
                 continue
 
             ## Формирование url для selenium ##
@@ -208,20 +200,23 @@ class LeonParser:
     def __get_markets(self, event_data: dict) -> dict:
         """Получение требуемых данных событий"""
 
-        region = event_data.get('league')['region']['name']
-        league = event_data.get('league')['name']
-        teams = event_data.get('name')
-        date = datetime.fromtimestamp(event_data['kickoff']/1000).strftime('%Y-%m-%d')
+        try:
+            region = event_data.get('league')['region']['name']
+            league = event_data.get('league')['name']
+            teams = event_data.get('name')
+            date = datetime.fromtimestamp(event_data['kickoff']/1000).strftime('%Y-%m-%d')
 
-        runners_table = {
-            'bookmaker': 'leon',
-            'region': region,
-            'league': league,
-            'teams': teams,
-            'market': None,
-            'date': date,
-            'runners': {}
-        }
+            runners_table = {
+                'bookmaker': 'leon',
+                'region': region,
+                'league': league,
+                'teams': teams,
+                'market': None,
+                'date': date,
+                'runners': {}
+            }
+        except Exception:
+            return {}
 
         if self.__market == 'Победитель':
             return self.__get_markets_winner(event_data, runners_table)
@@ -293,7 +288,13 @@ class LeonParser:
 if __name__ == '__main__':
     import time
     import pprint
-    leon_parser = LeonParser(game_type="Soccer", betline="inplay", market="Тотал")
+    leon_parser = LeonParser({
+        'game_type': "Soccer",
+        'betline': "inplay",
+        'market': "Тотал",
+        'region': 'all',
+        'league': 'all'
+    })
     for _ in range(10):
         start = time.time()
         events_data = asyncio.run(leon_parser.start_parse())

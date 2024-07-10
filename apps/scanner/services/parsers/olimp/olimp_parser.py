@@ -50,26 +50,18 @@ class OlimpParser:
         5. league (региональная лига): league_name(lang=ru, exp: 'NHL. Плей-офф') или all
     """
 
-    def __init__(
-            self,
-            game_type: str,
-            betline: str = 'prematch',
-            market: str = 'Победитель',
-            region: str = 'all',
-            league: str = 'all'
-    ):
-
-        match game_type:
+    def __init__(self, scan_params: dict):
+        match scan_params['game_type']:
             case "Soccer":
                 self.__game_type = "1"
             case "Basketball":
                 self.__game_type = "5"
             case "IceHockey":
                 self.__game_type = "2"
-        self.__market = market
-        self.__betline = betline
-        self.__region = region
-        self.__league = league
+        self.__market = scan_params['market']
+        self.__betline = scan_params['betline']
+        self.__region = scan_params['region']
+        self.__league = scan_params['league']
 
     async def start_parse(self) -> list | None:
         """Запуск асинхронного парсинга, обработки результатов и получения списка данных по каждому событию (матчу)"""
@@ -91,11 +83,12 @@ class OlimpParser:
                 all_events_data = await asyncio.gather(task_top_events, task_leagues_events)
                 all_events_data = [x for y in all_events_data if y for x in y]
 
+                sorted_all_events_data = list({v['id']: v for v in all_events_data}.values())
             else:
                 return
 
-        if all_events_data:
-            return self.__process_parse_data(all_events_data)
+        if sorted_all_events_data:
+            return self.__process_parse_data(sorted_all_events_data)
 
     async def get_regions_and_leagues_list(self, session: aiohttp.ClientSession) -> dict:
         """Получение названий регионов и всех чемпионатов всех региональных лиг (имя и id)"""
@@ -135,13 +128,14 @@ class OlimpParser:
                         if self.__region == 'all' and self.__league == 'all':
                             all_events_data_list.extend(league['events'])
                         elif self.__region == league['competition']['name'].split('.')[0] and \
-                                self.__league == 'all' :
+                                self.__league == 'all':
                             all_events_data_list.extend(league['events'])
                         elif self.__league != 'all' and \
                                 '.' in league['competition']['name'] and \
                                 league['competition']['name'].replace(" ", "").split('.')[1]:
                             return league['events']
                 break
+
             return all_events_data_list
         except Exception as ex:
             logger.info(f'Ошибка выполнения запроса {ex}')
@@ -154,30 +148,34 @@ class OlimpParser:
             if not event_data:
                 continue
             processed_event_data = self.__get_markets(event_data)
-            if not processed_event_data['runners']:
+            if not processed_event_data.get('runners'):
                 continue
             output_data.append(processed_event_data)
+
         return output_data
 
     def __get_markets(self, event_data: dict) -> dict:
         """Получение требуемых данных событий"""
 
-        region = event_data['competitionName'].split('.')[0]
-        league = event_data['competitionName']
-        teams = event_data['name']
-        date = datetime.fromtimestamp(event_data['startDateTime']).strftime('%Y-%m-%d')
-        url = SELENIUM_URL % (event_data['sportId'], event_data['competitionId'], event_data['id'])
+        try:
+            region = event_data['competitionName'].split('.')[0]
+            league = event_data['competitionName']
+            teams = event_data['name']
+            date = datetime.fromtimestamp(event_data['startDateTime']).strftime('%Y-%m-%d')
+            url = SELENIUM_URL % (event_data['sportId'], event_data['competitionId'], event_data['id'])
 
-        runners_table = {
-            'bookmaker': 'olimp',
-            'region': region,
-            'league': league,
-            'teams': teams,
-            'market': None,
-            'runners': {},
-            'date': date,
-            'url': url
-        }
+            runners_table = {
+                'bookmaker': 'olimp',
+                'region': region,
+                'league': league,
+                'teams': teams,
+                'market': None,
+                'runners': {},
+                'date': date,
+                'url': url
+            }
+        except Exception:
+            return {}
 
         if self.__market == 'Победитель':
             return self.__get_markets_winner(event_data, runners_table)
@@ -251,13 +249,19 @@ if __name__ == '__main__':
     #         leagues = await asyncio.create_task(olimp_parser.get_regions_and_leagues_list(session))
     #     return leagues
 
-    olimp_parser = OlimpParser(game_type="Soccer", betline="prematch", market="Фора")
+    olimp_parser = OlimpParser({
+        'game_type': "Soccer",
+        'betline': "prematch",
+        'market': "Тотал",
+        'region': 'all',
+        'league': 'all'
+    })
     for _ in range(1):
         start = time.time()
         events_data = asyncio.run(olimp_parser.start_parse())
         #events_data = asyncio.run(starter())
         work_time = time.time() - start
-        pprint.pprint(events_data)
-        print(len(events_data))
+        #pprint.pprint(events_data)
+        print(events_data)
         print(work_time)
         #pprint.pprint(events_data)

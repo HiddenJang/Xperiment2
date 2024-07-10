@@ -39,39 +39,11 @@ def start_scan(scan_params: dict) -> list:
                             - min_k_away: float
     """
 
-    first_bkmkr = scan_params['first_bkmkr']
-    second_bkmkr = scan_params['second_bkmkr']
-    game_type = scan_params['game_type']
-    betline = scan_params['betline']
-    market = scan_params['market']
-    region = scan_params['region']
-    league = scan_params['league']
-    optional = scan_params['optional']
+    leon_parser = LeonParser(scan_params)
+    betboom_parser = BetboomParser(scan_params)
+    olimp_parser = OlimpParser(scan_params)
 
-    leon_parser = LeonParser(
-                game_type=game_type,
-                betline=betline,
-                market=market,
-                region=region,
-                league=league
-            )
-    betboom_parser = BetboomParser(
-                game_type=game_type,
-                betline=betline,
-                market=market,
-                region=region,
-                league=league
-            )
-
-    olimp_parser = OlimpParser(
-                game_type=game_type,
-                betline=betline,
-                market=market,
-                region=region,
-                league=league
-            )
-
-    match first_bkmkr:
+    match scan_params['first_bkmkr']:
         case "leon":
             first_bkmkr_parser = leon_parser
         case "betboom":
@@ -79,10 +51,10 @@ def start_scan(scan_params: dict) -> list:
         case "olimp":
             first_bkmkr_parser = olimp_parser
         case _:
-            logger.error(f"Недопустимое название букмекера - {first_bkmkr}!")
+            logger.error(f"Недопустимое название букмекера - {scan_params['first_bkmkr']}!")
             return []
 
-    match second_bkmkr:
+    match scan_params['second_bkmkr']:
         case "leon":
             second_bkmkr_parser = leon_parser
         case "betboom":
@@ -90,38 +62,19 @@ def start_scan(scan_params: dict) -> list:
         case "olimp":
             second_bkmkr_parser = olimp_parser
         case _:
-            logger.error(f"Недопустимое название букмекера - {second_bkmkr}!")
+            logger.error(f"Недопустимое название букмекера - {scan_params['second_bkmkr']}!")
             return []
 
-    # start_time = time.time()
-
     all_events_data = asyncio.run(get_events_data(first_bkmkr_parser, second_bkmkr_parser))
-
-    # stop_time = time.time() - start_time
-    # print(stop_time)
-
     events_map = get_events_map(all_events_data)
     analyzer = RunnersAnalysis()
-    if market == "Тотал":
-        forks = analyzer.find_totals_forks(
-            events_map,
-            optional['min_k_first_bkmkr'],
-            optional['min_k_second_bkmkr'],
-            optional['corridor']
-        )
-    elif market == "Победитель":
-        forks = analyzer.find_totals_forks(
-            events_map,
-            optional['min_k_home'],
-            optional['min_k_draw'],
-            optional['min_k_away']
-        )
+    if scan_params['market'] == "Тотал":
+        forks = analyzer.find_totals_forks(events_map, scan_params['optional'])
+    elif scan_params['market'] == "Победитель":
+        forks = analyzer.find_winner_forks(events_map, scan_params['optional'])
+    else:
+        return []
 
-    # stop_time = time.time() - start_time
-    # print(f'events map len={len(events_map)}')
-    # print(f'forks amount={len(forks)}')
-    # pprint.pprint(forks)
-    # print(stop_time)
     return forks
 
 
@@ -136,17 +89,23 @@ if __name__ == '__main__':
     # for _ in range(1):
     #     res = start_scan(first_bkmkr="leon", second_bkmkr="olimp", market="Тотал")
     #     print(res)
+    params = {
+        'first_bkmkr': "leon",
+        'second_bkmkr': "olimp",
+        'game_type': "Soccer",
+        'betline': "prematch",
+        'market': "Тотал",
+        'region': "all",
+        'league': "all",
+        'optional': {
+            'min_k_first_bkmkr': 1.9,
+            'min_k_second_bkmkr': 1.9,
+            'corridor': 0,
+            'min_k_home': 2,
+            'min_k_draw': 2,
+            'min_k_away': 2
+        }
+    }
 
-    def start_scanner(
-            first_bkmkr="leon",
-            second_bkmkr="betboom",
-            game_type="Soccer",
-            betline="prematch",
-            market="Тотал",
-            region="all",
-            league="all"
-    ) -> list:
-        return start_scan(first_bkmkr, second_bkmkr, game_type, betline, market, region, league)
-
-    res = start_scanner()
-    print(res)
+    res = start_scan(params)
+    #print(res)

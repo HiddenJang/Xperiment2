@@ -58,27 +58,20 @@ class BetboomParser:
         5. league (региональная лига): league_name(lang=ru, exp: 'NHL. Плей-офф') или all
     """
 
-    def __init__(
-            self, 
-            game_type: int | str,
-            betline: str ='prematch', 
-            market: str ='Победитель',
-            region: str ='all', 
-            league: str ='all'
-    ):
-        match game_type:
+    def __init__(self, scan_params: dict):
+        match scan_params['game_type']:
             case int():
-                self.__game_type = game_type
+                self.__game_type = scan_params['game_type']
             case "Soccer":
                 self.__game_type = 1
             case "Basketball":
                 self.__game_type = 4
             case "IceHockey":
                 self.__game_type = 10
-        self.__market = market
-        self.__betline = betline
-        self.__region = region
-        self.__league = league
+        self.__market = scan_params['market']
+        self.__betline = scan_params['betline']
+        self.__region = scan_params['region']
+        self.__league = scan_params['league']
 
     async def start_parse(self) -> list | None:
         """Запуск асинхронного парсинга, обработки результатов и получения списка данных по каждому событию (матчу)"""
@@ -243,7 +236,7 @@ class BetboomParser:
             if not event_data:
                 continue
             processed_event_data = self.__get_markets(event_data)
-            if not processed_event_data['runners']:
+            if not processed_event_data.get('runners'):
                 continue
             output_data.append(processed_event_data)
         return output_data
@@ -251,22 +244,25 @@ class BetboomParser:
     def __get_markets(self, event_data: dict) -> dict:
         """Получение требуемых данных событий"""
 
-        region = event_data.get('CtN')
-        league = event_data.get('CN')
-        teams = event_data.get('N')
-        date = event_data.get('D').split('T')[0]
-        url = SELENIUM_URL % event_data['Id']
+        try:
+            region = event_data.get('CtN')
+            league = event_data.get('CN')
+            teams = event_data.get('N')
+            date = event_data.get('D').split('T')[0]
+            url = SELENIUM_URL % event_data['Id']
 
-        runners_table = {
-            'bookmaker': 'betboom',
-            'region': region,
-            'league': league,
-            'teams': teams,
-            'market': None,
-            'runners': {},
-            'date': date,
-            'url': url
-        }
+            runners_table = {
+                'bookmaker': 'betboom',
+                'region': region,
+                'league': league,
+                'teams': teams,
+                'market': None,
+                'runners': {},
+                'date': date,
+                'url': url
+            }
+        except Exception:
+            return {}
 
         if self.__market == 'Победитель':
             return self.__get_markets_winner(event_data, runners_table)

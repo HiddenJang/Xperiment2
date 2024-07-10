@@ -7,11 +7,13 @@ class RunnersAnalysis:
     @staticmethod
     def find_totals_forks(
             events_data: list,
-            min_k_first_bkmkr: float,
-            min_k_second_bkmkr: float,
-            corridor: float
+            optional: dict
     ) -> list:
         """Поиск вилок в ставках типа Тотал"""
+
+        min_k_first_bkmkr = optional['min_k_first_bkmkr']
+        min_k_second_bkmkr = optional['min_k_second_bkmkr']
+        corridor = optional['corridor']
 
         total_forks = []
         for event_data in events_data:
@@ -66,11 +68,13 @@ class RunnersAnalysis:
     @staticmethod
     def find_winner_forks(
             events_data: list,
-            min_k_home: float,
-            min_k_draw: float,
-            min_k_away: float,
+            optional: dict
     ) -> list:
         """Поиск вилок в ставках типа Победитель"""
+
+        min_k_home = optional['min_k_home']
+        min_k_draw = optional['min_k_draw']
+        min_k_away = optional['min_k_away']
 
         winner_forks = []
         for event_data in events_data:
