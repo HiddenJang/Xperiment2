@@ -7,7 +7,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.environ.get('MYSQL_NAME'),
         'USER': os.environ.get('MYSQL_USER'),
-        'PASSWORD': os.environ.get('MYSQL_ROOT_PASSWORD'),
+        'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
         'HOST': os.environ.get('MYSQL_HOST'),
         'PORT': os.environ.get('MYSQL_PORT'),
         'OPTIONS': {
@@ -15,3 +15,4 @@ DATABASES = {
         }
     }
 }
+STATIC_ROOT = os.path.join(BASE_DIR, "static")

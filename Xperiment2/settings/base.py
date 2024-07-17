@@ -130,7 +130,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "static" # Нужно для прода, изначально пустой каталог, куда Django соберёт всё при выполнении manage.py collectstatic
-#STATICFILES_DIRS = [BASE_DIR / "static_dev", "apps/static",] # Каталоги, в которых будет производлиться поиск статики, сюда нужно складывать статику проекта, не относящуюся к конкретному приложению
+STATICFILES_DIRS = [BASE_DIR / "apps/authentication/static", "apps/scanner/static",] # Каталоги, в которых будет производлиться поиск статики, сюда нужно складывать статику проекта, не относящуюся к конкретному приложению
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = [BASE_DIR / 'media']
@@ -140,36 +140,36 @@ MEDIA_ROOT = [BASE_DIR / 'media']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'console': {
-            'format': "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
-        },
-        'file': {
-            'format': "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
-        }
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'console'
-        },
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'formatter': 'file',
-            'filename': f'{BASE_DIR}/logs.log'
-        }
-    },
-    'loggers': {
-        '': {
-            'level': 'DEBUG',
-            'handlers': ['console', 'file']
-        }
-    }
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'formatters': {
+#         'console': {
+#             'format': "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
+#         },
+#         'file': {
+#             'format': "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
+#         }
+#     },
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'console'
+#         },
+#         'file': {
+#             'level': 'INFO',
+#             'class': 'logging.FileHandler',
+#             'formatter': 'file',
+#             'filename': f'{BASE_DIR}/logs.log'
+#         }
+#     },
+#     'loggers': {
+#         '': {
+#             'level': 'DEBUG',
+#             'handlers': ['console', 'file']
+#         }
+#     }
+# }
 
 # Redis settings
 
