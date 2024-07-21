@@ -21,16 +21,18 @@ services:
   xperiment2:
     image: xperiment2_app:latest
     container_name: xperiment2_app
+    env_file:
+      - ./config/.env
     depends_on:
       - db
     volumes:
-
+      - static_volume:/xperiment2/static
       - media_volume:/xperiment2/media
-    env_file:
-      - ./config/.env
     command: >
-      bash -c "gunicorn -b 0.0.0.0:8000 Xperiment2.wsgi:application"
-      
+      bash -c "python manage.py makemigrations
+      && python manage.py migrate
+      &&gunicorn -b 0.0.0.0:8000 Xperiment2.wsgi:application
+      "
 
   nginx:
     build:
@@ -39,7 +41,7 @@ services:
     image: nginx
     container_name: nginx
     volumes:
-
+      - static_volume:/xperiment2/static
       - media_volume:/xperiment2/media
     ports:
       - "80:80"
@@ -48,5 +50,5 @@ services:
 
 volumes:
   mysql_data:
-
+  static_volume:
   media_volume:
