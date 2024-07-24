@@ -16,3 +16,10 @@ DATABASES = {
     }
 }
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+REDIS_HOST = os.environ.get('REDIS_HOST')
+REDIS_EXTERNAL_PORT = os.environ.get('REDIS_EXTERNAL_PORT')
+
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_EXTERNAL_PORT}/0'  # URL брокера сообщений
+CELERY_BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 3600}
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_EXTERNAL_PORT}/0'  # URL backend'а результатов

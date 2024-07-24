@@ -35,6 +35,29 @@ class ScannerStarter(View):
         print(f'task {start_time} done success, finish_time={finish_time}, work_time=', work_time)
         return JsonResponse({"Success": scan_res}, status=200)
 
+class TestStarter(View):
+
+    def get(self, request):
+        elements_states = {
+            'first_bkmkr': "leon",
+            'second_bkmkr': "olimp",
+            'game_type': "Soccer",
+            'betline': "prematch",
+            'market': "Тотал",
+            'region': "all",
+            'league': "all",
+            'optional': {
+                'min_k_first_bkmkr': 1.9,
+                'min_k_second_bkmkr': 1.9,
+                'corridor': 0,
+                'min_k_home': 2,
+                'min_k_draw': 2,
+                'min_k_away': 2
+            }
+        }
+        print('button pushed')
+        scan_res = start_scan.apply_async(kwargs=elements_states).get()
+        return JsonResponse({"Success": scan_res}, status=200)
 
 # class TaskStateGetter(APIView):
 #     def get(self, request, formant=None):

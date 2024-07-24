@@ -17,7 +17,7 @@
             $('#u0').click(function() {
               $.ajax({
                 type: 'GET',
-                url: '/api/v1/start/',
+                url: '/api/v2/start/',
                 headers: {'X-CSRFToken': "{{ csrf_token }}"},
                 success: function (response) {
                     console.log(response.Success);

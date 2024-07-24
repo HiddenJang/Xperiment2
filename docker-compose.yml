@@ -3,6 +3,7 @@ version: '3.8'
 services:
   db:
     image: mysql
+    restart: always
     container_name: db
     env_file:
       - ./config/.env
@@ -25,14 +26,38 @@ services:
       - ./config/.env
     depends_on:
       - db
+      - redis
     volumes:
       - static_volume:/xperiment2/static
       - media_volume:/xperiment2/media
     command: >
-      bash -c "python manage.py makemigrations
+      bash -c "
+      python manage.py makemigrations
       && python manage.py migrate
       &&gunicorn -b 0.0.0.0:8000 Xperiment2.wsgi:application
       "
+
+  celery:
+    restart: always
+    image: xperiment2_app:latest
+    working_dir: /xperiment2
+    volumes:
+      - ./source/:/app
+    environment:
+      DJANGO_SETTINGS_MODULE: "${DJANGO_SETTINGS_MODULE}"
+    deploy:
+      resources:
+        limits:
+          memory: 15G
+        reservations:
+          memory: 10G
+    ports:
+      - "5555:5555"
+    command: celery -A Xperiment2 worker -l info
+    links:
+      - redis
+    depends_on:
+      - redis
 
   nginx:
     build:
@@ -44,9 +69,35 @@ services:
       - static_volume:/xperiment2/static
       - media_volume:/xperiment2/media
     ports:
-      - "80:80"
+      - "${NGINX_EXTERNAL_PORT}:80"
     depends_on:
       - xperiment2
+
+  redis:
+    image: redis:latest
+    container_name: redis_container
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_USER=${REDIS_USER}
+      - REDIS_USER_PASSWORD=${REDIS_USER_PASSWORD}
+    ports:
+      - "${REDIS_EXTERNAL_PORT}:6379"
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "$REDIS_PASSWORD", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
 
 volumes:
   mysql_data:
