@@ -293,7 +293,7 @@ class LeonParser:
 if __name__ == '__main__':
     import time
     import pprint
-    leon_parser = LeonParser(game_type="Soccer", betline="inplay", market="Тотал")
+    leon_parser = LeonParser(game_type="Soccer", betline="prematch", market="Тотал")
     for _ in range(10):
         start = time.time()
         events_data = asyncio.run(leon_parser.start_parse())

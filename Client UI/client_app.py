@@ -114,7 +114,12 @@ class DesktopApp(QMainWindow):
             'second_bkmkr': self.ui.comboBox_secondBkmkr.currentText().lower(),
             'game_type': self.ui.comboBox_sportType.currentText(),
             'market': self.ui.comboBox_marketType.currentText(),
-            'betline': self.ui.comboBox_gameStatus.currentText().lower()
+            'betline': self.ui.comboBox_gameStatus.currentText().lower(),
+            'kwargs': {
+                'min_k_first_bkmkr': self.ui.doubleSpinBox_minKFirstBkmkr.value(),
+                'min_k_second_bkmkr': self.ui.doubleSpinBox_minKSecondBkmkr.value(),
+                'corridor': self.ui.doubleSpinBox_corridor.value(),
+            }
         }
 
     def open_results_window(self) -> None:

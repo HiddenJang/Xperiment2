@@ -12,7 +12,8 @@ def start_scan(
         betline="prematch",
         market="Тотал",
         region="all",
-        league="all"
+        league="all",
+        kwargs={},
 ) -> list:
 
-    return parsing_core.start_scan(first_bkmkr, second_bkmkr, game_type, betline, market, region, league)
+    return parsing_core.start_scan(first_bkmkr, second_bkmkr, game_type, betline, market, region, league, **kwargs)
