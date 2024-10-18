@@ -26,8 +26,17 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
         for column in (0, 3, 4, 5, 6):
             self.ui.tableWidget_scanResults.horizontalHeader().setSectionResizeMode(column, QtWidgets.QHeaderView.ResizeToContents)
 
+        match scan_result[0]["market"].lower():
+            case "тотал" | "фора":
+                self.render_total(scan_result)
+            case "победитель":
+                self.render_winner(scan_result)
+
+    def render_total(self, scan_result) -> None:
+        """Отрисовка результатов типа Тотал/фора"""
+
         row_num = 0
-        for fork_data in scan_result["Success"]:
+        for fork_data in scan_result:
             for bkmkr_data in fork_data:
                 self.ui.tableWidget_scanResults.insertRow(row_num)
                 item_bookmaker = QtWidgets.QTableWidgetItem()
@@ -75,6 +84,60 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
             row_num += 1
         for row in range(self.ui.tableWidget_scanResults.rowCount()):
             self.ui.tableWidget_scanResults.verticalHeader().setSectionResizeMode(row, QtWidgets.QHeaderView.ResizeToContents)
+
+    def render_winner(self, scan_result) -> None:
+        """Отрисовка результатов типа Победитель"""
+
+        row_num = 0
+        for fork_data in scan_result:
+            for bkmkr_data in fork_data:
+                self.ui.tableWidget_scanResults.insertRow(row_num)
+                item_bookmaker = QtWidgets.QTableWidgetItem()
+                item_bookmaker.setText(self._translate("Form_scanResults", bkmkr_data['bookmaker']))
+                self.ui.tableWidget_scanResults.setItem(row_num, 0, item_bookmaker)
+
+                item_teams = QtWidgets.QTableWidgetItem()
+                item_teams.setText(self._translate("Form_scanResults", bkmkr_data['teams']))
+                self.ui.tableWidget_scanResults.setItem(row_num, 1, item_teams)
+
+                item_region_league = QtWidgets.QTableWidgetItem()
+                item_region_league.setText(
+                    self._translate("Form_scanResults", f"{bkmkr_data['region']}/{bkmkr_data['league']}"))
+                self.ui.tableWidget_scanResults.setItem(row_num, 2, item_region_league)
+
+                item_date = QtWidgets.QTableWidgetItem()
+                item_date.setText(self._translate("Form_scanResults", bkmkr_data['date']))
+                self.ui.tableWidget_scanResults.setItem(row_num, 3, item_date)
+
+                item_market = QtWidgets.QTableWidgetItem()
+                item_market.setText(self._translate("Form_scanResults", bkmkr_data['market']))
+                self.ui.tableWidget_scanResults.setItem(row_num, 4, item_market)
+
+                home = bkmkr_data['runners'].get('home')
+                draw =bkmkr_data['runners'].get('draw')
+                away =bkmkr_data['runners'].get('away')
+                item_home_draw_away = QtWidgets.QTableWidgetItem()
+                item_home_draw_away.setText(
+                    self._translate("Form_scanResults", f"{home}/{draw}/{away}"))
+                self.ui.tableWidget_scanResults.setItem(row_num, 5, item_home_draw_away)
+
+                item_url = QtWidgets.QTableWidgetItem()
+                item_url.setText(self._translate("Form_scanResults", bkmkr_data['url']))
+                self.ui.tableWidget_scanResults.setItem(row_num, 6, item_url)
+                row_num += 1
+
+            self.ui.tableWidget_scanResults.insertRow(row_num)
+            for column in range(self.ui.tableWidget_scanResults.columnCount()):
+                item = QtWidgets.QTableWidgetItem()
+                brush = QtGui.QBrush(QtGui.QColor(15, 248, 12))
+                brush.setStyle(QtCore.Qt.SolidPattern)
+                item.setBackground(brush)
+                self.ui.tableWidget_scanResults.setItem(row_num, column, item)
+
+            row_num += 1
+        for row in range(self.ui.tableWidget_scanResults.rowCount()):
+            self.ui.tableWidget_scanResults.verticalHeader().setSectionResizeMode(row,
+                                                                                  QtWidgets.QHeaderView.ResizeToContents)
 
     def showEvent(self, event):
         self.openResultWindow.emit()

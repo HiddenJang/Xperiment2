@@ -33,7 +33,6 @@ class DesktopApp(QMainWindow):
         self.result_window_closed = True
 
         self.add_functions()
-        self.request_server_status()
 
     def add_functions(self) -> None:
         """Добавление функций обработки действий пользователя в GUI"""
@@ -46,20 +45,41 @@ class DesktopApp(QMainWindow):
         self.result_window.closeResultWindow.connect(self.stop_scan)
         self.result_window.openResultWindow.connect(self.result_window_open_slot)
 
+        self.ui.pushButton_connect.clicked.connect(self.request_server_status)
+        self.ui.pushButton_disconnect.clicked.connect(self.disconnect_from_server)
+
     def request_server_status(self) -> None:
         """Запрос статуса сервера"""
 
         self.render_diagnostics("Проверка соединения с сервером...")
+        self.ui.pushButton_connect.setDisabled(True)
 
         self.scanner_status = Scanner({})
         self.get_status_thread = QThread()
         self.scanner_status.moveToThread(self.get_status_thread)
         self.get_status_thread.started.connect(self.scanner_status.get_server_status)
-        self.scanner_status.server_status_signal.connect(self.render_diagnostics)
         self.scanner_status.server_status_signal.connect(self.render_server_status)
-        self.scanner_status.server_status_signal.connect(self.get_status_thread.quit)
-        self.scanner_status.scan_prohibition_signal.connect(self.ui.pushButton_startScan.setDisabled)
+        self.scanner_status.stop_status_requests_signal.connect(self.get_status_thread.quit)
+        self.scanner_status.stop_status_requests_signal.connect(self.change_con_buttons_states)
         self.get_status_thread.start()
+
+    def disconnect_from_server(self) -> None:
+        """Отключение от сервера"""
+
+        if hasattr(self, 'get_status_thread'):
+            self.get_status_thread.requestInterruption()
+        self.ui.pushButton_disconnect.setDisabled(True)
+
+        if not (hasattr(self, 'scanThread') and self.scanThread.isRunning()):
+            self.ui.pushButton_startScan.setDisabled(True)
+
+    def change_con_buttons_states(self, context) -> None:
+        """Изменение состояний кнопок подключения/отключения"""
+
+        self.ui.pushButton_connect.setDisabled(False)
+        self.render_diagnostics(context)
+        self.ui.label_serverStatus.setText(self._translate("desktopClient", "Статус"))
+        self.ui.label_serverStatus.setStyleSheet("")
 
     def result_window_open_slot(self) -> None:
         """Состояние окна result_window"""
@@ -135,9 +155,9 @@ class DesktopApp(QMainWindow):
                 'min_k_first_bkmkr': self.ui.doubleSpinBox_minKfirstBkmkr.value(),
                 'min_k_second_bkmkr': self.ui.doubleSpinBox_minKsecondBkmkr.value(),
                 'corridor': self.ui.doubleSpinBox_corridor.value(),
-                'min_k_home': 1.9,
-                'min_k_draw': 1.9,
-                'min_k_away': 1.9,
+                'min_k_home': self.ui.doubleSpinBox_minKfirstBkmkr.value(),
+                'min_k_away': self.ui.doubleSpinBox_minKsecondBkmkr.value(),
+                'min_k_draw': self.ui.doubleSpinBox_corridor.value(),
             }
 
         }
@@ -192,21 +212,28 @@ class DesktopApp(QMainWindow):
         item.setText(self._translate("desktopClient", message))
         self.ui.listWidget_diagnostics.addItem(item)
 
-    def render_server_status(self, info: str) -> None:
+    def render_server_status(self, status_data: dict) -> None:
         """Отображение проверки доступности сервера и активация кнопки Начать сканирование"""
 
-        if "Status 200" in info:
-            self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер активен"))
-            self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
-        else:
+        if "200" in status_data["status"]:
+            if not self.ui.label_serverStatus.text() == "Сервер активен":
+                self.ui.pushButton_disconnect.setDisabled(False)
+                self.ui.pushButton_startScan.setDisabled(False)
+                self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер активен"))
+                self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
+                self.render_diagnostics("Сервер активен. Статус 200.")
+        elif not self.ui.label_serverStatus.text() == "Сервер недоступен":
+            self.ui.pushButton_disconnect.setDisabled(False)
+            self.ui.pushButton_startScan.setDisabled(True)
             self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер недоступен"))
             self.ui.label_serverStatus.setStyleSheet("background-color: rgb(246, 4, 4);border-color: rgb(0, 0, 0);")
+            self.render_diagnostics(f"Сервер недоступен. Ошибка подключения: {status_data['context']}.")
 
     def render_scan_result(self, scan_results: dict) -> None:
         """Отрисовка результатов поиска"""
 
         if scan_results.get('Success'):
-            self.result_window.render_results(scan_results)
+            self.result_window.render_results(scan_results['Success'])
 
 
 if __name__ == "__main__":

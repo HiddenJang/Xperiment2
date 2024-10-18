@@ -14,8 +14,9 @@ logger = logging.getLogger('Client UI.services')
 class Scanner(QObject):
     """Класс запуска сканирования в отдельном потоке"""
     
-    server_status_signal = QtCore.pyqtSignal(str)
-    scan_prohibition_signal = QtCore.pyqtSignal(bool)
+    server_status_signal = QtCore.pyqtSignal(dict)
+    stop_status_requests_signal = QtCore.pyqtSignal(str)
+
     scan_result_signal = QtCore.pyqtSignal(dict)
     scan_stopped_signal = QtCore.pyqtSignal(str)
 
@@ -23,55 +24,55 @@ class Scanner(QObject):
         super(Scanner, self).__init__()
         self.elements_states = elements_states
 
-    def server_status_emit(self, status: str) -> None:
-        """Отправка статуса сервера в GUI"""
-
-        if status == '200' or status == '<Response [200]>':
-            status = 'Status 200. The server is running'
-        elif 'error' not in status.lower():
-            status = f'Status {status}'
-        self.server_status_signal.emit(status)
+    # def server_status_emit(self, status: str) -> None:
+    #     """Отправка статуса сервера в GUI"""
+    #
+    #     if status == '200' or status == '<Response [200]>':
+    #         status = {'status': 200}
+    #     elif 'error' not in status.lower():
+    #         status = {f'Status {status}'
+    #     self.server_status_signal.emit(status)
 
     def get_server_status(self) -> None:
-        """Получение статуса сервера при запуске приложения"""
+        """Получение статуса сервера при запуске приложения. Отправка статуса сервера в GUI"""
 
         while True:
+            if QThread.currentThread().isInterruptionRequested():
+                self.stop_status_requests_signal.emit("Проверка подключения к серверу остановлена пользователем")
+                return
             try:
-                status = requests.get(url=settings.api_url, timeout=10).status_code
-                self.server_status_emit(str(status))
-                self.scan_prohibition_signal.emit(False)
-                break
+                status = requests.get(url=settings.API_URL, timeout=settings.STATUS_REQUEST_TIMEOUT).status_code
+                context = ''
             except BaseException as ex:
-                self.server_status_emit(f'Connection error {ex}')
-                QThread.sleep(2)
+                status = ''
+                context = ex
+            self.server_status_signal.emit({'status': str(status), 'context': context})
+            QThread.sleep(settings.STATUS_REQUEST_FREQUENCY)
+
 
     def start(self) -> dict | None:
         """Запуск сканнера и получение результатов"""
         
         with requests.session() as session:
             try:
-                resp = session.get(url=settings.api_url, timeout=10)
-                self.server_status_emit(str(resp))
+                session.get(url=settings.API_URL, timeout=10)
             except BaseException as ex:
-                self.server_status_emit(f'Connection error {ex}')
-                self.scan_stopped_signal.emit("Сканирование остановлено")
+                self.scan_stopped_signal.emit(f"Сканирование остановлено {ex}")
                 return
 
-            while not QThread.currentThread().isInterruptionRequested():
+            while True:
+                if QThread.currentThread().isInterruptionRequested():
+                    self.scan_stopped_signal.emit("Сканирование остановлено пользователем")
+                    return
                 try:
                     scan_results = session.post(
-                        url=settings.api_url,
+                        url=settings.API_URL,
                         headers={'X-CSRFToken': session.cookies['csrftoken']},
                         data=json.dumps(self.elements_states),
                         timeout=90
                     )
-                    self.server_status_emit(str(scan_results.status_code))
-                    if QThread.currentThread().isInterruptionRequested():
-                        self.scan_stopped_signal.emit("Сканирование остановлено")
-                    else:
-                        self.scan_result_signal.emit(scan_results.json())
+                    self.scan_result_signal.emit(scan_results.json())
                 except BaseException as ex:
-                    self.server_status_emit(f'Connection error {ex}')
-                    self.scan_stopped_signal.emit("Сканирование остановлено")
-                    break
+                    self.scan_stopped_signal.emit(f"Сканирование остановлено {ex}")
+                    return
 
