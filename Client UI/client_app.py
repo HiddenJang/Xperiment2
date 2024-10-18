@@ -137,7 +137,8 @@ class DesktopApp(QMainWindow):
         self.ui.label_minKsecondBkmkr.setDisabled(False)
         self.ui.label_corridor.setDisabled(False)
 
-        self.ui.pushButton_startScan.setDisabled(False)
+        if hasattr(self, 'get_status_thread') and self.ui.label_serverStatus.text() == "Сервер активен":
+            self.ui.pushButton_startScan.setDisabled(False)
         self.ui.pushButton_stopScan.setDisabled(True)
 
     def get_elements_states(self) -> dict:
@@ -196,8 +197,8 @@ class DesktopApp(QMainWindow):
     def stop_scan(self) -> None:
         """Останов сканирования"""
 
-        self.render_diagnostics("Идет завершение сканирования, ожидайте...")
-        if hasattr(self, 'scanThread'):
+        if hasattr(self, 'scanThread') and self.scanThread.isRunning():
+            self.render_diagnostics("Идет завершение сканирования, ожидайте...")
             self.scanThread.requestInterruption()
         self.ui.pushButton_stopScan.setDisabled(True)
 
@@ -218,7 +219,8 @@ class DesktopApp(QMainWindow):
         if "200" in status_data["status"]:
             if not self.ui.label_serverStatus.text() == "Сервер активен":
                 self.ui.pushButton_disconnect.setDisabled(False)
-                self.ui.pushButton_startScan.setDisabled(False)
+                if not (hasattr(self, 'scanThread') and self.scanThread.isRunning()):
+                    self.ui.pushButton_startScan.setDisabled(False)
                 self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер активен"))
                 self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
                 self.render_diagnostics("Сервер активен. Статус 200.")

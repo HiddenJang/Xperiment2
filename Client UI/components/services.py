@@ -24,15 +24,6 @@ class Scanner(QObject):
         super(Scanner, self).__init__()
         self.elements_states = elements_states
 
-    # def server_status_emit(self, status: str) -> None:
-    #     """Отправка статуса сервера в GUI"""
-    #
-    #     if status == '200' or status == '<Response [200]>':
-    #         status = {'status': 200}
-    #     elif 'error' not in status.lower():
-    #         status = {f'Status {status}'
-    #     self.server_status_signal.emit(status)
-
     def get_server_status(self) -> None:
         """Получение статуса сервера при запуске приложения. Отправка статуса сервера в GUI"""
 
@@ -48,7 +39,6 @@ class Scanner(QObject):
                 context = ex
             self.server_status_signal.emit({'status': str(status), 'context': context})
             QThread.sleep(settings.STATUS_REQUEST_FREQUENCY)
-
 
     def start(self) -> dict | None:
         """Запуск сканнера и получение результатов"""

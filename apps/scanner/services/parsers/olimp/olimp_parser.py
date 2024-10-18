@@ -70,7 +70,7 @@ class OlimpParser:
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), timeout=CONNECTION_TIMEOUT) as session:
 
             if self.__betline == 'inplay':
-                all_events_data = await asyncio.create_task(
+                sorted_all_events_data = await asyncio.create_task(
                     self.__get_events_data(session, LIVE_LEAGUES_EVENTS_LIST_URL.format(sport_type=self.__game_type))
                 )
 
