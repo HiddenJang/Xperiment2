@@ -1,11 +1,12 @@
 import asyncio
 import aiohttp
-import logging
 from datetime import datetime
 
 from apps.scanner.services.parsers import parse_settings
+from celery.utils.log import get_task_logger
 
-logger = logging.getLogger('Xperiment2.apps.scanner.olimp.olimp_parser')
+logger = get_task_logger('Xperiment2.apps.scanner.services.parsers.olimp.olimp_parser')
+
 CONNECTION_ATTEMPTS = 20
 CONNECTION_TIMEOUT = aiohttp.ClientTimeout(
     total=None,

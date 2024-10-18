@@ -1,5 +1,7 @@
 import copy
+from celery.utils.log import get_task_logger
 
+logger = get_task_logger('Xperiment2.apps.scanner.services.parsers.runner_analysis')
 
 class RunnersAnalysis:
     """Класс анализа коэффициентов на различные типы ставок"""

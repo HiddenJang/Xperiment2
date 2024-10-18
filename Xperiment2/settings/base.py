@@ -131,7 +131,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "static" # Нужно для прода, изначально пустой каталог, куда Django соберёт всё при выполнении manage.py collectstatic
-STATICFILES_DIRS = [BASE_DIR / "apps/authentication/static", "apps/scanner/static",] # Каталоги, в которых будет производлиться поиск статики, сюда нужно складывать статику проекта, не относящуюся к конкретному приложению
+#STATICFILES_DIRS = [BASE_DIR / "apps/authentication/static", "apps/scanner/static",] # Каталоги, в которых будет производлиться поиск статики, сюда нужно складывать статику проекта, не относящуюся к конкретному приложению
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = [BASE_DIR / 'media']
@@ -141,36 +141,54 @@ MEDIA_ROOT = [BASE_DIR / 'media']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'formatters': {
-#         'console': {
-#             'format': "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
-#         },
-#         'file': {
-#             'format': "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
-#         }
-#     },
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler',
-#             'formatter': 'console'
-#         },
-#         'file': {
-#             'level': 'INFO',
-#             'class': 'logging.FileHandler',
-#             'formatter': 'file',
-#             'filename': f'{BASE_DIR}/logs.log'
-#         }
-#     },
-#     'loggers': {
-#         '': {
-#             'level': 'DEBUG',
-#             'handlers': ['console', 'file']
-#         }
-#     }
-# }
+# Logging settings
+
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR_DJANGO = LOGS_DIR / 'django_logs'
+LOGS_DIR_CELERY = LOGS_DIR / 'celery_logs'
+
+if not os.path.exists(LOGS_DIR):
+    os.mkdir(LOGS_DIR)
+
+if not os.path.exists(LOGS_DIR_DJANGO):
+    os.mkdir(LOGS_DIR_DJANGO)
+
+if not os.path.exists(LOGS_DIR_CELERY):
+    os.mkdir(LOGS_DIR_CELERY)
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console': {
+            'format': "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
+        },
+        'file': {
+            'format': "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console'
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'maxBytes': 300000,
+            'backupCount': 5,
+            'formatter': 'file',
+            'filename': LOGS_DIR_DJANGO / 'django.log'
+        }
+    },
+    'loggers': {
+        '': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file']
+        }
+    }
+}
 
 # Redis settings
 
@@ -187,3 +205,4 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERYD_HIJACK_ROOT_LOGGER = False

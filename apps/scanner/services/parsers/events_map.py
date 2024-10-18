@@ -1,5 +1,9 @@
 import re
 
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger('Xperiment2.apps.scanner.services.parsers.events_map')
+
 def get_events_map(all_events_data: list) -> list:
     """Нахождение соответствий среди событий двух букмекеров"""
 

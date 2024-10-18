@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 from .leon.leon_parser import LeonParser
 from .betboom.betboom_parser import BetboomParser
@@ -7,8 +6,10 @@ from .olimp.olimp_parser import OlimpParser
 from .events_map import get_events_map
 from .runner_analysis import RunnersAnalysis
 
+from celery.utils.log import get_task_logger
 
-logger = logging.getLogger('Xperiment2.apps.scanner.parsers.parsing_core')
+logger = get_task_logger('Xperiment2.apps.scanner.services.parsers.parsing_core')
+
 
 
 async def get_events_data(first_bkmkr_parser, second_bkmkr_parser) -> list:
