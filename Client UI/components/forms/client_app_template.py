@@ -261,10 +261,16 @@ class Ui_MainWindow_client(object):
         self.menubar = QtWidgets.QMenuBar(MainWindow_client)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 563, 22))
         self.menubar.setObjectName("menubar")
+        self.menu = QtWidgets.QMenu(self.menubar)
+        self.menu.setObjectName("menu")
         MainWindow_client.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow_client)
         self.statusbar.setObjectName("statusbar")
         MainWindow_client.setStatusBar(self.statusbar)
+        self.action_serverSettings = QtWidgets.QAction(MainWindow_client)
+        self.action_serverSettings.setObjectName("action_serverSettings")
+        self.menu.addAction(self.action_serverSettings)
+        self.menubar.addAction(self.menu.menuAction())
 
         self.retranslateUi(MainWindow_client)
         QtCore.QMetaObject.connectSlotsByName(MainWindow_client)
@@ -301,6 +307,8 @@ class Ui_MainWindow_client(object):
         self.pushButton_connect.setText(_translate("MainWindow_client", "Подключиться"))
         self.pushButton_disconnect.setText(_translate("MainWindow_client", "Прервать"))
         self.label_systemInfo.setText(_translate("MainWindow_client", "Системная информация"))
+        self.menu.setTitle(_translate("MainWindow_client", "Настройки"))
+        self.action_serverSettings.setText(_translate("MainWindow_client", "Адрес сервера"))
 
 
 if __name__ == "__main__":

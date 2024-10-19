@@ -1,7 +1,8 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtWidgets import QDialog
 import pprint
-from .result_window_template import Ui_Form_scanResults
+from .forms.result_window_template import Ui_Form_scanResults
+
 
 class ResultWindow(Ui_Form_scanResults, QDialog):
     """Класс-обертка для окна отрисовки результатов поиска"""

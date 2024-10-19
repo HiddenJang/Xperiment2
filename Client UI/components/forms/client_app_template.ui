@@ -705,8 +705,20 @@
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Настройки</string>
+    </property>
+    <addaction name="action_serverSettings"/>
+   </widget>
+   <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="action_serverSettings">
+   <property name="text">
+    <string>Адрес сервера</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

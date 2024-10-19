@@ -7,11 +7,14 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QThread
 
+from components import settings
 from components import logging_init
 from components.services import Scanner
+from components.result_window import ResultWindow
+from components.server_settings_input import ServerSettingsInput
+from components.forms.client_app_template import Ui_MainWindow_client
 
-from forms.client_app_template import Ui_MainWindow_client
-from forms.result_window import ResultWindow
+
 
 ## Принудительное переключение рабочей директории ##
 file_path = Path(__file__).resolve().parent
@@ -30,10 +33,37 @@ class DesktopApp(QMainWindow):
         self._translate = QtCore.QCoreApplication.translate
 
         self.result_window = ResultWindow()
+        self.server_set_window = ServerSettingsInput()
+
         self.result_window_closed = True
 
+        self.get_user_settings()
         self.add_functions()
 
+
+    ###### Set user settings from file #####
+    def get_user_settings(self) -> None:
+        """Получение сохраненных настроек пользователя из файла"""
+
+        if os.path.exists(settings.USER_SETTINGS_FILE):
+            with open(settings.USER_SETTINGS_FILE, "r") as file:
+                user_settings = file.readline()
+
+            #self.set_elements_states()
+
+    def set_elements_states(self) -> None:
+        """Установка состояний виджетов в соответствии с сохраненными настройками пользователя"""
+        self.ui.comboBox_firstBkmkr.setCurrentText()
+        self.ui.comboBox_secondBkmkr.setDisabled(False)
+        self.ui.comboBox_sportType.setDisabled(False)
+        self.ui.comboBox_marketType.setDisabled(False)
+        self.ui.comboBox_gameStatus.setDisabled(False)
+
+        self.ui.doubleSpinBox_minKfirstBkmkr.setDisabled(False)
+        self.ui.doubleSpinBox_minKsecondBkmkr.setDisabled(False)
+        self.ui.doubleSpinBox_corridor.setDisabled(False)
+
+    ###### Add handling functions #####
     def add_functions(self) -> None:
         """Добавление функций обработки действий пользователя в GUI"""
 
@@ -47,6 +77,8 @@ class DesktopApp(QMainWindow):
 
         self.ui.pushButton_connect.clicked.connect(self.request_server_status)
         self.ui.pushButton_disconnect.clicked.connect(self.disconnect_from_server)
+
+        self.ui.action_serverSettings.triggered.connect(self.open_server_set_window)
 
     def request_server_status(self) -> None:
         """Запрос статуса сервера"""
@@ -170,6 +202,12 @@ class DesktopApp(QMainWindow):
             self.result_window.show()
             self.result_window.exec_()
 
+    def open_server_set_window(self) -> None:
+        """Открытие окна настроек подключения к серверу"""
+
+        self.server_set_window.show()
+        self.server_set_window.exec_()
+
     def start_scan(self) -> None:
         """Запуск сканирования"""
 
@@ -236,6 +274,17 @@ class DesktopApp(QMainWindow):
 
         if scan_results.get('Success'):
             self.result_window.render_results(scan_results['Success'])
+
+    def save_states(self) -> None:
+        """Сохранение состояний элементов"""
+        elements_states = {}
+        elements_states[""]
+        with open(settings.USER_SETTINGS_FILE, "w") as file:
+            file.write()
+
+    def closeEvent(self, event):
+        #self.save_states()
+        self.close()
 
 
 if __name__ == "__main__":
