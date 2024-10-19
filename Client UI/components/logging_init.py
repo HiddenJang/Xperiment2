@@ -2,6 +2,7 @@ import os
 import sys
 from datetime import datetime
 import logging
+from logging import handlers
 
 from . import settings
 
@@ -10,22 +11,14 @@ def init_logger(name):
 
     match sys.platform:
         case 'linux':
-            logs_path = os.getcwd() + '/'
-            old_logs_path = logs_path + 'old_logs/'
+            logs_path = os.getcwd() + '/' + settings.LOGS_PATH + '/'
         case 'windows':
-            logs_path = os.getcwd() + '\\'
-            old_logs_path = logs_path + 'old_logs\\'
+            logs_path = os.getcwd() + '\\' + settings.LOGS_PATH + '\\'
         case _:
-            logs_path = os.getcwd() + '/'
-            old_logs_path = logs_path + 'old_logs/'
+            logs_path = os.getcwd() + '/' + settings.LOGS_PATH + '/'
 
-    if os.path.exists(logs_path + settings.FILENAME):
-        if not os.path.exists(old_logs_path):
-            os.mkdir(old_logs_path)
-        os.rename(
-            logs_path + settings.FILENAME,
-            f'{old_logs_path}old_log_{datetime.now().strftime("%d.%m.%y %H.%M.%S")}.txt'
-        )
+    if not os.path.exists(logs_path):
+        os.mkdir(logs_path)
 
     match settings.LOGLEVEL:
         case "INFO":
@@ -46,7 +39,12 @@ def init_logger(name):
     sh.setFormatter(logging.Formatter(settings.FORMAT))
     sh.setLevel(LOGLEVEL)
 
-    fh = logging.FileHandler(filename=settings.FILENAME, encoding="UTF-8")
+    fh = handlers.RotatingFileHandler(
+        filename=logs_path + settings.FILENAME,
+        encoding="UTF-8",
+        maxBytes=300000,
+        backupCount=5,
+    )
     fh.setFormatter(logging.Formatter(settings.FORMAT))
     fh.setLevel(LOGLEVEL)
 

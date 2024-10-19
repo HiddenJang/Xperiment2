@@ -10,7 +10,7 @@ from PyQt5.QtCore import QThread
 from components import logging_init
 from components.services import Scanner
 
-from forms.client_app_template import Ui_desktopClient
+from forms.client_app_template import Ui_MainWindow_client
 from forms.result_window import ResultWindow
 
 ## Принудительное переключение рабочей директории ##
@@ -25,7 +25,7 @@ logger = logging.getLogger('Client UI.client_app')
 class DesktopApp(QMainWindow):
     def __init__(self):
         super(DesktopApp, self).__init__()
-        self.ui = Ui_desktopClient()
+        self.ui = Ui_MainWindow_client()
         self.ui.setupUi(self)
         self._translate = QtCore.QCoreApplication.translate
 
@@ -78,7 +78,7 @@ class DesktopApp(QMainWindow):
 
         self.ui.pushButton_connect.setDisabled(False)
         self.render_diagnostics(context)
-        self.ui.label_serverStatus.setText(self._translate("desktopClient", "Статус"))
+        self.ui.label_serverStatus.setText(self._translate("MainWindow_client", "Статус"))
         self.ui.label_serverStatus.setStyleSheet("")
 
     def result_window_open_slot(self) -> None:
@@ -210,7 +210,7 @@ class DesktopApp(QMainWindow):
         message = f'{datetime.now().strftime("%d.%m.%y %H:%M:%S")}:  {info}'
 
         item = QtWidgets.QListWidgetItem()
-        item.setText(self._translate("desktopClient", message))
+        item.setText(self._translate("MainWindow_client", message))
         self.ui.listWidget_diagnostics.addItem(item)
 
     def render_server_status(self, status_data: dict) -> None:
@@ -221,13 +221,13 @@ class DesktopApp(QMainWindow):
                 self.ui.pushButton_disconnect.setDisabled(False)
                 if not (hasattr(self, 'scanThread') and self.scanThread.isRunning()):
                     self.ui.pushButton_startScan.setDisabled(False)
-                self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер активен"))
+                self.ui.label_serverStatus.setText(self._translate("MainWindow_client", "Сервер активен"))
                 self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
                 self.render_diagnostics("Сервер активен. Статус 200.")
         elif not self.ui.label_serverStatus.text() == "Сервер недоступен":
             self.ui.pushButton_disconnect.setDisabled(False)
             self.ui.pushButton_startScan.setDisabled(True)
-            self.ui.label_serverStatus.setText(self._translate("desktopClient", "Сервер недоступен"))
+            self.ui.label_serverStatus.setText(self._translate("MainWindow_client", "Сервер недоступен"))
             self.ui.label_serverStatus.setStyleSheet("background-color: rgb(246, 4, 4);border-color: rgb(0, 0, 0);")
             self.render_diagnostics(f"Сервер недоступен. Ошибка подключения: {status_data['context']}.")
 
@@ -245,5 +245,4 @@ if __name__ == "__main__":
         w.show()
         sys.exit(app.exec_())
     except BaseException as ex:
-        #DesktopApp.diagMessagesOutput(f'{time} Модуль LeakScanner, цикл отображения MainWindow, error message: {ex}')
         logger.error(f'Ошибка цикла отображения MainWindow, error message: {ex}')

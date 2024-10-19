@@ -1,6 +1,7 @@
 # Logging settings
 FORMAT = "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
-FILENAME = "Logs.txt"
+LOGS_PATH = "logs"
+FILENAME = "gui_logs.log"
 LOGLEVEL = "DEBUG"
 
 # server api settings

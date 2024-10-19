@@ -8,7 +8,7 @@ import logging
 
 from . import settings
 
-logger = logging.getLogger('Client UI.services')
+logger = logging.getLogger('Client UI.components.services')
 
 
 class Scanner(QObject):
