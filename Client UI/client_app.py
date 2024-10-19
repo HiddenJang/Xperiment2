@@ -5,15 +5,13 @@ from datetime import datetime
 from pathlib import Path
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QSettings
 
-from components import settings
 from components import logging_init
 from components.services import Scanner
 from components.result_window import ResultWindow
 from components.server_settings_input import ServerSettingsInput
 from components.forms.client_app_template import Ui_MainWindow_client
-
 
 
 ## Принудительное переключение рабочей директории ##
@@ -37,31 +35,10 @@ class DesktopApp(QMainWindow):
 
         self.result_window_closed = True
 
-        self.get_user_settings()
+        self.settings = QSettings('client_app', 'Gcompany', self)
+        self.load_settings()
+
         self.add_functions()
-
-
-    ###### Set user settings from file #####
-    def get_user_settings(self) -> None:
-        """Получение сохраненных настроек пользователя из файла"""
-
-        if os.path.exists(settings.USER_SETTINGS_FILE):
-            with open(settings.USER_SETTINGS_FILE, "r") as file:
-                user_settings = file.readline()
-
-            #self.set_elements_states()
-
-    def set_elements_states(self) -> None:
-        """Установка состояний виджетов в соответствии с сохраненными настройками пользователя"""
-        self.ui.comboBox_firstBkmkr.setCurrentText()
-        self.ui.comboBox_secondBkmkr.setDisabled(False)
-        self.ui.comboBox_sportType.setDisabled(False)
-        self.ui.comboBox_marketType.setDisabled(False)
-        self.ui.comboBox_gameStatus.setDisabled(False)
-
-        self.ui.doubleSpinBox_minKfirstBkmkr.setDisabled(False)
-        self.ui.doubleSpinBox_minKsecondBkmkr.setDisabled(False)
-        self.ui.doubleSpinBox_corridor.setDisabled(False)
 
     ###### Add handling functions #####
     def add_functions(self) -> None:
@@ -275,15 +252,22 @@ class DesktopApp(QMainWindow):
         if scan_results.get('Success'):
             self.result_window.render_results(scan_results['Success'])
 
-    def save_states(self) -> None:
-        """Сохранение состояний элементов"""
-        elements_states = {}
-        elements_states[""]
-        with open(settings.USER_SETTINGS_FILE, "w") as file:
-            file.write()
+    ###### Save and load user settings #####
+
+    def save_settings(self) -> None:
+        for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
+            self.settings.setValue(combo_box.objectName(), combo_box.currentText())
+        for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
+            self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
+
+    def load_settings(self) -> None:
+        for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
+            combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
+        for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
+            double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
 
     def closeEvent(self, event):
-        #self.save_states()
+        self.save_settings()
         self.close()
 
 
