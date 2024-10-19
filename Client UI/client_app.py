@@ -7,6 +7,7 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QThread, QSettings
 
+from components import settings
 from components import logging_init
 from components.services import Scanner
 from components.result_window import ResultWindow
@@ -259,12 +260,18 @@ class DesktopApp(QMainWindow):
             self.settings.setValue(combo_box.objectName(), combo_box.currentText())
         for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
             self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
+        for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit):
+            if line_edit.objectName() == 'lineEdit_serverAddress' and not line_edit.text():
+                line_edit.setText(settings.API_URL)
+            self.settings.setValue(line_edit.objectName(), line_edit.text())
 
     def load_settings(self) -> None:
         for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
             combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
         for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
             double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
+        for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit):
+            line_edit.setText(self.settings.value(line_edit.objectName()))
 
     def closeEvent(self, event):
         self.save_settings()
