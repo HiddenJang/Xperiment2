@@ -7,7 +7,7 @@ LOGS_PATH = "logs"
 FILENAME = "gui_logs.log"
 LOGLEVEL = "DEBUG"
 
-# server api settings
+# default server api settings
 API_URL = 'http://127.0.0.1:8000/api/v1/start/'
 
 

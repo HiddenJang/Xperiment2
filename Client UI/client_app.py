@@ -42,6 +42,7 @@ class DesktopApp(QMainWindow):
         self.add_functions()
 
     ###### Add handling functions #####
+
     def add_functions(self) -> None:
         """Добавление функций обработки действий пользователя в GUI"""
 
@@ -55,8 +56,11 @@ class DesktopApp(QMainWindow):
 
         self.ui.pushButton_connect.clicked.connect(self.request_server_status)
         self.ui.pushButton_disconnect.clicked.connect(self.disconnect_from_server)
+        self.ui.comboBox_marketType.currentTextChanged.connect(self.change_koeff_labels)
 
         self.ui.action_serverSettings.triggered.connect(self.open_server_set_window)
+
+    ###### Test connection slots ######
 
     def request_server_status(self) -> None:
         """Запрос статуса сервера"""
@@ -64,7 +68,8 @@ class DesktopApp(QMainWindow):
         self.render_diagnostics("Проверка соединения с сервером...")
         self.ui.pushButton_connect.setDisabled(True)
 
-        self.scanner_status = Scanner({})
+        api_url = self.server_set_window.get_server_address()
+        self.scanner_status = Scanner(elements_states={}, api_url=api_url)
         self.get_status_thread = QThread()
         self.scanner_status.moveToThread(self.get_status_thread)
         self.get_status_thread.started.connect(self.scanner_status.get_server_status)
@@ -83,6 +88,8 @@ class DesktopApp(QMainWindow):
         if not (hasattr(self, 'scanThread') and self.scanThread.isRunning()):
             self.ui.pushButton_startScan.setDisabled(True)
 
+    ##### Change GUI elements states #####
+
     def change_con_buttons_states(self, context) -> None:
         """Изменение состояний кнопок подключения/отключения"""
 
@@ -90,16 +97,6 @@ class DesktopApp(QMainWindow):
         self.render_diagnostics(context)
         self.ui.label_serverStatus.setText(self._translate("MainWindow_client", "Статус"))
         self.ui.label_serverStatus.setStyleSheet("")
-
-    def result_window_open_slot(self) -> None:
-        """Состояние окна result_window"""
-
-        self.result_window_closed = False
-
-    def result_window_close_slot(self) -> None:
-        """Состояние окна result_window"""
-
-        self.result_window_closed = True
 
     def deactivate_elements(self) -> None:
         """Деактивация элементов после начала поиска"""
@@ -124,6 +121,7 @@ class DesktopApp(QMainWindow):
         self.ui.label_corridor.setDisabled(True)
 
         self.ui.pushButton_startScan.setDisabled(True)
+        self.ui.menubar.setDisabled(True)
 
     def activate_elements(self) -> None:
         """Активация элементов после остановки поиска"""
@@ -150,6 +148,32 @@ class DesktopApp(QMainWindow):
         if hasattr(self, 'get_status_thread') and self.ui.label_serverStatus.text() == "Сервер активен":
             self.ui.pushButton_startScan.setDisabled(False)
         self.ui.pushButton_stopScan.setDisabled(True)
+
+        self.ui.menubar.setDisabled(False)
+
+    def change_koeff_labels(self) -> None:
+        """Изменение названий коэффициентов"""
+        match self.ui.comboBox_marketType.currentText().lower():
+            case "тотал" | "фора":
+                self.ui.label_minKfirstBkmkr.setText("Min коэфф. БК1")
+                self.ui.label_minKsecondBkmkr.setText("Min коэфф. БК2")
+                self.ui.label_corridor.setText("Коридор")
+            case "победитель":
+                self.ui.label_minKfirstBkmkr.setText("Min коэфф. на ком. 1")
+                self.ui.label_minKsecondBkmkr.setText("Min коэфф. на ком. 2")
+                self.ui.label_corridor.setText("Min коэфф. на ничью")
+
+    ###### Slots ######
+
+    def result_window_open_slot(self) -> None:
+        """Состояние окна result_window"""
+
+        self.result_window_closed = False
+
+    def result_window_close_slot(self) -> None:
+        """Состояние окна result_window"""
+
+        self.result_window_closed = True
 
     def get_elements_states(self) -> dict:
         """Получение состояний всех элементов GUI"""
@@ -191,9 +215,10 @@ class DesktopApp(QMainWindow):
 
         self.deactivate_elements()
         self.ui.pushButton_stopScan.setDisabled(False)
-        elements_states = self.get_elements_states()
 
-        self.scanner = Scanner(elements_states)
+        elements_states = self.get_elements_states()
+        api_url = self.server_set_window.get_server_address()
+        self.scanner = Scanner(elements_states=elements_states, api_url=api_url)
         self.scanThread = QThread()
         self.scanner.moveToThread(self.scanThread)
         self.scanThread.started.connect(self.scanner.start)
@@ -245,7 +270,7 @@ class DesktopApp(QMainWindow):
             self.ui.pushButton_startScan.setDisabled(True)
             self.ui.label_serverStatus.setText(self._translate("MainWindow_client", "Сервер недоступен"))
             self.ui.label_serverStatus.setStyleSheet("background-color: rgb(246, 4, 4);border-color: rgb(0, 0, 0);")
-            self.render_diagnostics(f"Сервер недоступен. Ошибка подключения: {status_data['context']}.")
+            self.render_diagnostics(f"Сервер недоступен. Ошибка подключения: статус-код {status_data['status']} {status_data['context']}")
 
     def render_scan_result(self, scan_results: dict) -> None:
         """Отрисовка результатов поиска"""
@@ -256,20 +281,34 @@ class DesktopApp(QMainWindow):
     ###### Save and load user settings #####
 
     def save_settings(self) -> None:
+        ## ComboBox ##
         for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
             self.settings.setValue(combo_box.objectName(), combo_box.currentText())
+        ## DoubleSpinBox ##
         for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
             self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
+        ## Label ##
+        for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
+            if label.objectName() == 'label_serverStatus':
+                label.setText("Статус")
+            self.settings.setValue(label.objectName(), label.text())
+        ## LineEdit ##
         for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit):
             if line_edit.objectName() == 'lineEdit_serverAddress' and not line_edit.text():
                 line_edit.setText(settings.API_URL)
             self.settings.setValue(line_edit.objectName(), line_edit.text())
 
     def load_settings(self) -> None:
+        ## ComboBox ##
         for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
             combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
+        ## DoubleSpinBox ##
         for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
             double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
+        ## Label ##
+        for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
+            label.setText(self.settings.value(label.objectName()))
+        ## LineEdit ##
         for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit):
             line_edit.setText(self.settings.value(line_edit.objectName()))
 

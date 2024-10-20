@@ -1,6 +1,6 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtWidgets import QDialog
-import pprint
+import webbrowser
 from .forms.result_window_template import Ui_Form_scanResults
 
 
@@ -16,6 +16,7 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
         self.ui.setupUi(self)
 
         self._translate = QtCore.QCoreApplication.translate
+        self.ui.tableWidget_scanResults.itemDoubleClicked.connect(self.open_link)
 
     def render_results(self, scan_result: dict) -> None:
         """Отрисовка результатов сканирования в таблицу"""
@@ -147,3 +148,8 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
         self.ui.tableWidget_scanResults.clearContents()
         self.close()
         self.closeResultWindow.emit()
+
+    def open_link(self, item) -> None:
+        """Открытие URL-ссылок в браузере по двойному нажатию"""
+        if item.column() == 6:
+            webbrowser.open(item.text())

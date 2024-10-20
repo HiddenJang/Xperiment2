@@ -8,6 +8,7 @@ import logging
 
 from . import settings
 
+
 logger = logging.getLogger('Client UI.components.services')
 
 
@@ -20,9 +21,10 @@ class Scanner(QObject):
     scan_result_signal = QtCore.pyqtSignal(dict)
     scan_stopped_signal = QtCore.pyqtSignal(str)
 
-    def __init__(self, elements_states: dict):
+    def __init__(self, elements_states: dict, api_url: str):
         super(Scanner, self).__init__()
         self.elements_states = elements_states
+        self.api_url = api_url
 
     def get_server_status(self) -> None:
         """Получение статуса сервера при запуске приложения. Отправка статуса сервера в GUI"""
@@ -32,7 +34,7 @@ class Scanner(QObject):
                 self.stop_status_requests_signal.emit("Проверка подключения к серверу остановлена пользователем")
                 return
             try:
-                status = requests.get(url=settings.API_URL, timeout=settings.STATUS_REQUEST_TIMEOUT).status_code
+                status = requests.get(url=self.api_url, timeout=settings.STATUS_REQUEST_TIMEOUT).status_code
                 context = ''
             except BaseException as ex:
                 status = ''
@@ -45,7 +47,7 @@ class Scanner(QObject):
         
         with requests.session() as session:
             try:
-                session.get(url=settings.API_URL, timeout=10)
+                session.get(url=self.api_url, timeout=10)
             except BaseException as ex:
                 self.scan_stopped_signal.emit(f"Сканирование остановлено {ex}")
                 return
@@ -56,7 +58,7 @@ class Scanner(QObject):
                     return
                 try:
                     scan_results = session.post(
-                        url=settings.API_URL,
+                        url=self.api_url,
                         headers={'X-CSRFToken': session.cookies['csrftoken']},
                         data=json.dumps(self.elements_states),
                         timeout=90
