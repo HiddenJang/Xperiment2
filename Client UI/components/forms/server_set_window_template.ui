@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>379</width>
-    <height>104</height>
+    <width>380</width>
+    <height>269</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,7 +23,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>66</y>
+     <y>230</y>
      <width>341</width>
      <height>32</height>
     </rect>
@@ -38,7 +38,7 @@
   <widget class="QLabel" name="label_serverAddress">
    <property name="geometry">
     <rect>
-     <x>13</x>
+     <x>10</x>
      <y>10</y>
      <width>111</width>
      <height>17</height>
@@ -62,6 +62,159 @@
    </property>
    <property name="clearButtonEnabled">
     <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="doubleSpinBox_statusRequestFrequency">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>85</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="decimals">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <double>9999.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.500000000000000</double>
+   </property>
+   <property name="stepType">
+    <enum>QAbstractSpinBox::DefaultStepType</enum>
+   </property>
+   <property name="value">
+    <double>2.000000000000000</double>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_statusRequestFrequency_1">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>63</y>
+     <width>371</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Между запросами статуса сервера</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_parsRequestFrequency_1">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>117</y>
+     <width>351</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Между запусками процессов парсинга, не менее</string>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="doubleSpinBox_parsRequestFrequency">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>139</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="decimals">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <double>9999.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.500000000000000</double>
+   </property>
+   <property name="stepType">
+    <enum>QAbstractSpinBox::DefaultStepType</enum>
+   </property>
+   <property name="value">
+    <double>1.500000000000000</double>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_statusRequestFrequency_2">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>89</y>
+     <width>31</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>сек</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_parsRequestFrequency_2">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>143</y>
+     <width>31</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>сек</string>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="doubleSpinBox_responseTimeout">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>192</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="decimals">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <double>9999.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.500000000000000</double>
+   </property>
+   <property name="stepType">
+    <enum>QAbstractSpinBox::DefaultStepType</enum>
+   </property>
+   <property name="value">
+    <double>10.000000000000000</double>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_responseTimeout_2">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>196</y>
+     <width>31</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>сек</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_responseTimeout_1">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>170</y>
+     <width>241</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Время ожидания ответа сервера</string>
    </property>
   </widget>
  </widget>

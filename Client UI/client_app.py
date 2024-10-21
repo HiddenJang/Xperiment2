@@ -68,8 +68,8 @@ class DesktopApp(QMainWindow):
         self.render_diagnostics("Проверка соединения с сервером...")
         self.ui.pushButton_connect.setDisabled(True)
 
-        api_url = self.server_set_window.get_server_address()
-        self.scanner_status = Scanner(elements_states={}, api_url=api_url)
+        con_settings = self.server_set_window.get_connection_settings()
+        self.scanner_status = Scanner(elements_states={}, con_settings=con_settings)
         self.get_status_thread = QThread()
         self.scanner_status.moveToThread(self.get_status_thread)
         self.get_status_thread.started.connect(self.scanner_status.get_server_status)
@@ -217,9 +217,10 @@ class DesktopApp(QMainWindow):
         self.ui.pushButton_stopScan.setDisabled(False)
 
         elements_states = self.get_elements_states()
-        api_url = self.server_set_window.get_server_address()
-        self.scanner = Scanner(elements_states=elements_states, api_url=api_url)
+        con_settings = self.server_set_window.get_connection_settings()
+        self.scanner = Scanner(elements_states=elements_states, con_settings=con_settings)
         self.scanThread = QThread()
+        self.scanThread.setTerminationEnabled()
         self.scanner.moveToThread(self.scanThread)
         self.scanThread.started.connect(self.scanner.start)
 
@@ -240,6 +241,7 @@ class DesktopApp(QMainWindow):
 
         if hasattr(self, 'scanThread') and self.scanThread.isRunning():
             self.render_diagnostics("Идет завершение сканирования, ожидайте...")
+            print('flag1')
             self.scanThread.requestInterruption()
         self.ui.pushButton_stopScan.setDisabled(True)
 
@@ -264,7 +266,7 @@ class DesktopApp(QMainWindow):
                     self.ui.pushButton_startScan.setDisabled(False)
                 self.ui.label_serverStatus.setText(self._translate("MainWindow_client", "Сервер активен"))
                 self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
-                self.render_diagnostics("Сервер активен. Статус 200.")
+                self.render_diagnostics("Сервер активен. Статус-код 200")
         elif not self.ui.label_serverStatus.text() == "Сервер недоступен":
             self.ui.pushButton_disconnect.setDisabled(False)
             self.ui.pushButton_startScan.setDisabled(True)
@@ -281,37 +283,41 @@ class DesktopApp(QMainWindow):
     ###### Save and load user settings #####
 
     def save_settings(self) -> None:
+        ## LineEdit ##
+        for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit):
+            if line_edit.objectName() == 'lineEdit_serverAddress' and not line_edit.text():
+                line_edit.setText(settings.DEFAULT_API_URL)
+            self.settings.setValue(line_edit.objectName(), line_edit.text())
         ## ComboBox ##
         for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
             self.settings.setValue(combo_box.objectName(), combo_box.currentText())
         ## DoubleSpinBox ##
         for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
             self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
+        for double_spin_box in self.server_set_window.findChildren(QtWidgets.QDoubleSpinBox):
+            self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
         ## Label ##
         for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
             if label.objectName() == 'label_serverStatus':
                 label.setText("Статус")
             self.settings.setValue(label.objectName(), label.text())
-        ## LineEdit ##
-        for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit):
-            if line_edit.objectName() == 'lineEdit_serverAddress' and not line_edit.text():
-                line_edit.setText(settings.API_URL)
-            self.settings.setValue(line_edit.objectName(), line_edit.text())
 
     def load_settings(self) -> None:
         try:
+            ## LineEdit ##
+            for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit): # я уж не знаю по каким причинам, но это поле должно стоять перед DoubleSpinBox. Почемуто QT воспринимает QDoubleSpinBox как QLineEdit.
+                line_edit.setText(self.settings.value(line_edit.objectName()))
             ## ComboBox ##
             for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
                 combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
             ## DoubleSpinBox ##
             for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
                 double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
+            for double_spin_box in self.server_set_window.findChildren(QtWidgets.QDoubleSpinBox):
+                double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
             ## Label ##
             for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
                 label.setText(self.settings.value(label.objectName()))
-            ## LineEdit ##
-            for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit):
-                line_edit.setText(self.settings.value(line_edit.objectName()))
         except BaseException as ex:
             logger.info("Ошибка при загрузке установленных ранее состояний GUI", ex)
 
