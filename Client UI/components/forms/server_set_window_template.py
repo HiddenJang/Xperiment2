@@ -21,6 +21,7 @@ class Ui_servers_settings(object):
         self.buttonBox.setGeometry(QtCore.QRect(30, 230, 341, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setCenterButtons(True)
         self.buttonBox.setObjectName("buttonBox")
         self.label_serverAddress = QtWidgets.QLabel(servers_settings)
         self.label_serverAddress.setGeometry(QtCore.QRect(10, 10, 111, 17))

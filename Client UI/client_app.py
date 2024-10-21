@@ -207,6 +207,7 @@ class DesktopApp(QMainWindow):
     def open_server_set_window(self) -> None:
         """Открытие окна настроек подключения к серверу"""
 
+        self.server_set_window.widget_states = self.server_set_window.get_connection_settings()
         self.server_set_window.show()
         self.server_set_window.exec_()
 
@@ -241,7 +242,6 @@ class DesktopApp(QMainWindow):
 
         if hasattr(self, 'scanThread') and self.scanThread.isRunning():
             self.render_diagnostics("Идет завершение сканирования, ожидайте...")
-            print('flag1')
             self.scanThread.requestInterruption()
         self.ui.pushButton_stopScan.setDisabled(True)
 
