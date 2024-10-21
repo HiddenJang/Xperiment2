@@ -299,18 +299,21 @@ class DesktopApp(QMainWindow):
             self.settings.setValue(line_edit.objectName(), line_edit.text())
 
     def load_settings(self) -> None:
-        ## ComboBox ##
-        for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
-            combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
-        ## DoubleSpinBox ##
-        for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
-            double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
-        ## Label ##
-        for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
-            label.setText(self.settings.value(label.objectName()))
-        ## LineEdit ##
-        for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit):
-            line_edit.setText(self.settings.value(line_edit.objectName()))
+        try:
+            ## ComboBox ##
+            for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
+                combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
+            ## DoubleSpinBox ##
+            for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
+                double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
+            ## Label ##
+            for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
+                label.setText(self.settings.value(label.objectName()))
+            ## LineEdit ##
+            for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit):
+                line_edit.setText(self.settings.value(line_edit.objectName()))
+        except BaseException as ex:
+            logger.info("Ошибка при загрузке установленных ранее состояний GUI", ex)
 
     def closeEvent(self, event):
         self.save_settings()
