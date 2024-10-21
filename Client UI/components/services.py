@@ -65,8 +65,34 @@ class Scanner(QObject):
                         timeout=90
                     )
                     self.scan_result_signal.emit(scan_results.json())
-                    QThread.currentThread().msleep(int(self.con_settings['pars_request_frequency']*1000))
+                    time = 0
+                    while time < round(self.con_settings['pars_request_frequency']):
+                        if QThread.currentThread().isInterruptionRequested():
+                            break
+                        QThread.sleep(1)
+                        time += 1
                 except BaseException as ex:
                     self.scan_stopped_signal.emit(f"Сканирование остановлено {ex}")
                     return
 
+    # def get_timeout_thread(self, ms_timeout: int) -> QThread:
+    #     timer = Timer(ms_timeout)
+    #     timeout_thread = QThread()
+    #     timer.moveToThread(timeout_thread)
+    #     timeout_thread.started.connect(timer.start_timer)
+    #     timer.time_is_up_signal.connect(timeout_thread.quit)
+    #     return timeout_thread
+    #
+    # def
+
+class Timer(QObject):
+    time_is_up_signal = QtCore.pyqtSignal(bool)
+
+    def __init__(self, ms_timeout: int):
+        super(Timer, self).__init__()
+        self.ms_timeout = ms_timeout
+
+    def start_timer(self) -> None:
+        """Запуск неблокирующего таймера с возможностью опроса"""
+        QThread.currentThread().msleep(self.ms_timeout)
+        self.time_is_up_signal.emit(True)

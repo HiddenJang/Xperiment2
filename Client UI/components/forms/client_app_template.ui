@@ -716,7 +716,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_serverSettings">
    <property name="text">
-    <string>Адрес сервера</string>
+    <string>Подключение</string>
    </property>
   </action>
  </widget>

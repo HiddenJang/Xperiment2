@@ -221,7 +221,6 @@ class DesktopApp(QMainWindow):
         con_settings = self.server_set_window.get_connection_settings()
         self.scanner = Scanner(elements_states=elements_states, con_settings=con_settings)
         self.scanThread = QThread()
-        self.scanThread.setTerminationEnabled()
         self.scanner.moveToThread(self.scanThread)
         self.scanThread.started.connect(self.scanner.start)
 
