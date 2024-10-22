@@ -322,6 +322,7 @@ class DesktopApp(QMainWindow):
 
     def closeEvent(self, event):
         self.save_settings()
+        self.result_window.close()
         self.close()
 
 
