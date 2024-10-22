@@ -29,7 +29,7 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
             self.ui.tableWidget_scanResults.horizontalHeader().setSectionResizeMode(column, QtWidgets.QHeaderView.ResizeToContents)
 
         match scan_result[0][0]["market"].lower():
-            case "тотал" | "фора":
+            case "тотал" | "total" | "фора":
                 self.render_total(scan_result)
             case "победитель" | "result":
                 self.render_winner(scan_result)

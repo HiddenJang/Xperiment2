@@ -221,6 +221,7 @@ class DesktopApp(QMainWindow):
         con_settings = self.server_set_window.get_connection_settings()
         self.scanner = Scanner(elements_states=elements_states, con_settings=con_settings)
         self.scanThread = QThread()
+        self.scanThread.setTerminationEnabled()
         self.scanner.moveToThread(self.scanThread)
         self.scanThread.started.connect(self.scanner.start)
 
@@ -241,7 +242,18 @@ class DesktopApp(QMainWindow):
 
         if hasattr(self, 'scanThread') and self.scanThread.isRunning():
             self.render_diagnostics("Идет завершение сканирования, ожидайте...")
-            self.scanThread.requestInterruption()
+            self.scanThread.quit()
+
+            start_time = datetime.now().timestamp()
+            while self.scanThread.isRunning():
+                QThread.msleep(500)
+                quiting_time = datetime.now().timestamp() - start_time
+                if quiting_time > 30:
+                    self.render_diagnostics("Превышение времени ожидания остановки потока сканирования")
+                    break
+
+            self.activate_elements()
+            self.render_diagnostics("Сканирование остановлено пользователем")
         self.ui.pushButton_stopScan.setDisabled(True)
 
     ###### Rendering #####
