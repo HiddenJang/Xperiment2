@@ -4,8 +4,9 @@ import os
 from datetime import datetime
 from pathlib import Path
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QLabel
 from PyQt5.QtCore import QThread, QSettings
+from apscheduler.schedulers.qt import QtScheduler
 
 from components import settings
 from components import logging_init
@@ -30,16 +31,21 @@ class DesktopApp(QMainWindow):
         self.ui = Ui_MainWindow_client()
         self.ui.setupUi(self)
         self._translate = QtCore.QCoreApplication.translate
-
+        # создание экземпляров вспомогательных окон
         self.result_window = ResultWindow()
         self.server_set_window = ServerSettingsInput()
-
         self.result_window_closed = True
-
+        # загрузка установленных ранее пользователем состояний элементов GUI
         self.settings = QSettings('client_app', 'Gcompany', self)
         self.load_settings()
-
+        # добавление обработчиков действий пользователя в GUI
         self.add_functions()
+        # добавление планировщика периодически запускаемых задач
+        self.scheduler = QtScheduler()
+        self.scheduler.start()
+        # запуск проверки доступности сервера
+        self.render_server_status()
+        self.request_server_status()
 
     ###### Add handling functions #####
 
@@ -54,8 +60,6 @@ class DesktopApp(QMainWindow):
         self.result_window.closeResultWindow.connect(self.stop_scan)
         self.result_window.openResultWindow.connect(self.result_window_open_slot)
 
-        self.ui.pushButton_connect.clicked.connect(self.request_server_status)
-        self.ui.pushButton_disconnect.clicked.connect(self.disconnect_from_server)
         self.ui.comboBox_marketType.currentTextChanged.connect(self.change_koeff_labels)
 
         self.ui.action_serverSettings.triggered.connect(self.open_server_set_window)
@@ -64,39 +68,17 @@ class DesktopApp(QMainWindow):
 
     def request_server_status(self) -> None:
         """Запрос статуса сервера"""
-
-        self.render_diagnostics("Проверка соединения с сервером...")
-        self.ui.pushButton_connect.setDisabled(True)
-
-        con_settings = self.server_set_window.get_connection_settings()
-        self.scanner_status = Scanner(elements_states={}, con_settings=con_settings)
-        self.get_status_thread = QThread()
-        self.scanner_status.moveToThread(self.get_status_thread)
-        self.get_status_thread.started.connect(self.scanner_status.get_server_status)
-        self.scanner_status.server_status_signal.connect(self.render_server_status)
-        self.scanner_status.stop_status_requests_signal.connect(self.get_status_thread.quit)
-        self.scanner_status.stop_status_requests_signal.connect(self.change_con_buttons_states)
-        self.get_status_thread.start()
-
-    def disconnect_from_server(self) -> None:
-        """Отключение от сервера"""
-
-        if hasattr(self, 'get_status_thread'):
-            self.get_status_thread.requestInterruption()
-        self.ui.pushButton_disconnect.setDisabled(True)
-
-        if not (hasattr(self, 'scanThread') and self.scanThread.isRunning()):
-            self.ui.pushButton_startScan.setDisabled(True)
+        if not self.scheduler.get_job('get_server_status_job'):
+            con_settings = self.server_set_window.get_connection_settings()
+            scanner = Scanner(con_settings)
+            self.scheduler.add_job(scanner.get_server_status,
+                                   'interval',
+                                   seconds=con_settings['status_request_interval'],
+                                   id='get_server_status_job',
+                                   max_instances=1)
+            scanner.server_status_signal.connect(self.render_server_status)
 
     ##### Change GUI elements states #####
-
-    def change_con_buttons_states(self, context) -> None:
-        """Изменение состояний кнопок подключения/отключения"""
-
-        self.ui.pushButton_connect.setDisabled(False)
-        self.render_diagnostics(context)
-        self.ui.label_serverStatus.setText(self._translate("MainWindow_client", "Статус"))
-        self.ui.label_serverStatus.setStyleSheet("")
 
     def deactivate_elements(self) -> None:
         """Деактивация элементов после начала поиска"""
@@ -121,6 +103,8 @@ class DesktopApp(QMainWindow):
         self.ui.label_corridor.setDisabled(True)
 
         self.ui.pushButton_startScan.setDisabled(True)
+        self.ui.pushButton_stopScan.setDisabled(False)
+
         self.ui.menubar.setDisabled(True)
 
     def activate_elements(self) -> None:
@@ -145,8 +129,7 @@ class DesktopApp(QMainWindow):
         self.ui.label_minKsecondBkmkr.setDisabled(False)
         self.ui.label_corridor.setDisabled(False)
 
-        if hasattr(self, 'get_status_thread') and self.ui.label_serverStatus.text() == "Сервер активен":
-            self.ui.pushButton_startScan.setDisabled(False)
+        self.ui.pushButton_startScan.setDisabled(False)
         self.ui.pushButton_stopScan.setDisabled(True)
 
         self.ui.menubar.setDisabled(False)
@@ -213,48 +196,29 @@ class DesktopApp(QMainWindow):
 
     def start_scan(self) -> None:
         """Запуск сканирования"""
-
         self.deactivate_elements()
-        self.ui.pushButton_stopScan.setDisabled(False)
+        if not self.scheduler.get_job('scan_job'):
+            elements_states = self.get_elements_states()
+            con_settings = self.server_set_window.get_connection_settings()
 
-        elements_states = self.get_elements_states()
-        con_settings = self.server_set_window.get_connection_settings()
-        self.scanner = Scanner(elements_states=elements_states, con_settings=con_settings)
-        self.scanThread = QThread()
-        self.scanThread.setTerminationEnabled()
-        self.scanner.moveToThread(self.scanThread)
-        self.scanThread.started.connect(self.scanner.start)
+            scanner = Scanner(con_settings, elements_states)
 
-        self.scanner.server_status_signal.connect(self.render_diagnostics)
-        self.scanner.server_status_signal.connect(self.render_server_status)
-
-        self.scanner.scan_result_signal.connect(self.render_scan_result)
-
-        self.scanner.scan_stopped_signal.connect(self.activate_elements)
-        self.scanner.scan_stopped_signal.connect(self.render_diagnostics)
-        self.scanner.scan_stopped_signal.connect(self.scanThread.quit)
-
-        self.scanThread.start()
-        self.render_diagnostics("Сканирование запущено...")
+            self.scheduler.add_job(scanner.get_data_from_server,
+                                   'interval',
+                                   seconds=con_settings['pars_request_interval'],
+                                   id='scan_job',
+                                   max_instances=1)
+            self.render_diagnostics("Сканирование запущено...")
+            scanner.scan_result_signal.connect(self.render_scan_result)
+        else:
+            self.render_diagnostics("Сканирование уже запущено")
 
     def stop_scan(self) -> None:
         """Останов сканирования"""
-
-        if hasattr(self, 'scanThread') and self.scanThread.isRunning():
-            self.render_diagnostics("Идет завершение сканирования, ожидайте...")
-            self.scanThread.quit()
-
-            start_time = datetime.now().timestamp()
-            while self.scanThread.isRunning():
-                QThread.msleep(500)
-                quiting_time = datetime.now().timestamp() - start_time
-                if quiting_time > 30:
-                    self.render_diagnostics("Превышение времени ожидания остановки потока сканирования")
-                    break
-
-            self.activate_elements()
-            self.render_diagnostics("Сканирование остановлено пользователем")
-        self.ui.pushButton_stopScan.setDisabled(True)
+        if self.scheduler.get_job('scan_job'):
+            self.scheduler.remove_job('scan_job')
+        self.render_diagnostics("Сканирование остановлено пользователем")
+        self.activate_elements()
 
     ###### Rendering #####
 
@@ -267,29 +231,34 @@ class DesktopApp(QMainWindow):
         item.setText(self._translate("MainWindow_client", message))
         self.ui.listWidget_diagnostics.addItem(item)
 
-    def render_server_status(self, status_data: dict) -> None:
+    def render_server_status(self, status_data: dict = None) -> None:
         """Отображение проверки доступности сервера и активация кнопки Начать сканирование"""
 
-        if "200" in status_data["status"]:
-            if not self.ui.label_serverStatus.text() == "Сервер активен":
-                self.ui.pushButton_disconnect.setDisabled(False)
-                if not (hasattr(self, 'scanThread') and self.scanThread.isRunning()):
-                    self.ui.pushButton_startScan.setDisabled(False)
-                self.ui.label_serverStatus.setText(self._translate("MainWindow_client", "Сервер активен"))
-                self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
-                self.render_diagnostics("Сервер активен. Статус-код 200")
-        elif not self.ui.label_serverStatus.text() == "Сервер недоступен":
-            self.ui.pushButton_disconnect.setDisabled(False)
+        if not status_data:
+            message_text = "Проверка соединения с сервером..."
+            self.ui.statusbar.showMessage(message_text)
+        elif "200" in status_data["status"]:
+            if not self.scheduler.get_job('scan_job'):
+                self.ui.pushButton_startScan.setDisabled(False)
+            message_text = f"<h3 style='color: green;'>Сервер активен. Статус-код 200</h3>"
+            message_label = QLabel(message_text)
+            self.ui.statusbar.addPermanentWidget(message_label)
+            # self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
+        else:
             self.ui.pushButton_startScan.setDisabled(True)
-            self.ui.label_serverStatus.setText(self._translate("MainWindow_client", "Сервер недоступен"))
-            self.ui.label_serverStatus.setStyleSheet("background-color: rgb(246, 4, 4);border-color: rgb(0, 0, 0);")
+            message_text = f"<h3 style='color: red;'>Сервер недоступен</h3>"
+            message_label = QLabel(message_text)
+            self.ui.statusbar.addPermanentWidget(message_label)
             self.render_diagnostics(f"Сервер недоступен. Ошибка подключения: статус-код {status_data['status']} {status_data['context']}")
+            # self.ui.label_serverStatus.setStyleSheet("background-color: rgb(246, 4, 4);border-color: rgb(0, 0, 0);")
 
     def render_scan_result(self, scan_results: dict) -> None:
         """Отрисовка результатов поиска"""
 
         if scan_results.get('Success'):
             self.result_window.render_results(scan_results['Success'])
+        else:
+            self.render_diagnostics(scan_results.get('fail'))
 
     ###### Save and load user settings #####
 
@@ -302,10 +271,11 @@ class DesktopApp(QMainWindow):
         ## ComboBox ##
         for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
             self.settings.setValue(combo_box.objectName(), combo_box.currentText())
+        ## SpinBox ##
+        for spin_box in self.server_set_window.findChildren(QtWidgets.QDoubleSpinBox):
+            self.settings.setValue(spin_box.objectName(), spin_box.value())
         ## DoubleSpinBox ##
         for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
-            self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
-        for double_spin_box in self.server_set_window.findChildren(QtWidgets.QDoubleSpinBox):
             self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
         ## Label ##
         for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
@@ -321,10 +291,11 @@ class DesktopApp(QMainWindow):
             ## ComboBox ##
             for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
                 combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
+            ## SpinBox ##
+            for spin_box in self.server_set_window.findChildren(QtWidgets.QDoubleSpinBox):
+                spin_box.setValue(float(self.settings.value(spin_box.objectName())))
             ## DoubleSpinBox ##
             for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
-                double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
-            for double_spin_box in self.server_set_window.findChildren(QtWidgets.QDoubleSpinBox):
                 double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
             ## Label ##
             for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
@@ -334,6 +305,7 @@ class DesktopApp(QMainWindow):
 
     def closeEvent(self, event):
         self.save_settings()
+        self.scheduler.shutdown(wait=False)
         self.result_window.close()
         self.close()
 

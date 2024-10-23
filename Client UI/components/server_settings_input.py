@@ -1,16 +1,16 @@
 from PyQt5.QtWidgets import QDialog
 
-from .forms.server_set_window_template import Ui_servers_settings
+from .forms.server_set_window_template import Ui_server_settings
 
 
-class ServerSettingsInput(Ui_servers_settings, QDialog):
+class ServerSettingsInput(Ui_server_settings, QDialog):
     """Класс-обертка для окна настроек подключения к серверу"""
 
     widget_states = {}
 
     def __init__(self):
         super(ServerSettingsInput, self).__init__()
-        self.ui = Ui_servers_settings()
+        self.ui = Ui_server_settings()
         self.ui.setupUi(self)
         self.add_functions()
 
@@ -21,18 +21,18 @@ class ServerSettingsInput(Ui_servers_settings, QDialog):
         """Получение адреса api сервера"""
         return {
             'api_url': self.ui.lineEdit_serverAddress.text(),
-            'status_request_frequency': self.ui.doubleSpinBox_statusRequestFrequency.value(),
-            'pars_request_frequency': self.ui.doubleSpinBox_parsRequestFrequency.value(),
-            'response_timeout': self.ui.doubleSpinBox_responseTimeout.value()
+            'status_request_interval': self.ui.spinBox_statusRequestInterval.value(),
+            'pars_request_interval': self.ui.spinBox_parsRequestInterval.value(),
+            'response_timeout': self.ui.spinBox_responseTimeout.value()
         }
 
     def close_without_saving(self) -> None:
         """Закрытие окна без сохранения изменений"""
 
         self.ui.lineEdit_serverAddress.setText(self.widget_states["api_url"])
-        self.ui.doubleSpinBox_statusRequestFrequency.setValue(self.widget_states["status_request_frequency"])
-        self.ui.doubleSpinBox_parsRequestFrequency.setValue(self.widget_states["pars_request_frequency"])
-        self.ui.doubleSpinBox_responseTimeout.setValue(self.widget_states["response_timeout"])
+        self.ui.spinBox_statusRequestInterval.setValue(self.widget_states["status_request_interval"])
+        self.ui.spinBox_parsRequestInterval.setValue(self.widget_states["pars_request_interval"])
+        self.ui.spinBox_responseTimeout.setValue(self.widget_states["response_timeout"])
 
     def closeEvent(self, event) -> None:
         self.close_without_saving()

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>servers_settings</class>
- <widget class="QDialog" name="servers_settings">
+ <class>server_settings</class>
+ <widget class="QDialog" name="server_settings">
   <property name="windowModality">
    <enum>Qt::ApplicationModal</enum>
   </property>
@@ -67,7 +67,7 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="doubleSpinBox_statusRequestFrequency">
+  <widget class="QSpinBox" name="spinBox_statusRequestInterval">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -76,20 +76,11 @@
      <height>26</height>
     </rect>
    </property>
-   <property name="decimals">
-    <number>1</number>
-   </property>
    <property name="maximum">
-    <double>9999.000000000000000</double>
-   </property>
-   <property name="singleStep">
-    <double>0.500000000000000</double>
-   </property>
-   <property name="stepType">
-    <enum>QAbstractSpinBox::DefaultStepType</enum>
+    <number>9999</number>
    </property>
    <property name="value">
-    <double>2.000000000000000</double>
+    <number>2</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_statusRequestFrequency_1">
@@ -118,7 +109,7 @@
     <string>Между запусками процессов парсинга, не менее</string>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="doubleSpinBox_parsRequestFrequency">
+  <widget class="QSpinBox" name="spinBox_parsRequestInterval">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -127,20 +118,11 @@
      <height>26</height>
     </rect>
    </property>
-   <property name="decimals">
-    <number>1</number>
-   </property>
    <property name="maximum">
-    <double>9999.000000000000000</double>
-   </property>
-   <property name="singleStep">
-    <double>0.500000000000000</double>
-   </property>
-   <property name="stepType">
-    <enum>QAbstractSpinBox::DefaultStepType</enum>
+    <number>9999</number>
    </property>
    <property name="value">
-    <double>1.500000000000000</double>
+    <number>2</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_statusRequestFrequency_2">
@@ -169,7 +151,7 @@
     <string>сек</string>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="doubleSpinBox_responseTimeout">
+  <widget class="QSpinBox" name="spinBox_responseTimeout">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -178,20 +160,11 @@
      <height>26</height>
     </rect>
    </property>
-   <property name="decimals">
-    <number>1</number>
-   </property>
    <property name="maximum">
-    <double>9999.000000000000000</double>
-   </property>
-   <property name="singleStep">
-    <double>0.500000000000000</double>
-   </property>
-   <property name="stepType">
-    <enum>QAbstractSpinBox::DefaultStepType</enum>
+    <number>9999</number>
    </property>
    <property name="value">
-    <double>10.000000000000000</double>
+    <number>10</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_responseTimeout_2">
@@ -226,7 +199,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>servers_settings</receiver>
+   <receiver>server_settings</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -242,7 +215,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>servers_settings</receiver>
+   <receiver>server_settings</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

@@ -308,7 +308,7 @@ class Ui_MainWindow_client(object):
         self.pushButton_disconnect.setText(_translate("MainWindow_client", "Прервать"))
         self.label_systemInfo.setText(_translate("MainWindow_client", "Системная информация"))
         self.menu.setTitle(_translate("MainWindow_client", "Настройки"))
-        self.action_serverSettings.setText(_translate("MainWindow_client", "Адрес сервера"))
+        self.action_serverSettings.setText(_translate("MainWindow_client", "Подключение"))
 
 
 if __name__ == "__main__":
