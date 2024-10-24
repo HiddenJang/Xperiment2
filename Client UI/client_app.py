@@ -30,6 +30,10 @@ class DesktopApp(QMainWindow):
         super(DesktopApp, self).__init__()
         self.ui = Ui_MainWindow_client()
         self.ui.setupUi(self)
+        # добавление виджетов и настроек
+        self.statusbar_message = QLabel()
+        self.statusbar_message.setObjectName("statusbar_message")
+        self.ui.statusbar.addWidget(self.statusbar_message)
         self._translate = QtCore.QCoreApplication.translate
         # создание экземпляров вспомогательных окон
         self.result_window = ResultWindow()
@@ -80,6 +84,7 @@ class DesktopApp(QMainWindow):
             scanner.server_status_signal.connect(self.render_server_status)
 
     def restart_scheduler_status_job(self) -> None:
+        """Перезапуск планировщика после изменения настроек подключения к серверу"""
         self.ui.pushButton_startScan.setDisabled(True)
         if self.scheduler.get_job('get_server_status_job'):
             self.scheduler.remove_job('get_server_status_job')
@@ -215,7 +220,6 @@ class DesktopApp(QMainWindow):
                                    id='scan_job',
                                    max_instances=1)
             self.render_diagnostics("Сканирование запущено...")
-
             scanner.scan_result_signal.connect(self.render_scan_result)
         else:
             self.render_diagnostics("Сканирование уже запущено")

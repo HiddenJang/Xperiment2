@@ -16,6 +16,15 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
         self.ui.setupUi(self)
 
         self._translate = QtCore.QCoreApplication.translate
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
+        self.setSizePolicy(sizePolicy)
+        self.setMinimumSize(QtCore.QSize(1089, 394))
+        self.setMaximumSize(QtCore.QSize(1089, 16777215))
+        self.ui.tableWidget_scanResults.horizontalHeader().setStretchLastSection(True)
+
         self.ui.tableWidget_scanResults.itemDoubleClicked.connect(self.open_link)
 
     def render_results(self, scan_result: dict) -> None:
@@ -25,14 +34,17 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
             self.ui.tableWidget_scanResults.removeRow(row)
         self.ui.tableWidget_scanResults.setRowCount(0)
 
-        for column in (0, 3, 4, 5, 6):
-            self.ui.tableWidget_scanResults.horizontalHeader().setSectionResizeMode(column, QtWidgets.QHeaderView.ResizeToContents)
+        # for column in (0, 3, 4, 5, 6):
+        #     self.ui.tableWidget_scanResults.horizontalHeader().setSectionResizeMode(column, QtWidgets.QHeaderView.ResizeToContents)
 
         match scan_result[0][0]["market"].lower():
             case "тотал" | "total" | "фора":
                 self.render_total(scan_result)
             case "победитель" | "result":
                 self.render_winner(scan_result)
+
+        if self.ui.tableWidget_scanResults.rowCount() < 13:
+            self.ui.tableWidget_scanResults.setRowCount(13)
 
     def render_total(self, scan_result) -> None:
         """Отрисовка результатов типа Тотал/фора"""

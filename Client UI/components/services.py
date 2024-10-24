@@ -1,7 +1,7 @@
 import requests
 import json
 import logging
-from PyQt5 import QtCore
+from PyQt5 import QtCore, sip
 from PyQt5.QtCore import QObject, QThread, QTimer
 
 logger = logging.getLogger('Client UI.components.services')
@@ -9,6 +9,7 @@ logger = logging.getLogger('Client UI.components.services')
 
 class Scanner(QObject):
     """Класс запуска сканирования в отдельном потоке"""
+    started_pars_thread_signal = QtCore.pyqtSignal(QThread)
 
     server_status_signal = QtCore.pyqtSignal(dict)
     scan_result_signal = QtCore.pyqtSignal(dict)
@@ -34,11 +35,11 @@ class Scanner(QObject):
         with requests.session() as scan_session:
             try:
                 scan_session.get(url=self.con_settings['api_url'],
-                                 timeout=self.con_settings['pars_response_timeout'])
+                                 timeout=self.con_settings['status_response_timeout'])
                 scan_results = scan_session.post(url=self.con_settings['api_url'],
                                                  headers={'X-CSRFToken': scan_session.cookies['csrftoken']},
                                                  data=json.dumps(self.elements_states),
-                                                 timeout=90)
+                                                 timeout=self.con_settings['pars_response_timeout'])
                 scan_results = scan_results.json()
             except BaseException as ex:
                 logger.error(f'Ошибка при попытке запроса данных от сервера {ex}')
