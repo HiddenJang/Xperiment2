@@ -580,97 +580,9 @@
       </item>
      </layout>
     </widget>
-    <widget class="QLabel" name="label_serverStatus">
-     <property name="geometry">
-      <rect>
-       <x>340</x>
-       <y>290</y>
-       <width>181</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">border-color: rgb(0, 0, 0);</string>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::Box</enum>
-     </property>
-     <property name="lineWidth">
-      <number>2</number>
-     </property>
-     <property name="text">
-      <string>Статус</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-    <widget class="QFrame" name="frame_3">
-     <property name="geometry">
-      <rect>
-       <x>305</x>
-       <y>260</y>
-       <width>241</width>
-       <height>101</height>
-      </rect>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::Box</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Plain</enum>
-     </property>
-     <property name="lineWidth">
-      <number>2</number>
-     </property>
-     <widget class="QLabel" name="label_connectionToServer">
-      <property name="geometry">
-       <rect>
-        <x>39</x>
-        <y>5</y>
-        <width>172</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Подключение к серверу</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_connect">
-      <property name="geometry">
-       <rect>
-        <x>6</x>
-        <y>68</y>
-        <width>111</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Подключиться</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_disconnect">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="geometry">
-       <rect>
-        <x>123</x>
-        <y>68</y>
-        <width>111</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Прервать</string>
-      </property>
-     </widget>
-    </widget>
     <zorder>layoutWidget_2</zorder>
-    <zorder>frame_3</zorder>
     <zorder>frame_2</zorder>
     <zorder>layoutWidget</zorder>
-    <zorder>label_serverStatus</zorder>
    </widget>
    <widget class="QListWidget" name="listWidget_diagnostics">
     <property name="geometry">
@@ -713,7 +625,17 @@
    </widget>
    <addaction name="menu"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="minimumSize">
+    <size>
+     <width>563</width>
+     <height>22</height>
+    </size>
+   </property>
+   <property name="sizeGripEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
   <action name="action_serverSettings">
    <property name="text">
     <string>Подключение</string>

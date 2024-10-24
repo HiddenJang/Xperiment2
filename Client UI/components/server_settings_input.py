@@ -23,7 +23,8 @@ class ServerSettingsInput(Ui_server_settings, QDialog):
             'api_url': self.ui.lineEdit_serverAddress.text(),
             'status_request_interval': self.ui.spinBox_statusRequestInterval.value(),
             'pars_request_interval': self.ui.spinBox_parsRequestInterval.value(),
-            'response_timeout': self.ui.spinBox_responseTimeout.value()
+            'status_response_timeout': self.ui.spinBox_statusResponseTimeout.value(),
+            'pars_response_timeout': self.ui.spinBox_parsResponseTimeout.value()
         }
 
     def close_without_saving(self) -> None:
@@ -32,7 +33,8 @@ class ServerSettingsInput(Ui_server_settings, QDialog):
         self.ui.lineEdit_serverAddress.setText(self.widget_states["api_url"])
         self.ui.spinBox_statusRequestInterval.setValue(self.widget_states["status_request_interval"])
         self.ui.spinBox_parsRequestInterval.setValue(self.widget_states["pars_request_interval"])
-        self.ui.spinBox_responseTimeout.setValue(self.widget_states["response_timeout"])
+        self.ui.spinBox_statusResponseTimeout.setValue(self.widget_states["status_response_timeout"])
+        self.ui.spinBox_parsResponseTimeout.setValue(self.widget_states["pars_response_timeout"])
 
     def closeEvent(self, event) -> None:
         self.close_without_saving()

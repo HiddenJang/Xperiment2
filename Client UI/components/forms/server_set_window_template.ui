@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>380</width>
-    <height>269</height>
+    <height>327</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,7 +23,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>230</y>
+     <y>286</y>
      <width>341</width>
      <height>32</height>
     </rect>
@@ -151,7 +151,7 @@
     <string>сек</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="spinBox_responseTimeout">
+  <widget class="QSpinBox" name="spinBox_statusResponseTimeout">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -167,7 +167,7 @@
     <number>10</number>
    </property>
   </widget>
-  <widget class="QLabel" name="label_responseTimeout_2">
+  <widget class="QLabel" name="label_statusResponseTimeout_2">
    <property name="geometry">
     <rect>
      <x>80</x>
@@ -180,7 +180,7 @@
     <string>сек</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_responseTimeout_1">
+  <widget class="QLabel" name="label_statusResponseTimeout_1">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -190,7 +190,49 @@
     </rect>
    </property>
    <property name="text">
-    <string>Время ожидания ответа сервера</string>
+    <string>Время ожидания  статуса сервера</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_parsResponseTimeout_2">
+   <property name="geometry">
+    <rect>
+     <x>82</x>
+     <y>249</y>
+     <width>31</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>сек</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_parsResponseTimeout_1">
+   <property name="geometry">
+    <rect>
+     <x>12</x>
+     <y>223</y>
+     <width>351</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Время ожидания  результатов парсинга, не более</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_parsResponseTimeout">
+   <property name="geometry">
+    <rect>
+     <x>12</x>
+     <y>245</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="maximum">
+    <number>9999</number>
+   </property>
+   <property name="value">
+    <number>90</number>
    </property>
   </widget>
  </widget>

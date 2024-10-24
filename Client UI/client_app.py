@@ -63,6 +63,7 @@ class DesktopApp(QMainWindow):
         self.ui.comboBox_marketType.currentTextChanged.connect(self.change_koeff_labels)
 
         self.ui.action_serverSettings.triggered.connect(self.open_server_set_window)
+        self.server_set_window.ui.buttonBox.accepted.connect(self.restart_scheduler_status_job)
 
     ###### Test connection slots ######
 
@@ -77,6 +78,12 @@ class DesktopApp(QMainWindow):
                                    id='get_server_status_job',
                                    max_instances=1)
             scanner.server_status_signal.connect(self.render_server_status)
+
+    def restart_scheduler_status_job(self) -> None:
+        self.ui.pushButton_startScan.setDisabled(True)
+        if self.scheduler.get_job('get_server_status_job'):
+            self.scheduler.remove_job('get_server_status_job')
+        self.request_server_status()
 
     ##### Change GUI elements states #####
 
@@ -200,7 +207,6 @@ class DesktopApp(QMainWindow):
         if not self.scheduler.get_job('scan_job'):
             elements_states = self.get_elements_states()
             con_settings = self.server_set_window.get_connection_settings()
-
             scanner = Scanner(con_settings, elements_states)
 
             self.scheduler.add_job(scanner.get_data_from_server,
@@ -209,6 +215,7 @@ class DesktopApp(QMainWindow):
                                    id='scan_job',
                                    max_instances=1)
             self.render_diagnostics("Сканирование запущено...")
+
             scanner.scan_result_signal.connect(self.render_scan_result)
         else:
             self.render_diagnostics("Сканирование уже запущено")
@@ -235,29 +242,25 @@ class DesktopApp(QMainWindow):
         """Отображение проверки доступности сервера и активация кнопки Начать сканирование"""
 
         if not status_data:
-            message_text = "Проверка соединения с сервером..."
-            self.ui.statusbar.showMessage(message_text)
+            self.ui.statusbar.showMessage("Проверка соединения с сервером...")
         elif "200" in status_data["status"]:
             if not self.scheduler.get_job('scan_job'):
                 self.ui.pushButton_startScan.setDisabled(False)
-            message_text = f"<h3 style='color: green;'>Сервер активен. Статус-код 200</h3>"
-            message_label = QLabel(message_text)
-            self.ui.statusbar.addPermanentWidget(message_label)
-            # self.ui.label_serverStatus.setStyleSheet("background-color: rgb(15, 248, 12);border-color: rgb(0, 0, 0);")
+            self.ui.statusbar.clearMessage()
+            self.ui.statusbar.showMessage("Статус сервера: активен")
         else:
             self.ui.pushButton_startScan.setDisabled(True)
-            message_text = f"<h3 style='color: red;'>Сервер недоступен</h3>"
-            message_label = QLabel(message_text)
-            self.ui.statusbar.addPermanentWidget(message_label)
-            self.render_diagnostics(f"Сервер недоступен. Ошибка подключения: статус-код {status_data['status']} {status_data['context']}")
-            # self.ui.label_serverStatus.setStyleSheet("background-color: rgb(246, 4, 4);border-color: rgb(0, 0, 0);")
+            self.ui.statusbar.clearMessage()
+            self.ui.statusbar.showMessage("Статус сервера: недоступен")
+            logger.info(f"Ошибка подключения: статус-код {status_data['status']} {status_data['context']}")
+            self.render_diagnostics(f"Ошибка подключения: статус-код {status_data['status']} {status_data['context']}")
 
     def render_scan_result(self, scan_results: dict) -> None:
         """Отрисовка результатов поиска"""
 
         if scan_results.get('Success'):
             self.result_window.render_results(scan_results['Success'])
-        else:
+        elif scan_results.get('fail'):
             self.render_diagnostics(scan_results.get('fail'))
 
     ###### Save and load user settings #####
@@ -272,34 +275,37 @@ class DesktopApp(QMainWindow):
         for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
             self.settings.setValue(combo_box.objectName(), combo_box.currentText())
         ## SpinBox ##
-        for spin_box in self.server_set_window.findChildren(QtWidgets.QDoubleSpinBox):
+        for spin_box in self.server_set_window.findChildren(QtWidgets.QSpinBox):
             self.settings.setValue(spin_box.objectName(), spin_box.value())
         ## DoubleSpinBox ##
         for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
             self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
         ## Label ##
         for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
-            if label.objectName() == 'label_serverStatus':
-                label.setText("Статус")
             self.settings.setValue(label.objectName(), label.text())
 
     def load_settings(self) -> None:
         try:
             ## LineEdit ##
             for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit): # я уж не знаю по каким причинам, но это поле должно стоять перед DoubleSpinBox. Почемуто QT воспринимает QDoubleSpinBox как QLineEdit.
-                line_edit.setText(self.settings.value(line_edit.objectName()))
+                if self.settings.value(line_edit.objectName()):
+                    line_edit.setText(self.settings.value(line_edit.objectName()))
             ## ComboBox ##
             for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
-                combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
+                if self.settings.value(combo_box.objectName()):
+                    combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
             ## SpinBox ##
-            for spin_box in self.server_set_window.findChildren(QtWidgets.QDoubleSpinBox):
-                spin_box.setValue(float(self.settings.value(spin_box.objectName())))
+            for spin_box in self.server_set_window.findChildren(QtWidgets.QSpinBox):
+                if self.settings.value(spin_box.objectName()):
+                    spin_box.setValue(int(self.settings.value(spin_box.objectName())))
             ## DoubleSpinBox ##
             for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
-                double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
+                if self.settings.value(double_spin_box.objectName()):
+                    double_spin_box.setValue(float(self.settings.value(double_spin_box.objectName())))
             ## Label ##
             for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
-                label.setText(self.settings.value(label.objectName()))
+                if self.settings.value(label.objectName()):
+                    label.setText(self.settings.value(label.objectName()))
         except BaseException as ex:
             logger.info("Ошибка при загрузке установленных ранее состояний GUI", ex)
 

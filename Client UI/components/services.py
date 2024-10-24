@@ -22,7 +22,7 @@ class Scanner(QObject):
         """Получение статуса сервера при запуске приложения. Отправка статуса сервера в GUI"""
         try:
             status = requests.get(url=self.con_settings['api_url'],
-                                  timeout=self.con_settings['response_timeout']).status_code
+                                  timeout=self.con_settings['status_response_timeout']).status_code
             context = ''
         except BaseException as ex:
             status = ''
@@ -33,17 +33,14 @@ class Scanner(QObject):
         """Запуск сканнера"""
         with requests.session() as scan_session:
             try:
-                scan_session.get(
-                    url=self.con_settings['api_url'],
-                    timeout=self.con_settings['response_timeout']
-                )
-                scan_results = scan_session.post(
-                    url=self.con_settings['api_url'],
-                    headers={'X-CSRFToken': scan_session.cookies['csrftoken']},
-                    data=json.dumps(self.elements_states),
-                    timeout=90
-                )
+                scan_session.get(url=self.con_settings['api_url'],
+                                 timeout=self.con_settings['pars_response_timeout'])
+                scan_results = scan_session.post(url=self.con_settings['api_url'],
+                                                 headers={'X-CSRFToken': scan_session.cookies['csrftoken']},
+                                                 data=json.dumps(self.elements_states),
+                                                 timeout=90)
                 scan_results = scan_results.json()
+                print(scan_results)
             except BaseException as ex:
                 logger.error(f'Ошибка при попытке запроса данных от сервера {ex}')
                 scan_results = {'fail': f'Ошибка при попытке запроса данных от сервера {ex}'}
