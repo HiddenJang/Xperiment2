@@ -40,7 +40,6 @@ class Scanner(QObject):
                                                  data=json.dumps(self.elements_states),
                                                  timeout=90)
                 scan_results = scan_results.json()
-                print(scan_results)
             except BaseException as ex:
                 logger.error(f'Ошибка при попытке запроса данных от сервера {ex}')
                 scan_results = {'fail': f'Ошибка при попытке запроса данных от сервера {ex}'}
