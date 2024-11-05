@@ -51,7 +51,7 @@ class DesktopApp(QMainWindow):
         self.render_server_status()
         self.request_server_status()
 
-        self.scanner_tread_link = QThread()
+        self.scanner_tread = QThread()
     ###### Add handling functions #####
 
     def add_functions(self) -> None:
@@ -228,12 +228,13 @@ class DesktopApp(QMainWindow):
             self.render_diagnostics("Сканирование уже запущено")
 
     def scan_thread_started_slot(self, thread_object: QThread) -> None:
-        self.scanner_tread_link = thread_object
+        """Создание сслыки на объект потока сканирования для определения его состояния"""
+        self.scanner_tread = thread_object
 
     def stop_scan(self) -> None:
         """Инициация процесса останова сканирования"""
         self.ui.pushButton_stopScan.setDisabled(True)
-        if self.scheduler.get_job('scan_job') and self.scanner_tread_link.isRunning():
+        if self.scheduler.get_job('scan_job') and self.scanner_tread.isRunning():
             self.scheduler.get_job('scan_job').pause()
             con_settings = self.server_set_window.get_connection_settings()
             self.render_diagnostics(f"Производится останов сканирования. "
