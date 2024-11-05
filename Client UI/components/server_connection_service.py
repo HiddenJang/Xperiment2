@@ -1,18 +1,17 @@
 import requests
 import json
 import logging
-from PyQt5 import QtCore, sip
-from PyQt5.QtCore import QObject, QThread, QTimer
+from PyQt5 import QtCore
+from PyQt5.QtCore import QObject, QThread
 
 logger = logging.getLogger('Client UI.components.services')
 
 
 class Scanner(QObject):
     """Класс запуска сканирования в отдельном потоке"""
-    started_pars_thread_signal = QtCore.pyqtSignal(QThread)
-
     server_status_signal = QtCore.pyqtSignal(dict)
     scan_result_signal = QtCore.pyqtSignal(dict)
+    scan_thread_link_signal = QtCore.pyqtSignal(QThread)
 
     def __init__(self, con_settings: dict, elements_states: dict = None):
         super(Scanner, self).__init__()
@@ -32,6 +31,7 @@ class Scanner(QObject):
 
     def get_data_from_server(self) -> dict:
         """Запуск сканнера"""
+        self.scan_thread_link_signal.emit(QThread.currentThread())
         with requests.session() as scan_session:
             try:
                 scan_session.get(url=self.con_settings['api_url'],

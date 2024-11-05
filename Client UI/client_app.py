@@ -10,10 +10,10 @@ from apscheduler.schedulers.qt import QtScheduler
 
 from components import settings
 from components import logging_init
-from components.services import Scanner
+from components.server_connection_service import Scanner
 from components.result_window import ResultWindow
-from components.server_settings_input import ServerSettingsInput
-from components.forms.client_app_template import Ui_MainWindow_client
+from components.server_settings_window import ServerSettingsInput
+from components.templates.client_app_template import Ui_MainWindow_client
 
 
 ## Принудительное переключение рабочей директории ##
@@ -51,6 +51,7 @@ class DesktopApp(QMainWindow):
         self.render_server_status()
         self.request_server_status()
 
+        self.scanner_tread_link = QThread()
     ###### Add handling functions #####
 
     def add_functions(self) -> None:
@@ -221,13 +222,29 @@ class DesktopApp(QMainWindow):
                                    max_instances=1)
             self.render_diagnostics("Сканирование запущено...")
             scanner.scan_result_signal.connect(self.render_scan_result)
+            scanner.scan_result_signal.connect(self.scan_stopped_slot)
+            scanner.scan_thread_link_signal.connect(self.scan_thread_started_slot)
         else:
             self.render_diagnostics("Сканирование уже запущено")
 
+    def scan_thread_started_slot(self, thread_object: QThread) -> None:
+        self.scanner_tread_link = thread_object
+
     def stop_scan(self) -> None:
-        """Останов сканирования"""
+        """Инициация процесса останова сканирования"""
+        self.ui.pushButton_stopScan.setDisabled(True)
+        if self.scheduler.get_job('scan_job') and self.scanner_tread_link.isRunning():
+            self.scheduler.get_job('scan_job').pause()
+            con_settings = self.server_set_window.get_connection_settings()
+            self.render_diagnostics(f"Производится останов сканирования. "
+                                    f"Ожидайте, время завершения не более {con_settings['pars_response_timeout']} с...")
+        else:
+            self.scan_stopped_slot()
+
+    def scan_stopped_slot(self, result=dict) -> None:
+        """Завершение процесса останова сканирования"""
         if self.scheduler.get_job('scan_job'):
-            self.scheduler.remove_job('scan_job')
+            self.scheduler.get_job('scan_job').remove()
         self.render_diagnostics("Сканирование остановлено пользователем")
         self.activate_elements()
 
