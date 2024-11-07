@@ -580,9 +580,23 @@
       </item>
      </layout>
     </widget>
+    <widget class="QPushButton" name="pushButton_openBrowser">
+     <property name="geometry">
+      <rect>
+       <x>350</x>
+       <y>272</y>
+       <width>141</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Открыть браузер</string>
+     </property>
+    </widget>
     <zorder>layoutWidget_2</zorder>
     <zorder>frame_2</zorder>
     <zorder>layoutWidget</zorder>
+    <zorder>pushButton_openBrowser</zorder>
    </widget>
    <widget class="QListWidget" name="listWidget_diagnostics">
     <property name="geometry">

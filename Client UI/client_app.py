@@ -14,7 +14,7 @@ from components.server_connection_service import Scanner
 from components.result_window import ResultWindow
 from components.server_settings_window import ServerSettingsInput
 from components.templates.client_app_template import Ui_MainWindow_client
-
+from components.browsers_control.core import Driver
 
 ## Принудительное переключение рабочей директории ##
 file_path = Path(__file__).resolve().parent
@@ -51,7 +51,7 @@ class DesktopApp(QMainWindow):
         self.render_server_status()
         self.request_server_status()
 
-        self.scanner_tread = QThread()
+        self.scanner_thread = QThread()
     ###### Add handling functions #####
 
     def add_functions(self) -> None:
@@ -65,10 +65,15 @@ class DesktopApp(QMainWindow):
         self.result_window.closeResultWindow.connect(self.stop_scan)
         self.result_window.openResultWindow.connect(self.result_window_open_slot)
 
-        self.ui.comboBox_marketType.currentTextChanged.connect(self.change_koeff_labels)
+        self.ui.comboBox_marketType.currentTextChanged.connect(self.change_coeff_labels)
 
         self.ui.action_serverSettings.triggered.connect(self.open_server_set_window)
         self.server_set_window.ui.buttonBox.accepted.connect(self.restart_scheduler_status_job)
+
+        self.ui.pushButton_openBrowser.clicked.connect(self.open_browser)
+
+    def open_browser(self):
+        driver = Driver(settings.BOOKMAKERS.get('leon')).get_driver()
 
     ###### Test connection slots ######
 
@@ -147,7 +152,7 @@ class DesktopApp(QMainWindow):
 
         self.ui.menubar.setDisabled(False)
 
-    def change_koeff_labels(self) -> None:
+    def change_coeff_labels(self) -> None:
         """Изменение названий коэффициентов"""
         match self.ui.comboBox_marketType.currentText().lower():
             case "тотал" | "фора":
@@ -229,12 +234,12 @@ class DesktopApp(QMainWindow):
 
     def scan_thread_started_slot(self, thread_object: QThread) -> None:
         """Создание сслыки на объект потока сканирования для определения его состояния"""
-        self.scanner_tread = thread_object
+        self.scanner_thread = thread_object
 
     def stop_scan(self) -> None:
         """Инициация процесса останова сканирования"""
         self.ui.pushButton_stopScan.setDisabled(True)
-        if self.scheduler.get_job('scan_job') and self.scanner_tread.isRunning():
+        if self.scheduler.get_job('scan_job') and self.scanner_thread.isRunning():
             self.scheduler.get_job('scan_job').pause()
             con_settings = self.server_set_window.get_connection_settings()
             self.render_diagnostics(f"Производится останов сканирования. "
