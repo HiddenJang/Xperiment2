@@ -3,7 +3,6 @@ venv/
 .env
 *.log
 logs/
-static/
 media/
 config/
-.idea
+
