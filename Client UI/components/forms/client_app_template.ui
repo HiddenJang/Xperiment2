@@ -606,6 +606,9 @@
     <property name="text">
      <string>Системная информация</string>
     </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
