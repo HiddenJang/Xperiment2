@@ -333,9 +333,6 @@ class DesktopApp(QMainWindow):
             for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit): # я уж не знаю по каким причинам, но это поле должно стоять перед DoubleSpinBox. Почемуто QT воспринимает QDoubleSpinBox как QLineEdit.
                 if self.settings.value(line_edit.objectName()):
                     line_edit.setText(self.settings.value(line_edit.objectName()))
-
-            self.browser_control_set_window.set_control_settings_from_env()
-
             ## ComboBox ##
             for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
                 if self.settings.value(combo_box.objectName()):
@@ -352,6 +349,9 @@ class DesktopApp(QMainWindow):
             for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
                 if self.settings.value(label.objectName()):
                     label.setText(self.settings.value(label.objectName()))
+
+            ## Browser control settings window ##
+            self.browser_control_set_window.set_control_settings_from_env()
         except BaseException as ex:
             logger.info("Ошибка при загрузке установленных ранее состояний GUI", ex)
 
