@@ -1,14 +1,18 @@
 import os
 import json
-from PyQt5 import QtWidgets
+import logging
+from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QDialog
 
 from .templates.browser_control_window_template import Ui_browser_control_settings
 from . import settings
 
+logger = logging.getLogger('Client UI.components.browser_control_window')
+
 
 class BrowserControlSettings(Ui_browser_control_settings, QDialog):
     """Класс-обертка для окна настроек автоматического управления браузерами"""
+    diag_signal = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super(BrowserControlSettings, self).__init__()
@@ -22,9 +26,17 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
 
     def set_control_settings_from_env(self) -> None:
         """Установка состояний виджетов окна настроек управления браузерами из переменных окружения"""
+        if not os.path.exists(settings.ENV_PATH):
+            open(settings.ENV_PATH, "w").close()
+            diag_mess = f'Файл с переменными окружения отсутствует. Создан {settings.ENV_PATH}'
+            logger.info(logger.info(diag_mess))
+            self.diag_signal.emit(diag_mess)
+            return
+
         user_auth_data = os.environ.get('BKMKR_SITES_AUTH_DATA')
-        user_auth_data = json.loads(user_auth_data.replace("'", '"'))
+
         if user_auth_data:
+            user_auth_data = json.loads(user_auth_data.replace("'", '"'))
             for bkmkr_name in user_auth_data.keys():
                 for line_edit in self.findChildren(QtWidgets.QLineEdit):
                     if bkmkr_name in line_edit.objectName().lower() and 'login' in line_edit.objectName().lower():

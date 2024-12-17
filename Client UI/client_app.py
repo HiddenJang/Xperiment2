@@ -75,6 +75,7 @@ class DesktopApp(QMainWindow):
         self.server_set_window.ui.buttonBox.accepted.connect(self.restart_scheduler_status_job)
 
         self.ui.action_browserControlSettings.triggered.connect(self.open_browser_control_set_window)
+        self.browser_control_set_window.diag_signal.connect(self.render_diagnostics)
 
         self.ui.pushButton_startAutoBet.clicked.connect(self.start_auto_bet)
 
@@ -368,4 +369,4 @@ if __name__ == "__main__":
         w.show()
         sys.exit(app.exec_())
     except BaseException as ex:
-        logger.error(f'Ошибка цикла отображения MainWindow, error message: {ex}')
+        logger.error(f'Ошибка цикла отображения MainWindow, {ex}')
