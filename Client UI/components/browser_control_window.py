@@ -26,17 +26,14 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
 
     def set_control_settings_from_env(self) -> None:
         """Установка состояний виджетов окна настроек управления браузерами из переменных окружения"""
-        if not os.path.exists(settings.ENV_PATH):
-            open(settings.ENV_PATH, "w").close()
-            diag_mess = f'Файл с переменными окружения отсутствует. Создан {settings.ENV_PATH}'
-            logger.info(logger.info(diag_mess))
-            self.diag_signal.emit(diag_mess)
-            return
-
         user_auth_data = os.environ.get('BKMKR_SITES_AUTH_DATA')
 
         if user_auth_data:
-            user_auth_data = json.loads(user_auth_data.replace("'", '"'))
+            try:
+                user_auth_data = json.loads(user_auth_data.replace("'", '"'))
+            except BaseException as ex:
+                logger.info(ex)
+                return
             for bkmkr_name in user_auth_data.keys():
                 for line_edit in self.findChildren(QtWidgets.QLineEdit):
                     if bkmkr_name in line_edit.objectName().lower() and 'login' in line_edit.objectName().lower():
@@ -62,7 +59,7 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
         states = self.get_control_settings()
         with open(settings.ENV_PATH, "w") as env_file:
             env_file.write(f'BKMKR_SITES_AUTH_DATA={str(states)}')
-        os.environ.setdefault('BKMKR_SITES_AUTH_DATA', str(states))
+        os.environ['BKMKR_SITES_AUTH_DATA'] = str(states)
 
     def closeEvent(self, event) -> None:
         self.set_control_settings_from_env()
