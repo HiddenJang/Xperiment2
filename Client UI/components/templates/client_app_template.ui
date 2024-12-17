@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>563</width>
+    <width>863</width>
     <height>603</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>563</width>
+    <width>863</width>
     <height>603</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>563</width>
+    <width>863</width>
     <height>603</height>
    </size>
   </property>
@@ -63,7 +63,7 @@
      <property name="geometry">
       <rect>
        <x>15</x>
-       <y>12</y>
+       <y>41</y>
        <width>531</width>
        <height>241</height>
       </rect>
@@ -82,7 +82,7 @@
      <property name="geometry">
       <rect>
        <x>31</x>
-       <y>15</y>
+       <y>44</y>
        <width>495</width>
        <height>231</height>
       </rect>
@@ -490,7 +490,7 @@
      <property name="geometry">
       <rect>
        <x>31</x>
-       <y>270</y>
+       <y>299</y>
        <width>273</width>
        <height>58</height>
       </rect>
@@ -580,30 +580,33 @@
       </item>
      </layout>
     </widget>
-    <widget class="QPushButton" name="pushButton_openBrowser">
+    <widget class="QLabel" name="label_scanSettings">
      <property name="geometry">
       <rect>
-       <x>350</x>
-       <y>272</y>
-       <width>141</width>
-       <height>25</height>
+       <x>200</x>
+       <y>14</y>
+       <width>181</width>
+       <height>17</height>
       </rect>
      </property>
      <property name="text">
-      <string>Открыть браузер</string>
+      <string>Настройки сканирования</string>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::RichText</enum>
      </property>
     </widget>
     <zorder>layoutWidget_2</zorder>
     <zorder>frame_2</zorder>
     <zorder>layoutWidget</zorder>
-    <zorder>pushButton_openBrowser</zorder>
+    <zorder>label_scanSettings</zorder>
    </widget>
    <widget class="QListWidget" name="listWidget_diagnostics">
     <property name="geometry">
      <rect>
       <x>5</x>
       <y>390</y>
-      <width>551</width>
+      <width>555</width>
       <height>161</height>
      </rect>
     </property>
@@ -624,13 +627,168 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <widget class="QFrame" name="frame_autoBetSettings">
+    <property name="geometry">
+     <rect>
+      <x>564</x>
+      <y>0</y>
+      <width>296</width>
+      <height>551</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">border-top-color: rgb(0, 0, 0);</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <property name="lineWidth">
+     <number>3</number>
+    </property>
+    <property name="midLineWidth">
+     <number>1</number>
+    </property>
+    <widget class="QLabel" name="label_autoBetSettings">
+     <property name="geometry">
+      <rect>
+       <x>32</x>
+       <y>16</y>
+       <width>251</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Настройки автоматических ставок</string>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::RichText</enum>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_startAutoBet">
+     <property name="geometry">
+      <rect>
+       <x>65</x>
+       <y>506</y>
+       <width>181</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Запустить механизм!</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_betSizeFirst">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>111</y>
+       <width>131</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Первый букмекер</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_enableBetSet">
+     <property name="geometry">
+      <rect>
+       <x>74</x>
+       <y>156</y>
+       <width>91</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Применить</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_betSizeSecond">
+     <property name="geometry">
+      <rect>
+       <x>144</x>
+       <y>113</y>
+       <width>131</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Второй букмекер</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBox_betSizeSecond">
+     <property name="geometry">
+      <rect>
+       <x>164</x>
+       <y>133</y>
+       <width>42</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_closeBrowsers">
+     <property name="geometry">
+      <rect>
+       <x>90</x>
+       <y>470</y>
+       <width>151</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(255, 84, 84);</string>
+     </property>
+     <property name="text">
+      <string>Закрыть браузеры</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_betSize">
+     <property name="geometry">
+      <rect>
+       <x>67</x>
+       <y>90</y>
+       <width>101</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Размер ставки</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="checkBox_betImitation">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>51</y>
+       <width>281</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Имитация ставок</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBox_betSizeFirst">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>131</y>
+       <width>42</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>563</width>
+     <width>863</width>
      <height>22</height>
     </rect>
    </property>
@@ -639,6 +797,7 @@
      <string>Настройки</string>
     </property>
     <addaction name="action_serverSettings"/>
+    <addaction name="action_browserControlSettings"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -656,6 +815,11 @@
   <action name="action_serverSettings">
    <property name="text">
     <string>Подключение</string>
+   </property>
+  </action>
+  <action name="action_browserControlSettings">
+   <property name="text">
+    <string>Управление браузером</string>
    </property>
   </action>
  </widget>

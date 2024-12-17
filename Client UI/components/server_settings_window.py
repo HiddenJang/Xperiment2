@@ -3,13 +3,13 @@ from PyQt5.QtWidgets import QDialog
 from .templates.server_set_window_template import Ui_server_settings
 
 
-class ServerSettingsInput(Ui_server_settings, QDialog):
+class ServerSettings(Ui_server_settings, QDialog):
     """Класс-обертка для окна настроек подключения к серверу"""
 
     widget_states = {}
 
     def __init__(self):
-        super(ServerSettingsInput, self).__init__()
+        super(ServerSettings, self).__init__()
         self.ui = Ui_server_settings()
         self.ui.setupUi(self)
         self.add_functions()
@@ -18,14 +18,12 @@ class ServerSettingsInput(Ui_server_settings, QDialog):
         self.ui.buttonBox.rejected.connect(self.close_without_saving)
 
     def get_connection_settings(self) -> dict:
-        """Получение адреса api сервера"""
-        return {
-            'api_url': self.ui.lineEdit_serverAddress.text(),
-            'status_request_interval': self.ui.spinBox_statusRequestInterval.value(),
-            'pars_request_interval': self.ui.spinBox_parsRequestInterval.value(),
-            'status_response_timeout': self.ui.spinBox_statusResponseTimeout.value(),
-            'pars_response_timeout': self.ui.spinBox_parsResponseTimeout.value()
-        }
+        """Получение состояний виджетов окна настроек подключения"""
+        return {'api_url': self.ui.lineEdit_serverAddress.text(),
+                'status_request_interval': self.ui.spinBox_statusRequestInterval.value(),
+                'pars_request_interval': self.ui.spinBox_parsRequestInterval.value(),
+                'status_response_timeout': self.ui.spinBox_statusResponseTimeout.value(),
+                'pars_response_timeout': self.ui.spinBox_parsResponseTimeout.value()}
 
     def close_without_saving(self) -> None:
         """Закрытие окна без сохранения изменений"""

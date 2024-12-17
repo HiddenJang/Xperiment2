@@ -1,5 +1,10 @@
-from django.test import TestCase
-from datetime import datetime
-# Create your tests here.
+def exx():
+    string_1 = 'lineEdit_loginLeon'
+    return string_1
 
-print(datetime.now().timestamp())
+
+match 'login' in :
+    case exx():
+        print('YES!')
+    case _:
+        print('NO!')

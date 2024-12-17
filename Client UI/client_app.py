@@ -12,9 +12,11 @@ from components import settings
 from components import logging_init
 from components.server_connection_service import Scanner
 from components.result_window import ResultWindow
-from components.server_settings_window import ServerSettingsInput
+from components.server_settings_window import ServerSettings
+from components.browser_control_window import BrowserControlSettings
+
 from components.templates.client_app_template import Ui_MainWindow_client
-from components.browsers_control.core import Driver
+from components.browsers_control.core import BrowserControl
 
 ## Принудительное переключение рабочей директории ##
 file_path = Path(__file__).resolve().parent
@@ -37,7 +39,8 @@ class DesktopApp(QMainWindow):
         self._translate = QtCore.QCoreApplication.translate
         # создание экземпляров вспомогательных окон
         self.result_window = ResultWindow()
-        self.server_set_window = ServerSettingsInput()
+        self.server_set_window = ServerSettings()
+        self.browser_control_set_window = BrowserControlSettings()
         self.result_window_closed = True
         # загрузка установленных ранее пользователем состояний элементов GUI
         self.settings = QSettings('client_app', 'Gcompany', self)
@@ -52,6 +55,7 @@ class DesktopApp(QMainWindow):
         self.request_server_status()
 
         self.scanner_thread = QThread()
+
     ###### Add handling functions #####
 
     def add_functions(self) -> None:
@@ -70,10 +74,24 @@ class DesktopApp(QMainWindow):
         self.ui.action_serverSettings.triggered.connect(self.open_server_set_window)
         self.server_set_window.ui.buttonBox.accepted.connect(self.restart_scheduler_status_job)
 
-        self.ui.pushButton_openBrowser.clicked.connect(self.open_browser)
+        self.ui.action_browserControlSettings.triggered.connect(self.open_browser_control_set_window)
 
-    def open_browser(self):
-        driver = Driver(settings.BOOKMAKERS.get('leon')).get_driver()
+        self.ui.pushButton_startAutoBet.clicked.connect(self.start_auto_bet)
+
+        #BrowserControl.diag_signal.connect(self.render_diagnostics)
+
+    ###### Auto betting ######
+
+    def start_auto_bet(self):
+        """Запуск алгоритма автоматического размещения ставок"""
+        BrowserControl.bet_params = self.get_autoBet_settings()
+        BrowserControl().start()
+
+    def get_autoBet_settings(self) -> dict:
+        """Получение состояний элементов GUI фрейма НАСТРОЙ АВТОМАТИЧЕСКИХ СТАВОК"""
+        return {'bet_size_first': self.ui.spinBox_betSizeFirst.value(),
+                'bet_size_second': self.ui.spinBox_betSizeSecond.value(),
+                'bet_imitation': self.ui.checkBox_betImitation.isChecked()}
 
     ###### Test connection slots ######
 
@@ -100,7 +118,6 @@ class DesktopApp(QMainWindow):
 
     def deactivate_elements(self) -> None:
         """Деактивация элементов после начала поиска"""
-
         self.ui.comboBox_firstBkmkr.setDisabled(True)
         self.ui.comboBox_secondBkmkr.setDisabled(True)
         self.ui.comboBox_sportType.setDisabled(True)
@@ -177,40 +194,39 @@ class DesktopApp(QMainWindow):
         self.result_window_closed = True
 
     def get_elements_states(self) -> dict:
-        """Получение состояний всех элементов GUI"""
+        """Получение состояний элементов GUI фрейма НАСТРОЙ СКАНИРОВАНИЯ"""
 
-        return {
-            'first_bkmkr': self.ui.comboBox_firstBkmkr.currentText().lower(),
-            'second_bkmkr': self.ui.comboBox_secondBkmkr.currentText().lower(),
-            'game_type': self.ui.comboBox_sportType.currentText(),
-            'market': self.ui.comboBox_marketType.currentText(),
-            'betline': self.ui.comboBox_gameStatus.currentText().lower(),
-            'region': 'all',
-            'league': 'all',
-            'optional': {
-                'min_k_first_bkmkr': self.ui.doubleSpinBox_minKfirstBkmkr.value(),
-                'min_k_second_bkmkr': self.ui.doubleSpinBox_minKsecondBkmkr.value(),
-                'corridor': self.ui.doubleSpinBox_corridor.value(),
-                'min_k_home': self.ui.doubleSpinBox_minKfirstBkmkr.value(),
-                'min_k_away': self.ui.doubleSpinBox_minKsecondBkmkr.value(),
-                'min_k_draw': self.ui.doubleSpinBox_corridor.value(),
-            }
-
-        }
+        return {'first_bkmkr': self.ui.comboBox_firstBkmkr.currentText().lower(),
+                'second_bkmkr': self.ui.comboBox_secondBkmkr.currentText().lower(),
+                'game_type': self.ui.comboBox_sportType.currentText(),
+                'market': self.ui.comboBox_marketType.currentText(),
+                'betline': self.ui.comboBox_gameStatus.currentText().lower(),
+                'region': 'all',
+                'league': 'all',
+                'optional': {'min_k_first_bkmkr': self.ui.doubleSpinBox_minKfirstBkmkr.value(),
+                             'min_k_second_bkmkr': self.ui.doubleSpinBox_minKsecondBkmkr.value(),
+                             'corridor': self.ui.doubleSpinBox_corridor.value(),
+                             'min_k_home': self.ui.doubleSpinBox_minKfirstBkmkr.value(),
+                             'min_k_away': self.ui.doubleSpinBox_minKsecondBkmkr.value(),
+                             'min_k_draw': self.ui.doubleSpinBox_corridor.value()}}
 
     def open_results_window(self) -> None:
         """Открытие окна вывода результатов сканирования"""
-
         if self.result_window_closed:
             self.result_window.show()
             self.result_window.exec_()
 
     def open_server_set_window(self) -> None:
         """Открытие окна настроек подключения к серверу"""
-
         self.server_set_window.widget_states = self.server_set_window.get_connection_settings()
         self.server_set_window.show()
         self.server_set_window.exec_()
+
+    def open_browser_control_set_window(self) -> None:
+        """Открытие окна настроек автоматического управления браузерами"""
+        self.browser_control_set_window.widget_states = self.browser_control_set_window.get_control_settings()
+        self.browser_control_set_window.show()
+        self.browser_control_set_window.exec_()
 
     def start_scan(self) -> None:
         """Запуск сканирования"""

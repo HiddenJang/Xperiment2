@@ -1,36 +1,41 @@
 import logging
-import sys
+from PyQt5 import QtCore
 
 from .. import settings
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+from .webdriver import Driver
+from importlib import import_module
 
 logger = logging.getLogger('Client UI.components.browsers_control.core')
 
 
-class Driver:
-    """Класс вебдрайвера для управления браузером"""
+class BrowserControl:
+    diag_signal = QtCore.pyqtSignal(str)
+    bet_params = dict
 
-    def __init__(self, base_url):
-        self.base_url = base_url
+    def start(self):
+        control_modules_list = self.__get_control_modules()
+        for control_module in control_modules_list:
+            pass
 
-    def get_driver(self) -> webdriver:
-        """Создание объекта вебдрайвера"""
-        webdriver_file_path = settings.WEBDRIVER_DIR.get(sys.platform)
-        s = Service(executable_path=webdriver_file_path)
-        opts = Options()
-        # opts.add_argument('--headless') # запуск браузера в фоне
-        opts.add_argument("start-maximized")  # открыть в весь экран
-        opts.add_experimental_option("excludeSwitches", ["enable-automation"])  # устанавливаем опции для эмуляции управления прользователем (чтобы сайт не догадался)
-        opts.add_experimental_option('useAutomationExtension', False)
-        try:
-            driver = webdriver.Chrome(options=opts, service=s)
-            driver.get(url=self.base_url)
-            return driver
-        except BaseException as ex:
-            logger.error(ex)
+
+        # driver_dict = Driver(settings.BOOKMAKERS.get('leon')).get_driver()
+        # webdriver = driver_dict.get("driver")
+        # self.render_diagnostics(driver_dict.get("status"))
+
+    @staticmethod
+    def __get_control_modules() -> list:
+        """Получение списка доступных модулей управления вебстраницами букмекеров"""
+        module_list = []
+        for bkmkr_name in settings.BOOKMAKERS.keys():
+            try:
+                module = import_module(f'.browsers_control.websites_control_modules.{bkmkr_name}', package='components')
+            except BaseException as ex:
+                logger.error(ex)
+                continue
+            module_list.append(module)
+        return module_list
+
 
 
 if __name__ == '__main__':
-    driver = Driver('https://leon.ru/').get_driver()
+    pass

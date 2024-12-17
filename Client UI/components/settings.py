@@ -21,6 +21,6 @@ BOOKMAKERS = {
 
 # Webdriver directory (base dir - browsers_control)
 WEBDRIVER_DIR = {
-    'linux': BASE_DIR / "components/browsers_control/chromedriver/chromedriver",
+    'linux': BASE_DIR / "components/browsers_control/chromedriver-linux64/chromedriver",
     'windows': BASE_DIR / "components\\browsers_control\\chromedriver\\chromedriver.exe"
 }
