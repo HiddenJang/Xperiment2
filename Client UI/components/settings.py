@@ -1,6 +1,12 @@
 from pathlib import Path
+from dotenv import read_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+read_dotenv(dotenv=f'{BASE_DIR}/client_app.env')
+
+# .env path
+ENV_PATH = BASE_DIR / 'client_app.env'
 
 # Logging settings
 FORMAT = "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"

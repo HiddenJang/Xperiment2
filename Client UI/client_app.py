@@ -224,7 +224,6 @@ class DesktopApp(QMainWindow):
 
     def open_browser_control_set_window(self) -> None:
         """Открытие окна настроек автоматического управления браузерами"""
-        self.browser_control_set_window.widget_states = self.browser_control_set_window.get_control_settings()
         self.browser_control_set_window.show()
         self.browser_control_set_window.exec_()
 
@@ -333,6 +332,9 @@ class DesktopApp(QMainWindow):
             for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit): # я уж не знаю по каким причинам, но это поле должно стоять перед DoubleSpinBox. Почемуто QT воспринимает QDoubleSpinBox как QLineEdit.
                 if self.settings.value(line_edit.objectName()):
                     line_edit.setText(self.settings.value(line_edit.objectName()))
+
+            self.browser_control_set_window.set_control_settings_from_env()
+
             ## ComboBox ##
             for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
                 if self.settings.value(combo_box.objectName()):

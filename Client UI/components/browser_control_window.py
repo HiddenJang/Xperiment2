@@ -1,3 +1,5 @@
+import os
+import json
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDialog
 
@@ -8,8 +10,6 @@ from . import settings
 class BrowserControlSettings(Ui_browser_control_settings, QDialog):
     """Класс-обертка для окна настроек автоматического управления браузерами"""
 
-    widget_states = {}
-
     def __init__(self):
         super(BrowserControlSettings, self).__init__()
         self.ui = Ui_browser_control_settings()
@@ -17,7 +17,20 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
         self.add_functions()
 
     def add_functions(self) -> None:
-        self.ui.buttonBox.rejected.connect(self.close_without_saving)
+        self.ui.buttonBox.rejected.connect(self.set_control_settings_from_env)
+        self.ui.buttonBox.accepted.connect(self.close_with_saving)
+
+    def set_control_settings_from_env(self) -> None:
+        """Установка состояний виджетов окна настроек управления браузерами из переменных окружения"""
+        user_auth_data = os.environ.get('BKMKR_SITES_AUTH_DATA')
+        user_auth_data = json.loads(user_auth_data.replace("'", '"'))
+        if user_auth_data:
+            for bkmkr_name in user_auth_data.keys():
+                for line_edit in self.findChildren(QtWidgets.QLineEdit):
+                    if bkmkr_name in line_edit.objectName().lower() and 'login' in line_edit.objectName().lower():
+                        line_edit.setText(user_auth_data[bkmkr_name]['login'])
+                    elif bkmkr_name in line_edit.objectName().lower() and 'password' in line_edit.objectName().lower():
+                        line_edit.setText(user_auth_data[bkmkr_name]['password'])
 
     def get_control_settings(self) -> dict:
         """Получение состояний виджетов окна настроек управления браузерами"""
@@ -32,15 +45,13 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
                     states[bkmkr_name]['password'] = line_edit.text()
         return states
 
-    def close_without_saving(self) -> None:
-        """Закрытие окна без сохранения изменений"""
-        for bkmkr_name in self.widget_states.keys():
-            for line_edit in self.findChildren(QtWidgets.QLineEdit):
-                if bkmkr_name in line_edit.objectName().lower() and 'login' in line_edit.objectName().lower():
-                    line_edit.setText(self.widget_states[bkmkr_name]['login'])
-                elif bkmkr_name in line_edit.objectName().lower() and 'password' in line_edit.objectName().lower():
-                    line_edit.setText(self.widget_states[bkmkr_name]['password'])
+    def close_with_saving(self) -> None:
+        """Закрытие окна с сохранением изменений"""
+        states = self.get_control_settings()
+        with open(settings.ENV_PATH, "w") as env_file:
+            env_file.write(f'BKMKR_SITES_AUTH_DATA={str(states)}')
+        os.environ.setdefault('BKMKR_SITES_AUTH_DATA', str(states))
 
     def closeEvent(self, event) -> None:
-        self.close_without_saving()
+        self.set_control_settings_from_env()
         self.close()
