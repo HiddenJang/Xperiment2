@@ -32,6 +32,8 @@ class DesktopApp(QMainWindow):
         super(DesktopApp, self).__init__()
         self.ui = Ui_MainWindow_client()
         self.ui.setupUi(self)
+        # создание папки для скриншотов
+        self.create_screenshot_dir()
         # добавление виджетов и настроек
         self.statusbar_message = QLabel()
         self.statusbar_message.setObjectName("statusbar_message")
@@ -77,16 +79,19 @@ class DesktopApp(QMainWindow):
         self.ui.action_browserControlSettings.triggered.connect(self.open_browser_control_set_window)
         self.browser_control_set_window.diag_signal.connect(self.render_diagnostics)
 
-        self.ui.pushButton_startAutoBet.clicked.connect(self.start_auto_bet)
+        self.ui.pushButton_startAutoBet.clicked.connect(self.start_auto_bet_preload)
 
         #BrowserControl.diag_signal.connect(self.render_diagnostics)
 
     ###### Auto betting ######
 
-    def start_auto_bet(self):
+    def start_auto_bet_preload(self):
         """Запуск алгоритма автоматического размещения ставок"""
         BrowserControl.bet_params = self.get_autoBet_settings()
-        BrowserControl().start()
+        control_settings = self.browser_control_set_window.get_control_settings()
+        browser_control = BrowserControl(control_settings)
+        #browser_control.diag_signal.connect(self.render_diagnostics)
+        browser_control.start()
 
     def get_autoBet_settings(self) -> dict:
         """Получение состояний элементов GUI фрейма НАСТРОЙ АВТОМАТИЧЕСКИХ СТАВОК"""
@@ -354,6 +359,11 @@ class DesktopApp(QMainWindow):
             self.browser_control_set_window.set_control_settings_from_env()
         except BaseException as ex:
             logger.info("Ошибка при загрузке установленных ранее состояний GUI", ex)
+
+    def create_screenshot_dir(self):
+        """Создание папки для скриншотов"""
+        if not os.path.exists(settings.SCREENSHOTS_DIR):
+            os.mkdir(settings.SCREENSHOTS_DIR)
 
     def closeEvent(self, event):
         self.save_settings()

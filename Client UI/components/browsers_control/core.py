@@ -1,9 +1,10 @@
 import logging
+import threading
 from PyQt5 import QtCore
 
 from .. import settings
-from .webdriver import Driver
 from importlib import import_module
+
 
 logger = logging.getLogger('Client UI.components.browsers_control.core')
 
@@ -12,29 +13,42 @@ class BrowserControl:
     diag_signal = QtCore.pyqtSignal(str)
     bet_params = dict
 
+    def __init__(self, control_settings: dict):
+        self.control_settings = control_settings
+
     def start(self):
-        control_modules_list = self.__get_control_modules()
-        for control_module in control_modules_list:
-            pass
+        """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
+        started_threads = {}
+        control_modules = self.__get_control_modules()
+        auth_data = self.control_settings["auth_data"]
 
+        for bkmkr_name in auth_data.keys():
+            if not (auth_data[bkmkr_name]['login'] and auth_data[bkmkr_name]['password']):
+                try:
+                    del control_modules[bkmkr_name]
+                except BaseException:
+                    continue
 
-        # driver_dict = Driver(settings.BOOKMAKERS.get('leon')).get_driver()
-        # webdriver = driver_dict.get("driver")
-        # self.render_diagnostics(driver_dict.get("status"))
+        for bkmkr_name in control_modules.keys():
+            if auth_data.get(bkmkr_name):
+                control_module = control_modules[bkmkr_name]
+                control = control_module.Control({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]})
+                control_thread = threading.Thread(target=control.preload, daemon=True)
+                control_thread.start()
+                started_threads[bkmkr_name] = control_thread.native_id
 
     @staticmethod
-    def __get_control_modules() -> list:
-        """Получение списка доступных модулей управления вебстраницами букмекеров"""
-        module_list = []
+    def __get_control_modules() -> dict:
+        """Получение перечня доступных модулей управления вебстраницами букмекеров"""
+        modules_dict = {}
         for bkmkr_name in settings.BOOKMAKERS.keys():
             try:
                 module = import_module(f'.browsers_control.websites_control_modules.{bkmkr_name}', package='components')
             except BaseException as ex:
                 logger.error(ex)
                 continue
-            module_list.append(module)
-        return module_list
-
+            modules_dict[bkmkr_name] = module
+        return modules_dict
 
 
 if __name__ == '__main__':

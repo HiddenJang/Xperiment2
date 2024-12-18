@@ -43,23 +43,22 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
 
     def get_control_settings(self) -> dict:
         """Получение состояний виджетов окна настроек управления браузерами"""
-
-        states = {}
+        states = {'auth_data': {}}
         for bkmkr_name in settings.BOOKMAKERS.keys():
-            states[bkmkr_name] = {'login': '', 'password': ''}
+            states['auth_data'][bkmkr_name] = {'login': '', 'password': ''}
             for line_edit in self.findChildren(QtWidgets.QLineEdit):
                 if bkmkr_name in line_edit.objectName().lower() and 'login' in line_edit.objectName().lower():
-                    states[bkmkr_name]['login'] = line_edit.text()
+                    states['auth_data'][bkmkr_name]['login'] = line_edit.text()
                 elif bkmkr_name in line_edit.objectName().lower() and 'password' in line_edit.objectName().lower():
-                    states[bkmkr_name]['password'] = line_edit.text()
+                    states['auth_data'][bkmkr_name]['password'] = line_edit.text()
         return states
 
     def close_with_saving(self) -> None:
         """Закрытие окна с сохранением изменений"""
         states = self.get_control_settings()
         with open(settings.ENV_PATH, "w") as env_file:
-            env_file.write(f'BKMKR_SITES_AUTH_DATA={str(states)}')
-        os.environ['BKMKR_SITES_AUTH_DATA'] = str(states)
+            env_file.write(f'BKMKR_SITES_AUTH_DATA={str(states["auth_data"])}')
+        os.environ['BKMKR_SITES_AUTH_DATA'] = str(states["auth_data"])
 
     def closeEvent(self, event) -> None:
         self.set_control_settings_from_env()
