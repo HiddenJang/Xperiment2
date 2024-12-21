@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow, QLabel
-from PyQt5.QtCore import QThread, QSettings
+from PyQt5.QtCore import QThread, QSettings, QTimer
 from apscheduler.schedulers.qt import QtScheduler
 
 from components import settings
@@ -28,6 +28,7 @@ logger = logging.getLogger('Client UI.client_app')
 
 
 class DesktopApp(QMainWindow):
+    """Класс-обертка основного окна приложения"""
     def __init__(self):
         super(DesktopApp, self).__init__()
         self.ui = Ui_MainWindow_client()
@@ -85,16 +86,21 @@ class DesktopApp(QMainWindow):
 
     ###### Auto betting ######
 
-    def start_auto_bet_preload(self):
+    def start_auto_bet_preload(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
         BrowserControl.bet_params = self.get_autoBet_settings()
         control_settings = self.browser_control_set_window.get_control_settings()
-        browser_control = BrowserControl(control_settings)
+        self.browser_control = BrowserControl(control_settings)
         #browser_control.diag_signal.connect(self.render_diagnostics)
-        browser_control.start()
+        self.browser_control.start()
+
+    def place_bet(self) -> None:
+        """Сделать ставку на найденное событие"""
+        #self.browser_control
+        pass
 
     def get_autoBet_settings(self) -> dict:
-        """Получение состояний элементов GUI фрейма НАСТРОЙ АВТОМАТИЧЕСКИХ СТАВОК"""
+        """Получение состояний элементов GUI фрейма НАСТРОЙКИ АВТОМАТИЧЕСКИХ СТАВОК"""
         return {'bet_size_first': self.ui.spinBox_betSizeFirst.value(),
                 'bet_size_second': self.ui.spinBox_betSizeSecond.value(),
                 'bet_imitation': self.ui.checkBox_betImitation.isChecked()}
@@ -248,31 +254,25 @@ class DesktopApp(QMainWindow):
                                    max_instances=1)
             self.render_diagnostics("Сканирование запущено...")
             scanner.scan_result_signal.connect(self.render_scan_result)
-            scanner.scan_result_signal.connect(self.scan_stopped_slot)
             scanner.scan_thread_link_signal.connect(self.scan_thread_started_slot)
         else:
             self.render_diagnostics("Сканирование уже запущено")
 
     def scan_thread_started_slot(self, thread_object: QThread) -> None:
-        """Создание сслыки на объект потока сканирования для определения его состояния"""
+        """Создание сслыки на объект потока сканирования для запроса прерывания"""
         self.scanner_thread = thread_object
 
     def stop_scan(self) -> None:
-        """Инициация процесса останова сканирования"""
+        """Останов сканирования"""
         self.ui.pushButton_stopScan.setDisabled(True)
-        if self.scheduler.get_job('scan_job') and self.scanner_thread.isRunning():
-            self.scheduler.get_job('scan_job').pause()
-            con_settings = self.server_set_window.get_connection_settings()
-            self.render_diagnostics(f"Производится останов сканирования. "
-                                    f"Ожидайте, время завершения не более {con_settings['pars_response_timeout']} с...")
-        else:
-            self.scan_stopped_slot()
 
-    def scan_stopped_slot(self, result=dict) -> None:
-        """Завершение процесса останова сканирования"""
         if self.scheduler.get_job('scan_job'):
+            print(f'thread_is_running1={self.scanner_thread.isRunning()}')
+            self.scanner_thread.requestInterruption()
+            self.scheduler.shutdown(wait=False)
             self.scheduler.get_job('scan_job').remove()
-        self.render_diagnostics("Сканирование остановлено пользователем")
+            self.render_diagnostics("Сканирование остановлено пользователем")
+
         self.activate_elements()
 
     ###### Rendering #####

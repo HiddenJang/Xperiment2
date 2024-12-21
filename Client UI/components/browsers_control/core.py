@@ -32,10 +32,17 @@ class BrowserControl:
         for bkmkr_name in control_modules.keys():
             if auth_data.get(bkmkr_name):
                 control_module = control_modules[bkmkr_name]
-                control = control_module.Control({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]})
+                thread_event = threading.Event()
+                control = control_module.Control({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]},
+                                                 thread_event)
                 control_thread = threading.Thread(target=control.preload, daemon=True)
                 control_thread.start()
-                started_threads[bkmkr_name] = control_thread.native_id
+                started_threads[bkmkr_name] = {'control_thread': control_thread, 'thread_event': thread_event}
+
+    def bet(self) -> None:
+        """Разместить ставки на найденное событие"""
+
+
 
     @staticmethod
     def __get_control_modules() -> dict:

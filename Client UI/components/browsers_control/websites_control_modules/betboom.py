@@ -1,4 +1,5 @@
 import logging
+import threading
 from time import sleep
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,8 +15,9 @@ logger = logging.getLogger('Client UI.components.browsers_control.websites_contr
 class Control:
     preloaded = False
 
-    def __init__(self, common_auth_data: dict):
+    def __init__(self, common_auth_data: dict, thread_event: threading.Event):
         self.common_auth_data = common_auth_data
+        self.thread_event = thread_event
 
     def preload(self):
         """Открытие страницы БК и авторизация пользователя"""
@@ -78,3 +80,4 @@ class Control:
                     sleep(1)
 
         Control.preloaded = True
+        self.thread_event.wait()
