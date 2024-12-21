@@ -11,7 +11,6 @@ class Scanner(QObject):
     """Класс запуска сканирования в отдельном потоке"""
     server_status_signal = QtCore.pyqtSignal(dict)
     scan_result_signal = QtCore.pyqtSignal(dict)
-    scan_thread_link_signal = QtCore.pyqtSignal(QThread)
 
     def __init__(self, con_settings: dict, elements_states: dict = None):
         super(Scanner, self).__init__()
@@ -29,10 +28,8 @@ class Scanner(QObject):
             context = ex
         self.server_status_signal.emit({'status': str(status), 'context': context})
 
-    def get_data_from_server(self) -> dict | None:
+    def get_data_from_server(self) -> dict:
         """Запуск сканнера"""
-        self.scan_thread_link_signal.emit(QThread.currentThread())
-        print(f'id={QThread.currentThread().currentThreadId()}, inturruptionRequest={QThread.currentThread().isInterruptionRequested()}')
         with requests.session() as scan_session:
             try:
                 scan_session.get(url=self.con_settings['api_url'],
@@ -45,10 +42,7 @@ class Scanner(QObject):
             except BaseException as ex:
                 logger.error(f'Ошибка при попытке запроса данных от сервера {ex}')
                 scan_results = {'fail': f'Ошибка при попытке запроса данных от сервера {ex}'}
-            print('flag1')
-            if not QThread.currentThread().isInterruptionRequested():
-                print('flag2')
-                self.scan_result_signal.emit(scan_results)
+            self.scan_result_signal.emit(scan_results)
 
 
 

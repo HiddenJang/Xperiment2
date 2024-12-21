@@ -242,37 +242,26 @@ class DesktopApp(QMainWindow):
     def start_scan(self) -> None:
         """Запуск сканирования"""
         self.deactivate_elements()
-        if not self.scheduler.get_job('scan_job'):
-            elements_states = self.get_elements_states()
-            con_settings = self.server_set_window.get_connection_settings()
-            scanner = Scanner(con_settings, elements_states)
 
-            self.scheduler.add_job(scanner.get_data_from_server,
-                                   'interval',
-                                   seconds=con_settings['pars_request_interval'],
-                                   id='scan_job',
-                                   max_instances=1)
-            self.render_diagnostics("Сканирование запущено...")
-            scanner.scan_result_signal.connect(self.render_scan_result)
-            scanner.scan_thread_link_signal.connect(self.scan_thread_started_slot)
-        else:
-            self.render_diagnostics("Сканирование уже запущено")
+        elements_states = self.get_elements_states()
+        con_settings = self.server_set_window.get_connection_settings()
+        scanner = Scanner(con_settings, elements_states)
 
-    def scan_thread_started_slot(self, thread_object: QThread) -> None:
-        """Создание сслыки на объект потока сканирования для запроса прерывания"""
-        self.scanner_thread = thread_object
+        self.scheduler.add_job(scanner.get_data_from_server,
+                               'interval',
+                               seconds=con_settings['pars_request_interval'],
+                               id='scan_job',
+                               max_instances=1)
+        scanner.scan_result_signal.connect(self.render_scan_result)
+
+        self.render_diagnostics("Сканирование запущено...")
 
     def stop_scan(self) -> None:
         """Останов сканирования"""
         self.ui.pushButton_stopScan.setDisabled(True)
-
         if self.scheduler.get_job('scan_job'):
-            print(f'thread_is_running1={self.scanner_thread.isRunning()}')
-            self.scanner_thread.requestInterruption()
-            self.scheduler.shutdown(wait=False)
             self.scheduler.get_job('scan_job').remove()
             self.render_diagnostics("Сканирование остановлено пользователем")
-
         self.activate_elements()
 
     ###### Rendering #####
@@ -305,10 +294,9 @@ class DesktopApp(QMainWindow):
 
     def render_scan_result(self, scan_results: dict) -> None:
         """Отрисовка результатов поиска"""
-
-        if scan_results.get('Success'):
+        if scan_results.get('Success') and self.scheduler.get_job('scan_job'):
             self.result_window.render_results(scan_results['Success'])
-        elif scan_results.get('fail'):
+        elif scan_results.get('fail') and self.scheduler.get_job('scan_job'):
             self.render_diagnostics(scan_results.get('fail'))
 
     ###### Save and load user settings #####
