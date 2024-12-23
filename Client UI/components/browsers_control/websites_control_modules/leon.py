@@ -1,6 +1,8 @@
 import logging
 import threading
 from time import sleep
+
+from PyQt5 import QtCore
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -14,10 +16,16 @@ logger = logging.getLogger('Client UI.components.browsers_control.websites_contr
 
 class Control:
     preloaded = False
+    close_request = False
 
-    def __init__(self, common_auth_data: dict, thread_event: threading.Event):
+    def __init__(self, common_auth_data: dict,
+                 thread_event: threading.Event,
+                 diag_signal: QtCore.pyqtSignal,
+                 status_signal: QtCore.pyqtSignal):
         self.common_auth_data = common_auth_data
         self.thread_event = thread_event
+        self.diag_signal = diag_signal
+        self.status_signal = status_signal
 
     def preload(self):
         """Открытие страницы БК и авторизация пользователя"""
@@ -50,10 +58,17 @@ class Control:
             except BaseException as ex:
                 if n == 4:
                     logger.error(f'Ошибка авторизации {self.common_auth_data["bkmkr_name"]}, {ex}')
+                    self.diag_signal.emit(f'Ошибка авторизации {self.common_auth_data["bkmkr_name"]}, {ex}')
                     driver.close()
                     driver.quit()
                     return
                 continue
 
         Control.preloaded = True
+        self.diag_signal.emit(f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
         self.thread_event.wait()
+        if Control.close_request:
+            driver.close()
+            driver.quit()
+            self.diag_signal.emit(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
+            return

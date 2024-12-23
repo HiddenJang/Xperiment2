@@ -14,7 +14,6 @@ from components.server_connection_service import Scanner
 from components.result_window import ResultWindow
 from components.server_settings_window import ServerSettings
 from components.browser_control_window import BrowserControlSettings
-
 from components.templates.client_app_template import Ui_MainWindow_client
 from components.browsers_control.core import BrowserControl
 
@@ -81,6 +80,7 @@ class DesktopApp(QMainWindow):
         self.browser_control_set_window.diag_signal.connect(self.render_diagnostics)
 
         self.ui.pushButton_startAutoBet.clicked.connect(self.start_auto_bet_preload)
+        self.ui.pushButton_closeBrowsers.clicked.connect(self.close_browsers)
 
         #BrowserControl.diag_signal.connect(self.render_diagnostics)
 
@@ -88,18 +88,36 @@ class DesktopApp(QMainWindow):
 
     def start_auto_bet_preload(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
-        BrowserControl.bet_params = self.get_autoBet_settings()
+        BrowserControl.bet_params = self.get_autobet_settings()
         control_settings = self.browser_control_set_window.get_control_settings()
         self.browser_control = BrowserControl(control_settings)
-        #browser_control.diag_signal.connect(self.render_diagnostics)
-        self.browser_control.start()
+        self.browser_control.diag_signal.connect(self.render_diagnostics)
+        self.browser_control_thread = QThread()
+        self.browser_control.moveToThread(self.browser_control_thread)
+        self.browser_control_thread.started.connect(self.browser_control.start)
+        self.browser_control_thread.start()
+
+        # if not hasattr(self, 'browser_control'):
+        #     self.browser_control = BrowserControl(control_settings)
+        #     #browser_control.diag_signal.connect(self.render_diagnostics)
+        #     self.browser_control.start()
+        # else:
+        #     self.render_diagnostics("Браузер уже запущен")
+
+    def close_browsers(self) -> None:
+        """Закрытие браузеров"""
+        self.ui.pushButton_startAutoBet.setDisabled(True)
+        if hasattr(self, 'browser_control'):
+            self.browser_control.close_browsers()
+            del self.browser_control
+        self.ui.pushButton_startAutoBet.setDisabled(False)
 
     def place_bet(self) -> None:
         """Сделать ставку на найденное событие"""
         #self.browser_control
         pass
 
-    def get_autoBet_settings(self) -> dict:
+    def get_autobet_settings(self) -> dict:
         """Получение состояний элементов GUI фрейма НАСТРОЙКИ АВТОМАТИЧЕСКИХ СТАВОК"""
         return {'bet_size_first': self.ui.spinBox_betSizeFirst.value(),
                 'bet_size_second': self.ui.spinBox_betSizeSecond.value(),
@@ -128,58 +146,31 @@ class DesktopApp(QMainWindow):
 
     ##### Change GUI elements states #####
 
-    def deactivate_elements(self) -> None:
-        """Деактивация элементов после начала поиска"""
-        self.ui.comboBox_firstBkmkr.setDisabled(True)
-        self.ui.comboBox_secondBkmkr.setDisabled(True)
-        self.ui.comboBox_sportType.setDisabled(True)
-        self.ui.comboBox_marketType.setDisabled(True)
-        self.ui.comboBox_gameStatus.setDisabled(True)
+    def deactivate_elements(self, state: bool) -> None:
+        """Деактивация/активация элементов после начала поиска"""
+        self.ui.comboBox_firstBkmkr.setDisabled(state)
+        self.ui.comboBox_secondBkmkr.setDisabled(state)
+        self.ui.comboBox_sportType.setDisabled(state)
+        self.ui.comboBox_marketType.setDisabled(state)
+        self.ui.comboBox_gameStatus.setDisabled(state)
 
-        self.ui.doubleSpinBox_minKfirstBkmkr.setDisabled(True)
-        self.ui.doubleSpinBox_minKsecondBkmkr.setDisabled(True)
-        self.ui.doubleSpinBox_corridor.setDisabled(True)
+        self.ui.doubleSpinBox_minKfirstBkmkr.setDisabled(state)
+        self.ui.doubleSpinBox_minKsecondBkmkr.setDisabled(state)
+        self.ui.doubleSpinBox_corridor.setDisabled(state)
 
-        self.ui.label_firstBkmkr.setDisabled(True)
-        self.ui.label_secondBkmkr.setDisabled(True)
-        self.ui.label_sportType.setDisabled(True)
-        self.ui.label_marketType.setDisabled(True)
-        self.ui.label_gameStatus.setDisabled(True)
-        self.ui.label_minKfirstBkmkr.setDisabled(True)
-        self.ui.label_minKsecondBkmkr.setDisabled(True)
-        self.ui.label_corridor.setDisabled(True)
+        self.ui.label_firstBkmkr.setDisabled(state)
+        self.ui.label_secondBkmkr.setDisabled(state)
+        self.ui.label_sportType.setDisabled(state)
+        self.ui.label_marketType.setDisabled(state)
+        self.ui.label_gameStatus.setDisabled(state)
+        self.ui.label_minKfirstBkmkr.setDisabled(state)
+        self.ui.label_minKsecondBkmkr.setDisabled(state)
+        self.ui.label_corridor.setDisabled(state)
 
-        self.ui.pushButton_startScan.setDisabled(True)
-        self.ui.pushButton_stopScan.setDisabled(False)
+        self.ui.pushButton_startScan.setDisabled(state)
+        self.ui.pushButton_stopScan.setDisabled(not state)
 
-        self.ui.menubar.setDisabled(True)
-
-    def activate_elements(self) -> None:
-        """Активация элементов после остановки поиска"""
-
-        self.ui.comboBox_firstBkmkr.setDisabled(False)
-        self.ui.comboBox_secondBkmkr.setDisabled(False)
-        self.ui.comboBox_sportType.setDisabled(False)
-        self.ui.comboBox_marketType.setDisabled(False)
-        self.ui.comboBox_gameStatus.setDisabled(False)
-
-        self.ui.doubleSpinBox_minKfirstBkmkr.setDisabled(False)
-        self.ui.doubleSpinBox_minKsecondBkmkr.setDisabled(False)
-        self.ui.doubleSpinBox_corridor.setDisabled(False)
-
-        self.ui.label_firstBkmkr.setDisabled(False)
-        self.ui.label_secondBkmkr.setDisabled(False)
-        self.ui.label_sportType.setDisabled(False)
-        self.ui.label_marketType.setDisabled(False)
-        self.ui.label_gameStatus.setDisabled(False)
-        self.ui.label_minKfirstBkmkr.setDisabled(False)
-        self.ui.label_minKsecondBkmkr.setDisabled(False)
-        self.ui.label_corridor.setDisabled(False)
-
-        self.ui.pushButton_startScan.setDisabled(False)
-        self.ui.pushButton_stopScan.setDisabled(True)
-
-        self.ui.menubar.setDisabled(False)
+        self.ui.menubar.setDisabled(state)
 
     def change_coeff_labels(self) -> None:
         """Изменение названий коэффициентов"""
@@ -197,12 +188,10 @@ class DesktopApp(QMainWindow):
 
     def result_window_open_slot(self) -> None:
         """Состояние окна result_window"""
-
         self.result_window_closed = False
 
     def result_window_close_slot(self) -> None:
         """Состояние окна result_window"""
-
         self.result_window_closed = True
 
     def get_elements_states(self) -> dict:
@@ -241,34 +230,35 @@ class DesktopApp(QMainWindow):
 
     def start_scan(self) -> None:
         """Запуск сканирования"""
-        self.deactivate_elements()
+        self.deactivate_elements(True)
 
         elements_states = self.get_elements_states()
         con_settings = self.server_set_window.get_connection_settings()
-        scanner = Scanner(con_settings, elements_states)
+        self.scanner = Scanner(con_settings, elements_states)
 
-        self.scheduler.add_job(scanner.get_data_from_server,
+        self.scheduler.add_job(self.scanner.get_data_from_server,
                                'interval',
                                seconds=con_settings['pars_request_interval'],
                                id='scan_job',
+                               coalesce=True,
                                max_instances=1)
-        scanner.scan_result_signal.connect(self.render_scan_result)
-
+        self.scanner.scan_result_signal.connect(self.render_scan_result)
         self.render_diagnostics("Сканирование запущено...")
 
     def stop_scan(self) -> None:
         """Останов сканирования"""
         self.ui.pushButton_stopScan.setDisabled(True)
+        if hasattr(self, 'scanner'):
+            self.scanner.interruption_requested = True
         if self.scheduler.get_job('scan_job'):
             self.scheduler.get_job('scan_job').remove()
             self.render_diagnostics("Сканирование остановлено пользователем")
-        self.activate_elements()
+        self.deactivate_elements(False)
 
     ###### Rendering #####
 
     def render_diagnostics(self, info: str) -> None:
         """Вывод диагностической и системной информации"""
-
         message = f'{datetime.now().strftime("%d.%m.%y %H:%M:%S")}:  {info}'
 
         item = QtWidgets.QListWidgetItem()
@@ -289,14 +279,13 @@ class DesktopApp(QMainWindow):
             self.ui.pushButton_startScan.setDisabled(True)
             self.ui.statusbar.clearMessage()
             self.ui.statusbar.showMessage("Статус сервера: недоступен")
-            logger.info(f"Ошибка подключения: статус-код {status_data['status']} {status_data['context']}")
             self.render_diagnostics(f"Ошибка подключения: статус-код {status_data['status']} {status_data['context']}")
 
     def render_scan_result(self, scan_results: dict) -> None:
         """Отрисовка результатов поиска"""
-        if scan_results.get('Success') and self.scheduler.get_job('scan_job'):
+        if scan_results.get('Success'):
             self.result_window.render_results(scan_results['Success'])
-        elif scan_results.get('fail') and self.scheduler.get_job('scan_job'):
+        elif scan_results.get('fail'):
             self.render_diagnostics(scan_results.get('fail'))
 
     ###### Save and load user settings #####

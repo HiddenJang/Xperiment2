@@ -2,7 +2,7 @@ import requests
 import json
 import logging
 from PyQt5 import QtCore
-from PyQt5.QtCore import QObject, QThread
+from PyQt5.QtCore import QObject
 
 logger = logging.getLogger('Client UI.components.services')
 
@@ -11,11 +11,13 @@ class Scanner(QObject):
     """Класс запуска сканирования в отдельном потоке"""
     server_status_signal = QtCore.pyqtSignal(dict)
     scan_result_signal = QtCore.pyqtSignal(dict)
+    thread_id_signal = QtCore.pyqtSignal(int)
 
     def __init__(self, con_settings: dict, elements_states: dict = None):
         super(Scanner, self).__init__()
         self.con_settings = con_settings
         self.elements_states = elements_states
+        self.interruption_requested = False
 
     def get_server_status(self) -> None:
         """Получение статуса сервера при запуске приложения. Отправка статуса сервера в GUI"""
@@ -28,7 +30,7 @@ class Scanner(QObject):
             context = ex
         self.server_status_signal.emit({'status': str(status), 'context': context})
 
-    def get_data_from_server(self) -> dict:
+    def get_data_from_server(self) -> dict | None:
         """Запуск сканнера"""
         with requests.session() as scan_session:
             try:
@@ -42,7 +44,9 @@ class Scanner(QObject):
             except BaseException as ex:
                 logger.error(f'Ошибка при попытке запроса данных от сервера {ex}')
                 scan_results = {'fail': f'Ошибка при попытке запроса данных от сервера {ex}'}
-            self.scan_result_signal.emit(scan_results)
+
+            if not self.interruption_requested:
+                self.scan_result_signal.emit(scan_results)
 
 
 
