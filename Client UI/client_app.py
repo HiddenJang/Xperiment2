@@ -57,6 +57,7 @@ class DesktopApp(QMainWindow):
         self.request_server_status()
 
         self.scanner_thread = QThread()
+        self.thread_status_timer = QtCore.QTimer()
 
     ###### Add handling functions #####
 
@@ -97,21 +98,32 @@ class DesktopApp(QMainWindow):
         self.browser_control_thread.started.connect(self.browser_control.start)
         self.browser_control.diag_signal.connect(self.render_diagnostics)
         self.browser_control.finish_signal.connect(self.browser_control_thread.quit)
-        self.browser_control.finish_signal.connect(self.ui.pushButton_startAutoBet.setEnabled)
-        self.browser_control.finish_signal.connect(self.browser_control.timer.stop if
-                                                   self.browser_control.timer.isActive() else
-                                                   self.ui.pushButton_startAutoBet.setEnabled)
+        self.browser_control.finish_signal.connect(self.finish_browser_control)
         self.browser_control_thread.start()
 
     def close_browsers(self) -> None:
         """Закрытие браузеров"""
-
-        if hasattr(self, 'browser_control'):
+        if hasattr(self, 'browser_control_thread') and self.browser_control_thread.isRunning():
             try:
                 self.browser_control.close_browsers()
             except BaseException as ex:
                 self.render_diagnostics(str(ex))
                 logger.error(ex)
+
+    def finish_browser_control(self) -> None:
+        """Завершение автоматического управления браузером"""
+        if self.browser_control.timer.isActive():
+            self.browser_control.timer.stop()
+        if not self.thread_status_timer.isActive():
+            self.thread_status_timer.setInterval(500)
+            self.thread_status_timer.timeout.connect(self.survey_browser_control_thread)
+            self.thread_status_timer.start()
+
+    def survey_browser_control_thread(self) -> None:
+        """Опрос состояния потока автоматического управления браузером"""
+        if not self.browser_control_thread.isRunning():
+            self.thread_status_timer.stop()
+            self.ui.pushButton_startAutoBet.setDisabled(False)
 
     def place_bet(self) -> None:
         """Сделать ставку на найденное событие"""
