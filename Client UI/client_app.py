@@ -88,29 +88,30 @@ class DesktopApp(QMainWindow):
 
     def start_auto_bet_preload(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
+        self.ui.pushButton_startAutoBet.setDisabled(True)
         BrowserControl.bet_params = self.get_autobet_settings()
         control_settings = self.browser_control_set_window.get_control_settings()
         self.browser_control = BrowserControl(control_settings)
-        self.browser_control.diag_signal.connect(self.render_diagnostics)
         self.browser_control_thread = QThread()
         self.browser_control.moveToThread(self.browser_control_thread)
         self.browser_control_thread.started.connect(self.browser_control.start)
+        self.browser_control.diag_signal.connect(self.render_diagnostics)
+        self.browser_control.finish_signal.connect(self.browser_control_thread.quit)
+        self.browser_control.finish_signal.connect(self.ui.pushButton_startAutoBet.setEnabled)
+        self.browser_control.finish_signal.connect(self.browser_control.timer.stop if
+                                                   self.browser_control.timer.isActive() else
+                                                   self.ui.pushButton_startAutoBet.setEnabled)
         self.browser_control_thread.start()
-
-        # if not hasattr(self, 'browser_control'):
-        #     self.browser_control = BrowserControl(control_settings)
-        #     #browser_control.diag_signal.connect(self.render_diagnostics)
-        #     self.browser_control.start()
-        # else:
-        #     self.render_diagnostics("Браузер уже запущен")
 
     def close_browsers(self) -> None:
         """Закрытие браузеров"""
-        self.ui.pushButton_startAutoBet.setDisabled(True)
+
         if hasattr(self, 'browser_control'):
-            self.browser_control.close_browsers()
-            del self.browser_control
-        self.ui.pushButton_startAutoBet.setDisabled(False)
+            try:
+                self.browser_control.close_browsers()
+            except BaseException as ex:
+                self.render_diagnostics(str(ex))
+                logger.error(ex)
 
     def place_bet(self) -> None:
         """Сделать ставку на найденное событие"""

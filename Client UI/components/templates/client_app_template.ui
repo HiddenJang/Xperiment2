@@ -35,8 +35,8 @@
    <widget class="QFrame" name="frame">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>0</y>
+      <x>1</x>
+      <y>1</y>
       <width>560</width>
       <height>370</height>
      </rect>
@@ -670,8 +670,8 @@
     <widget class="QPushButton" name="pushButton_startAutoBet">
      <property name="geometry">
       <rect>
-       <x>65</x>
-       <y>506</y>
+       <x>59</x>
+       <y>474</y>
        <width>181</width>
        <height>25</height>
       </rect>
@@ -732,8 +732,8 @@
     <widget class="QPushButton" name="pushButton_closeBrowsers">
      <property name="geometry">
       <rect>
-       <x>90</x>
-       <y>470</y>
+       <x>88</x>
+       <y>508</y>
        <width>151</width>
        <height>21</height>
       </rect>

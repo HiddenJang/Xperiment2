@@ -15,60 +15,64 @@ logger = logging.getLogger('Client UI.components.browsers_control.websites_contr
 
 
 class Control:
-    preloaded = False
-    close_request = False
 
     def __init__(self, common_auth_data: dict,
-                 thread_event: threading.Event,
+                 thread_pause_event: threading.Event,
                  diag_signal: QtCore.pyqtSignal,
-                 status_signal: QtCore.pyqtSignal):
+                 finish_signal: QtCore.pyqtSignal):
         self.common_auth_data = common_auth_data
-        self.thread_event = thread_event
+        self.thread_pause_event = thread_pause_event
         self.diag_signal = diag_signal
-        self.status_signal = status_signal
+        self.finish_signal = finish_signal
+
+        self.preloaded = False
+        self.close_request = False
 
     def preload(self):
         """Открытие страницы БК и авторизация пользователя"""
-
-        driver = webdriver.Driver(settings.BOOKMAKERS.get(self.common_auth_data['bkmkr_name'])).get_driver()
-        driver = driver['driver']
+        driver_dict = webdriver.Driver(settings.BOOKMAKERS.get(self.common_auth_data['bkmkr_name'])).get_driver()
+        self.driver = driver_dict['driver']
         login = self.common_auth_data['auth_data']['login']
         password = self.common_auth_data['auth_data']['password']
 
         for n in range(5):
             try:
-                element3 = WebDriverWait(driver, 60).until(
+                element3 = WebDriverWait(self.driver, 60).until(
                     EC.presence_of_element_located((By.XPATH, "//a[@href='/login']")))
                 element3.click()
-                element4 = WebDriverWait(driver, 60).until(
+                element4 = WebDriverWait(self.driver, 60).until(
                     EC.presence_of_element_located((By.XPATH, "//span[contains(text(),'E-mail')]")))
                 element4.click()
-                element5 = WebDriverWait(driver, 60).until(
+                element5 = WebDriverWait(self.driver, 60).until(
                     EC.presence_of_element_located((By.XPATH, "//input[@name='login']")))
-                element6 = WebDriverWait(driver, 60).until(
+                element6 = WebDriverWait(self.driver, 60).until(
                     EC.presence_of_element_located((By.XPATH, "//input[@name='password']")))
                 element5.clear()
                 element6.clear()
                 element5.send_keys(login)
                 element6.send_keys(password)
-                element7 = WebDriverWait(driver, 60).until(
+                element7 = WebDriverWait(self.driver, 60).until(
                     EC.presence_of_element_located((By.XPATH, "//button[contains(@class, 'login__button')]")))
                 element7.click()
                 break
             except BaseException as ex:
                 if n == 4:
-                    logger.error(f'Ошибка авторизации {self.common_auth_data["bkmkr_name"]}, {ex}')
-                    self.diag_signal.emit(f'Ошибка авторизации {self.common_auth_data["bkmkr_name"]}, {ex}')
-                    driver.close()
-                    driver.quit()
+                    self.__quit(f'Ошибка авторизации {self.common_auth_data["bkmkr_name"]}, {ex}')
                     return
                 continue
 
-        Control.preloaded = True
+        self.preloaded = True
         self.diag_signal.emit(f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
-        self.thread_event.wait()
-        if Control.close_request:
-            driver.close()
-            driver.quit()
-            self.diag_signal.emit(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
+        logger.info(f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
+
+        self.thread_pause_event.wait()
+        if self.close_request:
+            self.__quit(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
             return
+
+    def __quit(self, diag_mess: str) -> None:
+        """Завершение работы"""
+        self.driver.close()
+        self.driver.quit()
+        logger.error(diag_mess)
+        self.diag_signal.emit(diag_mess)

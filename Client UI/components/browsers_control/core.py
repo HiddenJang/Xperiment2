@@ -12,13 +12,14 @@ logger = logging.getLogger('Client UI.components.browsers_control.core')
 
 class BrowserControl(QObject):
     diag_signal = QtCore.pyqtSignal(str)
-    status_signal = QtCore.pyqtSignal(bool)
+    finish_signal = QtCore.pyqtSignal(bool)
     bet_params = dict
 
     def __init__(self, control_settings: dict):
         super(BrowserControl, self).__init__()
         self.control_settings = control_settings
         self.started_threads = {}
+        self.timer = QtCore.QTimer()
 
     def start(self):
         """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
@@ -36,16 +37,22 @@ class BrowserControl(QObject):
         for bkmkr_name in control_modules.keys():
             if auth_data.get(bkmkr_name):
                 control_module = control_modules[bkmkr_name]
-                thread_event = threading.Event()
+                thread_pause_event = threading.Event()
                 control = control_module.Control({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]},
-                                                 thread_event,
+                                                 thread_pause_event,
                                                  self.diag_signal,
-                                                 self.status_signal)
+                                                 self.finish_signal)
                 control_thread = threading.Thread(target=control.preload, daemon=True)
                 control_thread.start()
                 self.started_threads[bkmkr_name] = {'control_module_class': control_module.Control,
+                                                    'control_instance': control,
                                                     'control_thread': control_thread,
-                                                    'thread_event': thread_event}
+                                                    'thread_pause_event': thread_pause_event}
+        if not self.started_threads:
+            self.diag_signal.emit("Процесс автоматического управления не запущен. "
+                                  "Отсутвуют требуемые модули управления или данные авторизации для доступных модулей")
+            self.finish_signal.emit(True)
+            return
         self.diag_signal.emit("Процесс автоматического управления запущен")
 
     def bet(self) -> None:
@@ -54,13 +61,29 @@ class BrowserControl(QObject):
 
     def close_browsers(self) -> None:
         """Закрытие браузеров"""
-        if hasattr(self, "started_threads"):
+        if hasattr(self, "started_threads") and self.__survey_threads_status():
             for bkmkr_name in self.started_threads.keys():
-                control_module_class = self.started_threads[bkmkr_name]['control_module_class']
-                control_module_class.close_request = True
+                control_instance = self.started_threads[bkmkr_name]['control_instance']
+                control_instance.close_request = True
+                thread_pause_event = self.started_threads[bkmkr_name]['thread_pause_event']
+                thread_pause_event.set()
+            if not self.timer.isActive():
+                self.timer.setInterval(500)
+                self.timer.timeout.connect(self.__survey_threads_status)
+                self.timer.start()
+        else:
+            self.finish_signal.emit(True)
 
-                thread_event = self.started_threads[bkmkr_name]['thread_event']
-                thread_event.set()
+    def __survey_threads_status(self) -> bool:
+        """Опрос сотояний потоков управления сайтами букмекеров, True - в работе, False - завершены"""
+        threads_in_work = False
+        for bkmkr_name in self.started_threads.keys():
+            control_thread = self.started_threads[bkmkr_name]['control_thread']
+            threads_in_work = threads_in_work or control_thread.is_alive()
+
+        if not threads_in_work:
+            self.finish_signal.emit(True)
+        return threads_in_work
 
     @staticmethod
     def __get_control_modules() -> dict:
