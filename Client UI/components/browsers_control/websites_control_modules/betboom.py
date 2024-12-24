@@ -18,12 +18,10 @@ class Control:
 
     def __init__(self, common_auth_data: dict,
                  thread_pause_event: threading.Event,
-                 diag_signal: QtCore.pyqtSignal,
-                 finish_signal: QtCore.pyqtSignal):
+                 diag_signal: QtCore.pyqtSignal):
         self.common_auth_data = common_auth_data
         self.thread_pause_event = thread_pause_event
         self.diag_signal = diag_signal
-        self.finish_signal = finish_signal
 
         self.preloaded = False
         self.close_request = False

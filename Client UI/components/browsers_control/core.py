@@ -40,8 +40,7 @@ class BrowserControl(QObject):
                 thread_pause_event = threading.Event()
                 control = control_module.Control({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]},
                                                  thread_pause_event,
-                                                 self.diag_signal,
-                                                 self.finish_signal)
+                                                 self.diag_signal)
                 control_thread = threading.Thread(target=control.preload, daemon=True)
                 control_thread.start()
                 self.started_threads[bkmkr_name] = {'control_module_class': control_module.Control,
@@ -50,6 +49,8 @@ class BrowserControl(QObject):
                                                     'thread_pause_event': thread_pause_event}
         if not self.started_threads:
             self.diag_signal.emit("Процесс автоматического управления не запущен. "
+                                  "Отсутвуют требуемые модули управления или данные авторизации для доступных модулей")
+            logger.info("Процесс автоматического управления не запущен. "
                                   "Отсутвуют требуемые модули управления или данные авторизации для доступных модулей")
             self.finish_signal.emit(True)
             return
@@ -98,6 +99,3 @@ class BrowserControl(QObject):
             modules_dict[bkmkr_name] = module
         return modules_dict
 
-
-if __name__ == '__main__':
-    pass
