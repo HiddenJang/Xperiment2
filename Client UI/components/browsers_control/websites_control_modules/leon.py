@@ -25,6 +25,7 @@ class Control:
 
         self.preloaded = False
         self.close_request = False
+        self.bet_params = {}
 
     def preload(self):
         """Открытие страницы БК и авторизация пользователя"""

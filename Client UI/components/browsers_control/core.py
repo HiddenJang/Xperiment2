@@ -67,11 +67,12 @@ class BrowserControl(QObject):
             if BrowserControl.bet_params and \
                     self.started_threads[first_bkmkr_name]['control_instance'].preloaded and \
                     self.started_threads[second_bkmkr_name]['control_instance'].preloaded:
+                self.started_threads[first_bkmkr_name]['control_instance'].bet_params = BrowserControl.bet_params.get(first_bkmkr_name)
+                self.started_threads[second_bkmkr_name]['control_instance'].bet_params = BrowserControl.bet_params.get(second_bkmkr_name)
                 first_thread_pause_event = self.started_threads[first_bkmkr_name]['thread_pause_event']
                 second_thread_pause_event = self.started_threads[second_bkmkr_name]['thread_pause_event']
                 first_thread_pause_event.set()
                 second_thread_pause_event.set()
-
             return
 
     def close_browsers(self) -> None:
