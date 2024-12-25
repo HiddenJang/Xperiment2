@@ -12,7 +12,7 @@ logger = logging.getLogger('Client UI.components.browsers_control.core')
 
 class BrowserControl(QObject):
     diag_signal = QtCore.pyqtSignal(str)
-    finish_signal = QtCore.pyqtSignal(bool)
+    finish_signal = QtCore.pyqtSignal()
     bet_params = dict
 
     def __init__(self, control_settings: dict):
@@ -52,7 +52,7 @@ class BrowserControl(QObject):
                                   "Отсутвуют требуемые модули управления или данные авторизации для доступных модулей")
             logger.info("Процесс автоматического управления не запущен. "
                                   "Отсутвуют требуемые модули управления или данные авторизации для доступных модулей")
-            self.finish_signal.emit(True)
+            self.finish_signal.emit()
             return
         self.diag_signal.emit("Процесс автоматического управления запущен")
 
@@ -73,17 +73,17 @@ class BrowserControl(QObject):
                 self.timer.timeout.connect(self.__survey_threads_status)
                 self.timer.start()
         else:
-            self.finish_signal.emit(True)
+            self.finish_signal.emit()
 
     def __survey_threads_status(self) -> bool:
-        """Опрос сотояний потоков управления сайтами букмекеров, True - в работе, False - завершены"""
+        """Опрос сотояний потоков управления сайтами букмекеров, True - в работе, False - завершены/не запущены"""
         threads_in_work = False
         for bkmkr_name in self.started_threads.keys():
             control_thread = self.started_threads[bkmkr_name]['control_thread']
             threads_in_work = threads_in_work or control_thread.is_alive()
 
         if not threads_in_work:
-            self.finish_signal.emit(True)
+            self.finish_signal.emit()
         return threads_in_work
 
     @staticmethod

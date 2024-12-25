@@ -30,6 +30,10 @@ class Control:
         """Открытие страницы БК и авторизация пользователя"""
         driver_dict = webdriver.Driver(settings.BOOKMAKERS.get(self.common_auth_data['bkmkr_name'])).get_driver()
         self.driver = driver_dict['driver']
+        if not self.driver:
+            logger.error(f"Сайт {self.common_auth_data['bkmkr_name']} {driver_dict['status']}")
+            self.diag_signal.emit(f"Сайт {self.common_auth_data['bkmkr_name']} {driver_dict['status']}")
+            return
         login = self.common_auth_data['auth_data']['login']
         password = self.common_auth_data['auth_data']['password']
 
