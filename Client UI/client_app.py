@@ -55,11 +55,10 @@ class DesktopApp(QMainWindow):
         # запуск проверки доступности сервера
         self.render_server_status()
         self.request_server_status()
-
-        self.scanner_thread = QThread()
-
         # таймер опроса состояния потока автоматического управления браузером
         self.thread_status_timer = QtCore.QTimer()
+        # экземпляр потока для запуска автоматического управления браузером
+        self.browser_control_thread = QThread()
 
     ###### Add handling functions #####
 
@@ -82,22 +81,19 @@ class DesktopApp(QMainWindow):
         self.ui.action_browserControlSettings.triggered.connect(self.open_browser_control_set_window)
         self.browser_control_set_window.diag_signal.connect(self.render_diagnostics)
 
-        self.ui.pushButton_startAutoBet.clicked.connect(self.start_auto_bet_preload)
+        self.ui.pushButton_startAutoBet.clicked.connect(self.preload_websites_and_authorize)
         self.ui.pushButton_closeBrowsers.clicked.connect(self.close_browsers)
-
-        #BrowserControl.diag_signal.connect(self.render_diagnostics)
 
     ###### Auto betting ######
 
-    def start_auto_bet_preload(self) -> None:
+    def preload_websites_and_authorize(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
         self.ui.pushButton_startAutoBet.setDisabled(True)
         BrowserControl.bet_params = self.get_autobet_settings()
         control_settings = self.browser_control_set_window.get_control_settings()
         self.browser_control = BrowserControl(control_settings)
-        self.browser_control_thread = QThread()
         self.browser_control.moveToThread(self.browser_control_thread)
-        self.browser_control_thread.started.connect(self.browser_control.start)
+        self.browser_control_thread.started.connect(self.browser_control.preload_sites_and_authorize)
         self.browser_control.diag_signal.connect(self.render_diagnostics)
         self.browser_control.finish_signal.connect(self.browser_control_thread.quit)
         self.browser_control.finish_signal.connect(self.browser_control.timer.stop)
@@ -105,7 +101,7 @@ class DesktopApp(QMainWindow):
 
     def close_browsers(self) -> None:
         """Закрытие браузеров"""
-        if hasattr(self, 'browser_control_thread') and self.browser_control_thread.isRunning():
+        if self.browser_control_thread.isRunning():
             try:
                 self.browser_control.close_browsers()
                 if not self.thread_status_timer.isActive():
@@ -122,10 +118,11 @@ class DesktopApp(QMainWindow):
             self.thread_status_timer.stop()
             self.ui.pushButton_startAutoBet.setDisabled(False)
 
-    def place_bet(self) -> None:
+    def place_bet(self, scan_results: dict) -> None:
         """Сделать ставку на найденное событие"""
-        #self.browser_control
-        pass
+        if self.browser_control_thread.isRunning() and scan_results.get('Success'):
+            self.browser_control.start_betting(scan_results['Success'])
+
 
     def get_autobet_settings(self) -> dict:
         """Получение состояний элементов GUI фрейма НАСТРОЙКИ АВТОМАТИЧЕСКИХ СТАВОК"""
@@ -253,6 +250,7 @@ class DesktopApp(QMainWindow):
                                coalesce=True,
                                max_instances=1)
         self.scanner.scan_result_signal.connect(self.render_scan_result)
+        self.scanner.scan_result_signal.connect(self.place_bet)
         self.render_diagnostics("Сканирование запущено...")
 
     def stop_scan(self) -> None:

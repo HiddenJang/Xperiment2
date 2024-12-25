@@ -67,11 +67,16 @@ class Control:
         self.diag_signal.emit(f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
         logger.info(f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
 
-        self.thread_pause_event.wait()
-        if self.close_request:
-            self.__quit(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
-            return
+        while True:
+            self.thread_pause_event.wait()
+            if self.close_request:
+                self.__quit(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
+                return
+            self.bet()
 
+    def bet(self) -> None:
+        """Размещение ставки"""
+        print("Запущен процесс размещения ставки")
 
 
     def __quit(self, diag_mess: str) -> None:

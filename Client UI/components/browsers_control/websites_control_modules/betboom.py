@@ -75,6 +75,10 @@ class Control:
             self.__quit(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
             return
 
+    def bet(self) -> None:
+        """Размещение ставки"""
+        print("Запущен процесс размещения ставки")
+
     def __quit(self, diag_mess: str) -> None:
         """Завершение работы"""
         self.driver.close()
