@@ -89,14 +89,15 @@ class DesktopApp(QMainWindow):
     def preload_websites_and_authorize(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
         self.ui.pushButton_startAutoBet.setDisabled(True)
-        BrowserControl.bet_params = self.get_autobet_settings()
+
         control_settings = self.browser_control_set_window.get_control_settings()
         self.browser_control = BrowserControl(control_settings)
         self.browser_control.moveToThread(self.browser_control_thread)
         self.browser_control_thread.started.connect(self.browser_control.preload_sites_and_authorize)
         self.browser_control.diag_signal.connect(self.render_diagnostics)
         self.browser_control.finish_signal.connect(self.browser_control_thread.quit)
-        self.browser_control.finish_signal.connect(self.browser_control.timer.stop)
+        self.browser_control.finish_signal.connect(self.browser_control.threads_status_timer.stop)
+        self.browser_control.close_all_signal.connect(self.close_browsers)
         self.browser_control_thread.start()
 
     def close_browsers(self) -> None:
@@ -116,18 +117,21 @@ class DesktopApp(QMainWindow):
         """Проверка состояния потока автоматического управления браузером"""
         if not self.browser_control_thread.isRunning():
             self.thread_status_timer.stop()
+            self.browser_control.bet_in_progress = False
             self.ui.pushButton_startAutoBet.setDisabled(False)
 
     def place_bet(self, scan_results: dict) -> None:
         """Сделать ставку на найденное событие"""
-        if self.browser_control_thread.isRunning() and scan_results.get('Success'):
+        if self.browser_control_thread.isRunning() and \
+                not self.browser_control.bet_in_progress and \
+                scan_results.get('Success'):
+            BrowserControl.bet_params = self.get_autobet_settings()
             self.browser_control.start_betting(scan_results['Success'])
-
 
     def get_autobet_settings(self) -> dict:
         """Получение состояний элементов GUI фрейма НАСТРОЙКИ АВТОМАТИЧЕСКИХ СТАВОК"""
-        return {'bet_size_first': self.ui.spinBox_betSizeFirst.value(),
-                'bet_size_second': self.ui.spinBox_betSizeSecond.value(),
+        return {self.ui.comboBox_firstBkmkr.currentText().lower(): self.ui.spinBox_betSizeFirst.value(),
+                self.ui.comboBox_secondBkmkr.currentText().lower(): self.ui.spinBox_betSizeSecond.value(),
                 'bet_imitation': self.ui.checkBox_betImitation.isChecked()}
 
     ###### Test connection slots ######

@@ -78,7 +78,8 @@ class Control:
 
     def bet(self) -> None:
         """Размещение ставки"""
-        print("Запущен процесс размещения ставки")
+        print(f"Запущен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
+        print(f"Закончен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
 
     def __quit(self, diag_mess: str) -> None:
         """Завершение работы"""

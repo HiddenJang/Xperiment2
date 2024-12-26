@@ -1,7 +1,6 @@
 import logging
 import threading
 import time
-
 from PyQt5 import QtCore
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -11,7 +10,7 @@ from selenium.webdriver.common.by import By
 from .. import webdriver
 from ... import settings
 
-logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.leon')
+logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.olimp')
 
 
 class Control:
@@ -25,7 +24,6 @@ class Control:
 
         self.preloaded = False
         self.close_request = False
-        self.bet_prohibition = True
         self.event_data = {}
         self.bet_params = {}
 
@@ -40,21 +38,18 @@ class Control:
         password = self.common_auth_data['auth_data']['password']
 
         try:
-            # нажатие кнопки ВОЙТИ
-            WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//a[@href='/login']"))).click()
-            # нажатие вкладки EMAIL
-            WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//span[contains(text(),'E-mail')]"))).click()
-            # очитска полей ЛОШИН и ПАРОЛЬ и ввод данных авторизации
-            element1 = WebDriverWait(self.driver, 60).until(
-                EC.presence_of_element_located((By.XPATH, "//input[@name='login']")))
-            element2 = WebDriverWait(self.driver, 60).until(
-                EC.presence_of_element_located((By.XPATH, "//input[@name='password']")))
-            element1.clear()
-            element2.clear()
-            element1.send_keys(login)
-            element2.send_keys(password)
-            # нажатие кнопки ВОЙТИ в окне авторизации
-            WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//button[contains(@class, 'login__button')]"))).click()
+            # нажатие кнопки ВХОД
+            WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'signIn')]"))).click()
+            # ввод ЛОГИНА
+            element = self.driver.find_element(By.XPATH, "//input[@type='tel']")
+            element.click()
+            element.send_keys(login)
+            # ввод ПАРОЛЯ
+            element = self.driver.find_element(By.XPATH, "//input[@type='password']")
+            element.click()
+            element.send_keys(password)
+            # нажатие кнопки ВОЙТИ после ввода логина и пароля
+            self.driver.find_element(By.XPATH, "//button[@type='submit']").click()
         except BaseException as ex:
             self.__quit(f'Ошибка авторизации {self.common_auth_data["bkmkr_name"]}, {ex}')
             return
@@ -67,23 +62,11 @@ class Control:
             if self.close_request:
                 self.__quit(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
                 return
-            self.bet_prohibition = True
             self.bet()
 
     def bet(self) -> None:
         """Размещение ставки"""
         self.__send_diag_message(f"Запущен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
-        try:
-            print(self.event_data)
-            url = self.event_data["url"]
-            bet_size = self.bet_params[self.common_auth_data['bkmkr_name']]
-            print(self.event_data['runners'].keys())
-            total_nominal = list(self.event_data['runners'].keys())[0]
-            total_koeff_type = list(self.event_data['runners'][total_nominal].keys())[0]
-            total_koeff = self.event_data['runners'][total_nominal][total_koeff_type]
-            print(total_nominal, total_koeff_type, total_koeff)
-        except BaseException:
-            print(ex)
         time.sleep(10)
         self.__send_diag_message(f"Закончен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
 

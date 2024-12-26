@@ -4,7 +4,7 @@ import logging
 from PyQt5 import QtCore
 from PyQt5.QtCore import QObject
 
-logger = logging.getLogger('Client UI.components.services')
+logger = logging.getLogger('Client UI.components.server_connection_service')
 
 
 class Scanner(QObject):

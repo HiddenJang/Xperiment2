@@ -13,13 +13,16 @@ logger = logging.getLogger('Client UI.components.browsers_control.core')
 class BrowserControl(QObject):
     diag_signal = QtCore.pyqtSignal(str)
     finish_signal = QtCore.pyqtSignal()
+    close_all_signal = QtCore.pyqtSignal()
     bet_params = {}
 
     def __init__(self, control_settings: dict):
         super(BrowserControl, self).__init__()
         self.control_settings = control_settings
         self.started_threads = {}
-        self.timer = QtCore.QTimer()
+        self.bet_in_progress = False
+        self.threads_status_timer = QtCore.QTimer()
+        self.betting_status_timer = QtCore.QTimer()
 
     def preload_sites_and_authorize(self):
         """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
@@ -61,19 +64,42 @@ class BrowserControl(QObject):
         for event_data in events_data:
             first_bkmkr_name = event_data[0]['bookmaker']
             second_bkmkr_name = event_data[1]['bookmaker']
-            if not self.started_threads.get(first_bkmkr_name) or not self.started_threads.get(second_bkmkr_name):
-                continue
 
-            if BrowserControl.bet_params and \
+            if self.started_threads.get(first_bkmkr_name) and \
+                    self.started_threads.get(second_bkmkr_name) and \
+                    BrowserControl.bet_params and \
                     self.started_threads[first_bkmkr_name]['control_instance'].preloaded and \
                     self.started_threads[second_bkmkr_name]['control_instance'].preloaded:
-                self.started_threads[first_bkmkr_name]['control_instance'].bet_params = BrowserControl.bet_params.get(first_bkmkr_name)
-                self.started_threads[second_bkmkr_name]['control_instance'].bet_params = BrowserControl.bet_params.get(second_bkmkr_name)
+                self.started_threads[first_bkmkr_name]['control_instance'].bet_params = BrowserControl.bet_params
+                self.started_threads[first_bkmkr_name]['control_instance'].event_data = event_data[0]
+                self.started_threads[second_bkmkr_name]['control_instance'].bet_params = BrowserControl.bet_params
+                self.started_threads[second_bkmkr_name]['control_instance'].event_data = event_data[1]
                 first_thread_pause_event = self.started_threads[first_bkmkr_name]['thread_pause_event']
                 second_thread_pause_event = self.started_threads[second_bkmkr_name]['thread_pause_event']
                 first_thread_pause_event.set()
                 second_thread_pause_event.set()
+                self.bet_in_progress = True
+
+                if not self.betting_status_timer.isActive():
+                    self.betting_status_timer.setInterval(500)
+                    self.betting_status_timer.timeout.connect(lambda: self.__survey_betting_status(first_bkmkr_name, second_bkmkr_name))
+                    self.betting_status_timer.start()
+                return
+
+    def __survey_betting_status(self, first_bkmkr_name: str, second_bkmkr_name: str) -> None:
+        """Опрос процессов размещения ставок,
+                True - в работе, False - завершены/не запущены"""
+        first_bkmkr_thread = self.started_threads[first_bkmkr_name]['control_thread']
+        second_bkmkr_thread = self.started_threads[second_bkmkr_name]['control_thread']
+        if not first_bkmkr_thread.is_alive() or not second_bkmkr_thread.is_alive():
+            print("closing all")
+            self.close_all_signal.emit()
             return
+
+        first_bkmkr_thread_pause_event = self.started_threads[first_bkmkr_name]['thread_pause_event']
+        second_bkmkr_thread_pause_event = self.started_threads[second_bkmkr_name]['thread_pause_event']
+        if not first_bkmkr_thread_pause_event.is_set() and not second_bkmkr_thread_pause_event.is_set():
+            self.bet_in_progress = False
 
     def close_browsers(self) -> None:
         """Закрытие браузеров"""
@@ -83,15 +109,20 @@ class BrowserControl(QObject):
                 control_instance.close_request = True
                 thread_pause_event = self.started_threads[bkmkr_name]['thread_pause_event']
                 thread_pause_event.set()
-            if not self.timer.isActive():
-                self.timer.setInterval(500)
-                self.timer.timeout.connect(self.__survey_threads_status)
-                self.timer.start()
+
+            if self.betting_status_timer.isActive():
+                self.betting_status_timer.stop()
+
+            if not self.threads_status_timer.isActive():
+                self.threads_status_timer.setInterval(500)
+                self.threads_status_timer.timeout.connect(self.__survey_threads_status)
+                self.threads_status_timer.start()
         # else:
         #     self.finish_signal.emit()
 
     def __survey_threads_status(self) -> bool:
-        """Опрос сотояний потоков управления сайтами букмекеров, True - в работе, False - завершены/не запущены"""
+        """Опрос сотояний потоков управления сайтами букмекеров,
+        True - в работе, False - завершены/не запущены"""
         threads_in_work = False
         for bkmkr_name in self.started_threads.keys():
             control_thread = self.started_threads[bkmkr_name]['control_thread']
