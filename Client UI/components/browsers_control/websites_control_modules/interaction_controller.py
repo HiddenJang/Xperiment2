@@ -1,17 +1,13 @@
 import logging
 import threading
 import time
-
+from importlib import import_module
 from PyQt5 import QtCore
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
 
 from .. import webdriver
 from ... import settings
 
-logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.leon')
+logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.interaction_controller')
 
 
 class WebsiteController:
@@ -28,6 +24,8 @@ class WebsiteController:
         self.bet_prohibition = True
         self.event_data = {}
         self.bet_params = {}
+        self.site_interaction_module = import_module(f'.browsers_control.websites_control_modules.{self.common_auth_data["bkmkr_name"]}',
+                                    package='components')
 
     def preload(self):
         """Открытие страницы БК и авторизация пользователя"""
@@ -42,21 +40,7 @@ class WebsiteController:
         password = self.common_auth_data['auth_data']['password']
 
         try:
-            # нажатие кнопки ВОЙТИ
-            WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//a[@href='/login']"))).click()
-            # нажатие вкладки EMAIL
-            WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//span[contains(text(),'E-mail')]"))).click()
-            # очитска полей ЛОШИН и ПАРОЛЬ и ввод данных авторизации
-            element1 = WebDriverWait(self.driver, 60).until(
-                EC.presence_of_element_located((By.XPATH, "//input[@name='login']")))
-            element2 = WebDriverWait(self.driver, 60).until(
-                EC.presence_of_element_located((By.XPATH, "//input[@name='password']")))
-            element1.clear()
-            element2.clear()
-            element1.send_keys(login)
-            element2.send_keys(password)
-            # нажатие кнопки ВОЙТИ в окне авторизации
-            WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//button[contains(@class, 'login__button')]"))).click()
+            self.site_interaction_module.preload(self.driver, login, password)
             self.__send_diag_message(
                 f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
             self.preloaded = True
@@ -84,7 +68,7 @@ class WebsiteController:
             total_nominal = list(self.event_data['runners'].keys())[0]
             total_koeff_type = list(self.event_data['runners'][total_nominal].keys())[0]
             total_koeff = self.event_data['runners'][total_nominal][total_koeff_type]
-            print(total_nominal, total_koeff_type, total_koeff)
+            self.site_interaction_module.bet(url, bet_size, total_nominal, total_koeff_type, total_koeff)
         except BaseException as ex:
             print(ex)
         time.sleep(10)

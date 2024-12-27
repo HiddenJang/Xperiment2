@@ -1,10 +1,11 @@
 import logging
 import threading
+from importlib import import_module
 from PyQt5 import QtCore
 from PyQt5.QtCore import QObject
 
 from .. import settings
-from importlib import import_module
+from .websites_control_modules.interaction_controller import WebsiteController
 
 
 logger = logging.getLogger('Client UI.components.browsers_control.core')
@@ -26,28 +27,27 @@ class BrowserControl(QObject):
 
     def preload_sites_and_authorize(self):
         """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
-
-        control_modules = self.__get_control_modules()
+        interaction_modules = self.__get_site_interaction_modules()
         auth_data = self.control_settings["auth_data"]
 
         for bkmkr_name in auth_data.keys():
             if not (auth_data[bkmkr_name]['login'] and auth_data[bkmkr_name]['password']):
                 try:
-                    del control_modules[bkmkr_name]
+                    del interaction_modules[bkmkr_name]
                 except BaseException:
                     continue
 
-        for bkmkr_name in control_modules.keys():
+        for bkmkr_name in interaction_modules.keys():
             if auth_data.get(bkmkr_name):
-                control_module = control_modules[bkmkr_name]
+                interaction_module = interaction_modules[bkmkr_name]
                 thread_pause_event = threading.Event()
-                control = control_module.Control({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]},
+                website_controller = WebsiteController({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]},
                                                  thread_pause_event,
                                                  self.diag_signal)
-                control_thread = threading.Thread(target=control.preload, daemon=True)
+                control_thread = threading.Thread(target=website_controller.preload, daemon=True)
                 control_thread.start()
-                self.started_threads[bkmkr_name] = {'control_module_class': control_module.Control,
-                                                    'control_instance': control,
+                self.started_threads[bkmkr_name] = {'interaction_module': interaction_module,
+                                                    'controller_instance': website_controller,
                                                     'control_thread': control_thread,
                                                     'thread_pause_event': thread_pause_event}
         if not self.started_threads:
@@ -68,12 +68,12 @@ class BrowserControl(QObject):
             if self.started_threads.get(first_bkmkr_name) and \
                     self.started_threads.get(second_bkmkr_name) and \
                     BrowserControl.bet_params and \
-                    self.started_threads[first_bkmkr_name]['control_instance'].preloaded and \
-                    self.started_threads[second_bkmkr_name]['control_instance'].preloaded:
-                self.started_threads[first_bkmkr_name]['control_instance'].bet_params = BrowserControl.bet_params
-                self.started_threads[first_bkmkr_name]['control_instance'].event_data = event_data[0]
-                self.started_threads[second_bkmkr_name]['control_instance'].bet_params = BrowserControl.bet_params
-                self.started_threads[second_bkmkr_name]['control_instance'].event_data = event_data[1]
+                    self.started_threads[first_bkmkr_name]['controller_instance'].preloaded and \
+                    self.started_threads[second_bkmkr_name]['controller_instance'].preloaded:
+                self.started_threads[first_bkmkr_name]['controller_instance'].bet_params = BrowserControl.bet_params
+                self.started_threads[first_bkmkr_name]['controller_instance'].event_data = event_data[0]
+                self.started_threads[second_bkmkr_name]['controller_instance'].bet_params = BrowserControl.bet_params
+                self.started_threads[second_bkmkr_name]['controller_instance'].event_data = event_data[1]
                 first_thread_pause_event = self.started_threads[first_bkmkr_name]['thread_pause_event']
                 second_thread_pause_event = self.started_threads[second_bkmkr_name]['thread_pause_event']
                 first_thread_pause_event.set()
@@ -105,8 +105,8 @@ class BrowserControl(QObject):
         """Закрытие браузеров"""
         if self.__survey_threads_status():
             for bkmkr_name in self.started_threads.keys():
-                control_instance = self.started_threads[bkmkr_name]['control_instance']
-                control_instance.close_request = True
+                controller_instance = self.started_threads[bkmkr_name]['controller_instance']
+                controller_instance.close_request = True
                 thread_pause_event = self.started_threads[bkmkr_name]['thread_pause_event']
                 thread_pause_event.set()
 
@@ -133,7 +133,7 @@ class BrowserControl(QObject):
         return threads_in_work
 
     @staticmethod
-    def __get_control_modules() -> dict:
+    def __get_site_interaction_modules() -> dict:
         """Получение перечня доступных модулей управления вебстраницами букмекеров"""
         modules_dict = {}
         for bkmkr_name in settings.BOOKMAKERS.keys():
