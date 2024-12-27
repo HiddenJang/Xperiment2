@@ -24,7 +24,8 @@ class Driver:
                                f'Необходимо скачать webdriver Chrome')
             return {'driver': None,
                     'status': f'Webdriver отсутствует в директории {webdriver_file_path}. '
-                               f'Необходимо скачать webdriver Chrome'}
+                               f'Необходимо скачать webdriver Chrome',
+                    'ex': ''}
         s = Service(executable_path=webdriver_file_path)
         opts = Options()
         # opts.add_argument('--headless') # запуск браузера в фоне
@@ -35,10 +36,10 @@ class Driver:
         try:
             driver = webdriver.Chrome(options=opts, service=s)
             driver.get(url=self.base_url)
-            return {'driver': driver, 'status': 'Webdriver успешно подключен'}
+            return {'driver': driver, 'status': 'Webdriver успешно подключен', 'ex': ''}
         except BaseException as ex:
             logger.error(ex)
-            return {'driver': None, 'status': f'Ошибка в работе webdriver, {ex}'}
+            return {'driver': None, 'status': f'Ошибка в работе webdriver', 'ex': ex}
 
 
 if __name__ == '__main__':

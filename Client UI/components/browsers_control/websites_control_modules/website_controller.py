@@ -14,7 +14,7 @@ from ... import settings
 logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.leon')
 
 
-class Control:
+class WebsiteController:
 
     def __init__(self, common_auth_data: dict,
                  thread_pause_event: threading.Event,

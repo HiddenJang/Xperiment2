@@ -32,7 +32,9 @@ class Control:
         driver_dict = webdriver.Driver(settings.BOOKMAKERS.get(self.common_auth_data['bkmkr_name'])).get_driver()
         self.driver = driver_dict['driver']
         if not self.driver:
-            self.__send_diag_message(f"Сайт {self.common_auth_data['bkmkr_name']} {driver_dict['status']}", 'error')
+            self.__send_diag_message(f"Сайт {self.common_auth_data['bkmkr_name']} {driver_dict['status']}",
+                                     exception=driver_dict['ex'],
+                                     status='error')
             return
         login = self.common_auth_data['auth_data']['login']
         password = self.common_auth_data['auth_data']['password']
@@ -41,7 +43,7 @@ class Control:
             # нажатие кнопки ВХОД
             WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'signIn')]"))).click()
             # ввод ЛОГИНА
-            element = self.driver.find_element(By.XPATH, "//input[@type='tel']")
+            element = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']")))
             element.click()
             element.send_keys(login)
             # ввод ПАРОЛЯ
@@ -50,17 +52,26 @@ class Control:
             element.send_keys(password)
             # нажатие кнопки ВОЙТИ после ввода логина и пароля
             self.driver.find_element(By.XPATH, "//button[@type='submit']").click()
-        except BaseException as ex:
-            self.__quit(f'Ошибка авторизации {self.common_auth_data["bkmkr_name"]}, {ex}')
-            return
+            # проверка завершения авторизации
+            try:
+                WebDriverWait(self.driver, 60).until(EC.visibility_of_element_located((By.XPATH, "//button[contains(@class, 'balanceButton')]")))
+                self.__send_diag_message(
+                    f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
+                self.preloaded = True
+            except BaseException:
+                self.__send_diag_message(
+                    f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, но авторизация не пройдена')
 
-        self.preloaded = True
-        self.__send_diag_message(f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
+        except BaseException as ex:
+            self.__send_diag_message(f'Ошибка авторизации {self.common_auth_data["bkmkr_name"]}', exception=ex)
+            self.__quit()
+            return
 
         while True:
             self.thread_pause_event.wait()
             if self.close_request:
-                self.__quit(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
+                self.__send_diag_message(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
+                self.__quit()
                 return
             self.bet()
 
@@ -68,30 +79,31 @@ class Control:
         """Размещение ставки"""
         self.__send_diag_message(f"Запущен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
         time.sleep(10)
+        self.thread_pause_event.clear()
         self.__send_diag_message(f"Закончен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
 
 
-    def __send_diag_message(self, diag_mess: str, status: str='info') -> None:
+    def __send_diag_message(self, diag_mess: str, exception: BaseException='', status: str='info') -> None:
         """Отправка диагностических сообщений в логгер и приложение"""
+        log_info = diag_mess + '. ' + str(exception)
         match status:
             case 'debug':
-                logger.debug(diag_mess)
+                logger.debug(log_info)
             case 'info':
-                logger.info(diag_mess)
+                logger.info(log_info)
             case "warning":
-                logger.warning(diag_mess)
+                logger.warning(log_info)
             case "error":
-                logger.error(diag_mess)
+                logger.error(log_info)
             case "critical":
-                logger.critical(diag_mess)
+                logger.critical(log_info)
         self.diag_signal.emit(diag_mess)
 
-    def __quit(self, diag_mess: str) -> None:
+    def __quit(self) -> None:
         """Завершение работы"""
+        self.thread_pause_event.clear()
         try:
             self.driver.close()
             self.driver.quit()
         except BaseException:
             pass
-        logger.error(diag_mess)
-        self.diag_signal.emit(diag_mess)
