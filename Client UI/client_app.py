@@ -88,6 +88,9 @@ class DesktopApp(QMainWindow):
 
     def preload_websites_and_authorize(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
+        if not os.path.exists(settings.WEBDRIVER_DIR.get(sys.platform)):
+            self.render_diagnostics(f"Webdriver не найден:  {settings.WEBDRIVER_DIR.get(sys.platform)} does not exist. Необходимо скачать двебдрайвер в указанную директорию")
+            return
         self.ui.pushButton_startAutoBet.setDisabled(True)
 
         control_settings = self.browser_control_set_window.get_control_settings()

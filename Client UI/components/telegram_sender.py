@@ -9,7 +9,7 @@ class TelegramSender:
     message_switch = False
 
     @staticmethod
-    def send_text(text: str):
+    def send_text(text: str) -> None:
         """Отправка текста"""
         if TelegramSender.message_switch:
             try:
@@ -21,7 +21,7 @@ class TelegramSender:
                 logger.info(f'Ошибка отправки текстового сообщения в телеграмм, {ex}')
 
     @staticmethod
-    def send_photo(pngPath: str):
+    def send_photo(pngPath: str) -> None:
         """Отправка скриншотов"""
         if TelegramSender.message_switch:
             try:
@@ -35,7 +35,7 @@ class TelegramSender:
                 logger.info(f'Ошибка отправки скриншота в телеграмм, {ex}')
 
     @staticmethod
-    def send_xlsx(xlsxPath: str):
+    def send_xlsx(xlsxPath: str) -> None:
         """Отправка Excel-файлов"""
         if TelegramSender.message_switch:
             try:
@@ -49,7 +49,7 @@ class TelegramSender:
                 logger.info(f'Ошибка отправки статистики (xlsx) в телеграмм, {ex}')
 
     @staticmethod
-    def bot_state(var: bool):
+    def bot_state(var: bool) -> None:
         """Установка разрешения на отправку сообщений"""
         TelegramSender.message_switch = var
         if var:
