@@ -28,13 +28,43 @@ def preload(driver: selenium.webdriver, login: str, password: str) -> None:
 
 
 def bet(driver: selenium.webdriver,
+        bookmaker: str,
         url: str,
         bet_size: str,
         total_nominal: str,
         total_koeff_type: str,
         total_koeff: str) -> None:
     """Размещение ставки"""
-    time.sleep(10)
+    # закрытие купона тотала, если он остался от предыдущей ставки
+    try:
+        element = driver.find_element(By.XPATH, '//button[@class="bet-slip-event-card__remove"]')
+        element.click()
+        logger.info(f'Купон {bookmaker} от предыдущей ставки закрыт после загрузки страницы найденного события')
+    except BaseException as ex:
+        logger.info(
+            f'Не удалось закрытие купона LEON сразу после загрузки страницы (возможно он ранее был закрыт), {ex}')
+    # проверка достаточности баланса
+    try:
+        elementW = WebDriverWait(driver, 20).until(
+            EC.text_to_be_present_in_element((By.XPATH, '//div[@class="balance__text"]')))
+        elementW.text
+        balance = balance.split('.')[0]
+        if float(balance) < float(bet_size):
+            TelegramBot.sendText('Ставка на событие LEON не будет сделана, баланс меньше размера ставки.')
+            logger.info(f'Ставка на событие LEON {url} не будет сделана, баланс меньше размера ставки.')
+            self.event_thread.clear()
+            return
+    except Exception as ex:
+        TelegramBot.sendText('Не удалось получить баланс LEON. Ставка не будет сделана.')
+        logger.info(f'Не удалось получить баланс LEON. Ставка не будет сделана. {ex}')
+
+        # удалить после отработки
+        shotname_after = Preload.path + f"screenshots\\LEONafter-{str(datetime.now()).replace(':', '-')}.png"
+        driver.get_screenshot_as_file(shotname_after)  # скриншот
+        TelegramBot.sendPhoto(shotname_after)  # отправляет скриншот
+
+        self.event_thread.clear()
+        return
 
 
 

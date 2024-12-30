@@ -63,12 +63,27 @@ class WebsiteController:
         self.__send_diag_message(f"Запущен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
         try:
             print(self.event_data)
+            bookmaker = self.event_data["bookmaker"]
             url = self.event_data["url"]
             bet_size = self.bet_params[self.common_auth_data['bkmkr_name']]
             total_nominal = list(self.event_data['runners'].keys())[0]
             total_koeff_type = list(self.event_data['runners'][total_nominal].keys())[0]
             total_koeff = self.event_data['runners'][total_nominal][total_koeff_type]
-            self.site_interaction_module.bet(url, bet_size, total_nominal, total_koeff_type, total_koeff)
+
+            try:
+                self.driver.get(url=url)
+            except BaseException as ex:
+                self.__send_diag_message(f'Не удалось открыть url: {url}', exception=ex)
+                self.thread_pause_event.clear()
+                return
+
+            self.site_interaction_module.bet(self.driver,
+                                             bookmaker,
+                                             url,
+                                             bet_size,
+                                             total_nominal,
+                                             total_koeff_type,
+                                             total_koeff)
         except BaseException as ex:
             print(ex)
         time.sleep(10)
