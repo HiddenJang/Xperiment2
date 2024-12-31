@@ -1,5 +1,6 @@
 import requests
 import logging
+import urllib
 
 logger = logging.getLogger('Client UI.components.telegram_message_service')
 
@@ -9,16 +10,15 @@ class TelegramService:
     messages_on = False
     token = ""  # токен бота
     group_id = ""  # айди или ссылка-приглашение группы в телеграм
-    text_url = "https://api.telegram.org/bot" + token + "/sendMessage"
-    media_url = "https://api.telegram.org/bot" + token + "/sendMediaGroup"
 
     @staticmethod
     def send_text(text: str) -> None:
         """Отправка текста"""
         if TelegramService.messages_on:
             try:
-                params = {"group_id": TelegramService.group_id, "text": text}
-                requests.get(TelegramService.text_url, params=params)
+                text_url = "https://api.telegram.org/bot" + TelegramService.token + \
+                           "/sendMessage" + "?chat_id=" + TelegramService.group_id + "&text=" + text
+                requests.get(text_url)
             except BaseException as ex:
                 logger.info(f'Ошибка отправки текстового сообщения в телеграмм: {ex}')
 
@@ -27,10 +27,11 @@ class TelegramService:
         """Отправка скриншотов"""
         if TelegramService.messages_on:
             try:
+                media_url = "https://api.telegram.org/bot" + TelegramService.token + "/sendMediaGroup"
                 params = {"group_id": TelegramService.group_id,
                           "media": """[{"type": "photo", "media": "attach://random-name-1"}]"""}
                 files = {"random-name-1": open(img_path, "rb")}
-                requests.post(TelegramService.media_url, params=params, files=files)
+                requests.post(media_url, params=params, files=files)
             except BaseException as ex:
                 logger.info(f'Ошибка отправки скриншота в телеграмм: {ex}')
 
@@ -39,10 +40,11 @@ class TelegramService:
         """Отправка Excel-файлов"""
         if TelegramService.messages_on:
             try:
+                media_url = "https://api.telegram.org/bot" + TelegramService.token + "/sendMediaGroup"
                 params = {"group_id": TelegramService.group_id,
                           "media": """[{"type": "document", "media": "attach://random-name-1"}]"""}
                 files = {"random-name-1": open(xlsx_path, "rb")}
-                requests.post(TelegramService.media_url, params=params, files=files)
+                requests.post(media_url, params=params, files=files)
             except BaseException as ex:
                 logger.info(f'Ошибка отправки статистики (xlsx) в телеграмм: {ex}')
 
