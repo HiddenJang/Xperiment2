@@ -491,7 +491,7 @@
       <rect>
        <x>31</x>
        <y>299</y>
-       <width>273</width>
+       <width>231</width>
        <height>58</height>
       </rect>
      </property>
@@ -596,10 +596,24 @@
       <enum>Qt::RichText</enum>
      </property>
     </widget>
+    <widget class="QCheckBox" name="checkBox_telegramMessageSwitch">
+     <property name="geometry">
+      <rect>
+       <x>277</x>
+       <y>302</y>
+       <width>261</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Отправка сообщений в Telegram</string>
+     </property>
+    </widget>
     <zorder>layoutWidget_2</zorder>
     <zorder>frame_2</zorder>
     <zorder>layoutWidget</zorder>
     <zorder>label_scanSettings</zorder>
+    <zorder>checkBox_telegramMessageSwitch</zorder>
    </widget>
    <widget class="QListWidget" name="listWidget_diagnostics">
     <property name="geometry">
@@ -798,6 +812,7 @@
     </property>
     <addaction name="action_serverSettings"/>
     <addaction name="action_browserControlSettings"/>
+    <addaction name="action_telegramSettings"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -820,6 +835,11 @@
   <action name="action_browserControlSettings">
    <property name="text">
     <string>Управление браузером</string>
+   </property>
+  </action>
+  <action name="action_telegramSettings">
+   <property name="text">
+    <string>Взаимодействие с Telegram</string>
    </property>
   </action>
  </widget>

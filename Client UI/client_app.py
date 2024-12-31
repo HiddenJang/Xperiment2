@@ -14,8 +14,10 @@ from components.server_connection_service import Scanner
 from components.result_window import ResultWindow
 from components.server_settings_window import ServerSettings
 from components.browser_control_window import BrowserControlSettings
+from components.telegram_settings_window import TelegramSettings
 from components.templates.client_app_template import Ui_MainWindow_client
 from components.browsers_control.core import BrowserControl
+from components.telegram_message_service import TelegramService
 
 ## Принудительное переключение рабочей директории ##
 file_path = Path(__file__).resolve().parent
@@ -43,6 +45,7 @@ class DesktopApp(QMainWindow):
         self.result_window = ResultWindow()
         self.server_set_window = ServerSettings()
         self.browser_control_set_window = BrowserControlSettings()
+        self.telegram_set_window = TelegramSettings()
         self.result_window_closed = True
         # загрузка установленных ранее пользователем состояний элементов GUI
         self.settings = QSettings('client_app', 'Gcompany', self)
@@ -81,8 +84,12 @@ class DesktopApp(QMainWindow):
         self.ui.action_browserControlSettings.triggered.connect(self.open_browser_control_set_window)
         self.browser_control_set_window.diag_signal.connect(self.render_diagnostics)
 
+        self.ui.action_telegramSettings.triggered.connect(self.open_telegram_set_window)
+
         self.ui.pushButton_startAutoBet.clicked.connect(self.preload_websites_and_authorize)
         self.ui.pushButton_closeBrowsers.clicked.connect(self.close_browsers)
+
+        self.ui.checkBox_telegramMessageSwitch.clicked.connect(self.enable_telegram_messages)
 
     ###### Auto betting ######
 
@@ -243,6 +250,20 @@ class DesktopApp(QMainWindow):
         self.browser_control_set_window.show()
         self.browser_control_set_window.exec_()
 
+    def open_telegram_set_window(self) -> None:
+        """Открытие окна настроек взаимодействия с telegram"""
+        self.telegram_set_window.widget_states = self.telegram_set_window.get_telegram_settings()
+        self.telegram_set_window.show()
+        self.telegram_set_window.exec_()
+
+    def enable_telegram_messages(self) -> None:
+        """Включение/отключение отправки сообщений в telegram"""
+        if self.ui.checkBox_telegramMessageSwitch.isChecked():
+            widgets_states = self.telegram_set_window.get_telegram_settings()
+            TelegramService.group_id = widgets_states.get("group_id")
+            TelegramService.token = widgets_states.get("token")
+        TelegramService.turn_on(self.ui.checkBox_telegramMessageSwitch.isChecked())
+
     def start_scan(self) -> None:
         """Запуск сканирования"""
         self.deactivate_elements(True)
@@ -312,6 +333,9 @@ class DesktopApp(QMainWindow):
             if line_edit.objectName() == 'lineEdit_serverAddress' and not line_edit.text():
                 line_edit.setText(settings.DEFAULT_API_URL)
             self.settings.setValue(line_edit.objectName(), line_edit.text())
+
+        for line_edit in self.telegram_set_window.findChildren(QtWidgets.QLineEdit):
+            self.settings.setValue(line_edit.objectName(), line_edit.text())
         ## ComboBox ##
         for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
             self.settings.setValue(combo_box.objectName(), combo_box.currentText())
@@ -329,6 +353,10 @@ class DesktopApp(QMainWindow):
         try:
             ## LineEdit ##
             for line_edit in self.server_set_window.findChildren(QtWidgets.QLineEdit): # я уж не знаю по каким причинам, но это поле должно стоять перед DoubleSpinBox. Почемуто QT воспринимает QDoubleSpinBox как QLineEdit.
+                if self.settings.value(line_edit.objectName()):
+                    line_edit.setText(self.settings.value(line_edit.objectName()))
+
+            for line_edit in self.telegram_set_window.findChildren(QtWidgets.QLineEdit):
                 if self.settings.value(line_edit.objectName()):
                     line_edit.setText(self.settings.value(line_edit.objectName()))
             ## ComboBox ##
@@ -351,7 +379,7 @@ class DesktopApp(QMainWindow):
             ## Browser control settings window ##
             self.browser_control_set_window.set_control_settings_from_env()
         except BaseException as ex:
-            logger.info("Ошибка при загрузке установленных ранее состояний GUI", ex)
+            logger.info("Ошибка при загрузке установленных ранее состояний GUI:", ex)
 
     def create_screenshot_dir(self):
         """Создание папки для скриншотов"""
