@@ -340,6 +340,9 @@ class DesktopApp(QMainWindow):
         for combo_box in self.ui.desktopClient.findChildren(QtWidgets.QComboBox):
             self.settings.setValue(combo_box.objectName(), combo_box.currentText())
         ## SpinBox ##
+        for spin_box in self.ui.desktopClient.findChildren(QtWidgets.QSpinBox):
+            self.settings.setValue(spin_box.objectName(), spin_box.value())
+
         for spin_box in self.server_set_window.findChildren(QtWidgets.QSpinBox):
             self.settings.setValue(spin_box.objectName(), spin_box.value())
         ## DoubleSpinBox ##
@@ -364,6 +367,10 @@ class DesktopApp(QMainWindow):
                 if self.settings.value(combo_box.objectName()):
                     combo_box.setCurrentText(self.settings.value(combo_box.objectName()))
             ## SpinBox ##
+            for spin_box in self.ui.desktopClient.findChildren(QtWidgets.QSpinBox):
+                if self.settings.value(spin_box.objectName()):
+                    spin_box.setValue(int(self.settings.value(spin_box.objectName())))
+
             for spin_box in self.server_set_window.findChildren(QtWidgets.QSpinBox):
                 if self.settings.value(spin_box.objectName()):
                     spin_box.setValue(int(self.settings.value(spin_box.objectName())))

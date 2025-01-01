@@ -6,3 +6,4 @@ logs/
 media/
 config/
 /Client UI/screenshots/
+/Client UI/tests.py
