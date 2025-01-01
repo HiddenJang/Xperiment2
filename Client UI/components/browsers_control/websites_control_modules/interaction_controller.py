@@ -86,13 +86,17 @@ class WebsiteController:
                                              total_koeff)
 
         except BaseException as ex:
-            print(ex)
+            self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно",
+                                     exception=ex)
+            self.thread_pause_event.clear()
+            return
+
         self.thread_pause_event.clear()
         self.__send_diag_message(f"Закончен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
 
     def __send_diag_message(self, diag_mess: str, exception: BaseException = '', status: str = 'info') -> None:
         """Отправка диагностических сообщений в логгер и приложение"""
-        log_info = diag_mess + '. ' + str(exception)
+        log_info = diag_mess + ': ' + str(exception)
         match status:
             case 'debug':
                 logger.debug(log_info)

@@ -76,6 +76,7 @@ class BrowserControl(QObject):
                 self.started_threads[second_bkmkr_name]['controller_instance'].event_data = event_data[1]
                 first_thread_pause_event = self.started_threads[first_bkmkr_name]['thread_pause_event']
                 second_thread_pause_event = self.started_threads[second_bkmkr_name]['thread_pause_event']
+
                 first_thread_pause_event.set()
                 second_thread_pause_event.set()
                 self.bet_in_progress = True

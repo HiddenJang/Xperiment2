@@ -710,7 +710,7 @@
     <widget class="QPushButton" name="pushButton_enableBetSet">
      <property name="geometry">
       <rect>
-       <x>74</x>
+       <x>88</x>
        <y>156</y>
        <width>91</width>
        <height>23</height>
@@ -724,7 +724,7 @@
      <property name="geometry">
       <rect>
        <x>144</x>
-       <y>113</y>
+       <y>111</y>
        <width>131</width>
        <height>16</height>
       </rect>
@@ -737,10 +737,13 @@
      <property name="geometry">
       <rect>
        <x>164</x>
-       <y>133</y>
-       <width>42</width>
+       <y>130</y>
+       <width>70</width>
        <height>20</height>
       </rect>
+     </property>
+     <property name="maximum">
+      <number>99999</number>
      </property>
     </widget>
     <widget class="QPushButton" name="pushButton_closeBrowsers">
@@ -762,7 +765,7 @@
     <widget class="QLabel" name="label_betSize">
      <property name="geometry">
       <rect>
-       <x>67</x>
+       <x>81</x>
        <y>90</y>
        <width>101</width>
        <height>16</height>
@@ -789,10 +792,16 @@
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>131</y>
-       <width>42</width>
+       <y>130</y>
+       <width>70</width>
        <height>20</height>
       </rect>
+     </property>
+     <property name="maximum">
+      <number>99999</number>
+     </property>
+     <property name="displayIntegerBase">
+      <number>10</number>
      </property>
     </widget>
    </widget>
