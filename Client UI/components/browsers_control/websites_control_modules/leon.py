@@ -104,7 +104,8 @@ def bet(driver: selenium.webdriver,
     # попытка нажать на кнопку с нужным тоталом (открыть купон тотала)
     try:
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
-            f"//span[text()='Тотал']/ancestor::div[@class='sport-event-details-market-group__header']/following-sibling::div[@class='sport-event-details-market-group__content']/descendant::span[contains(text(),'{total_nominal}')]"))).click()
+            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total_nominal}')]"))).click()
+        logger.info(f'Кнопка с номиналом тотала {bookmaker} найдена и нажата успешно')
     except BaseException as ex:
         message = f'Попытка нажать на кнопку с нужным тоталом (открыть купон тотала) букмекера {bookmaker} неудачна'
         TelegramService.send_text(message)
@@ -114,9 +115,9 @@ def bet(driver: selenium.webdriver,
         # попытка закрыть всплывающее окно уведомления
         driver.find_element(By.XPATH, "//button[contains(text(),'Позже')]").click()
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
-            f"//span[text()='Тотал']/ancestor::div[@class='sport-event-details-market-group__header']/following-sibling::div[@class='sport-event-details-market-group__content']/descendant::span[contains(text(),'{total_nominal}')]"))).click()
+            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total_nominal}')]"))).click()
     except:
-        message = f'Попытка закрыть всплывающее окно {bookmaker} для открытия купона Тотала неудачна. Ставка не будет сделана'
+        message = f'Попытка закрыть всплывающее окно {bookmaker} для открытия купона тотала неудачна. Ставка не будет сделана'
         TelegramService.send_text(message)
         logger.info(message)
         diag_signal.emit(message)
