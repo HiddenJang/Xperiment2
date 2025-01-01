@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 import selenium
 from PyQt5 import QtCore
+from selenium.webdriver import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -25,7 +26,7 @@ def preload(driver: selenium.webdriver, login: str, password: str) -> None:
     WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//a[@href='/login']"))).click()
     # нажатие вкладки EMAIL
     WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//span[contains(text(),'E-mail')]"))).click()
-    # очитска полей ЛОШИН и ПАРОЛЬ и ввод данных авторизации
+    # очитска полей ЛОГИН и ПАРОЛЬ и ввод данных авторизации
     element1 = WebDriverWait(driver, 60).until(
         EC.presence_of_element_located((By.XPATH, "//input[@name='login']")))
     element2 = WebDriverWait(driver, 60).until(
@@ -48,17 +49,23 @@ def bet(driver: selenium.webdriver,
         total_koeff: str) -> None:
     """Размещение ставки"""
 
-    # закрытие купона тотала, если он остался от предыдущей ставки
-    try:
-        driver.implicitly_wait(2)
-        element = driver.find_element(By.XPATH, '//button[@class="bet-slip-event-card__remove"]')
-        element.click()
-        logger.info(f'Купон {bookmaker} от предыдущей ставки закрыт после загрузки страницы найденного события')
-    except BaseException as ex:
-        message = f'Не удалось закрытие купона {bookmaker} сразу после загрузки страницы (возможно он ранее был закрыт)'
-        logger.info(f'{message}: {ex}')
+    def close_coupon(webdriver: selenium.webdriver) -> None:
+        """Закрытие купона ставки"""
+        nonlocal diag_signal
+        try:
+            WebDriverWait(webdriver, 2).until(
+                EC.presence_of_element_located((By.XPATH, '//button[text()="Очистить"]'))).click()
+            WebDriverWait(webdriver, 2).until(
+                EC.presence_of_element_located((By.XPATH, '//button[text()="Удалить"]'))).click()
+            message = f'Купон {bookmaker} от ставки закрыт'
+            logger.info(f'{message}')
+        except BaseException as ex:
+            message = f'Не удалось закрытие купона {bookmaker} (возможно купоны отсутствуют или были закрыты ранее)'
+            logger.info(f'{message} {ex}')
         diag_signal.emit(message)
 
+    # закрытие купона тотала, если он остался от предыдущей ставки
+    close_coupon(driver)
     # проверка достаточности баланса
     try:
         driver.implicitly_wait(10)
@@ -78,7 +85,7 @@ def bet(driver: selenium.webdriver,
         get_screenshot(driver, bookmaker)
         return
 
-    # попытка нажать вкладку ТОТАЛЫ
+    # переключение на вкладку ТОТАЛЫ
     try:
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, "//button[text()='Тоталы']"))).click()
@@ -101,7 +108,7 @@ def bet(driver: selenium.webdriver,
         get_screenshot(driver, bookmaker)
         return
 
-    # попытка нажать на кнопку с нужным тоталом (открыть купон тотала)
+    # нажатие кнопки с нужным номиналом тотала (открытие купона тотала)
     try:
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
             f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total_nominal}')]"))).click()
@@ -124,3 +131,25 @@ def bet(driver: selenium.webdriver,
 
         get_screenshot(driver, bookmaker)
         return
+
+    # беттинг
+    #if Preload.betting_on:  # если автоматический беттинг разрешен пробуем поставить
+    # ввод значения ставки
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, '//input[contains(@class,"stake-input__value")]')))
+        element.click()
+        element.send_keys(Keys.CONTROL + 'A')
+        element.send_keys(Keys.DELETE)
+        element.send_keys(bet_size)
+        if int(element.get_attribute('value')) != int(bet_size):
+            raise Exception
+        message = f'Значение ставки на событие {bookmaker} введено успешно'
+        logger.info(message)
+    except BaseException as ex:
+        message = f'Не удалось ввести значение ставки на событие {bookmaker} {url}.Ставка не будет сделана'
+        TelegramService.send_text(message)
+        logger.info(f'{message}: {ex}')
+
+        get_screenshot(driver, bookmaker)
+        close_coupon(driver)

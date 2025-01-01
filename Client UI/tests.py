@@ -60,8 +60,7 @@ def start():
     total_nominal = '2.5'
     total_koeff_type = 'Больше'
     total_koeff = '1.6'
-    login = 'jangljungl@gmail.com'
-    password = '07112007a'
+
 
     preload(driver, login, password)
     bet(driver, bookmaker, url, bet_size, total_nominal, total_koeff_type, total_koeff)
