@@ -1,6 +1,5 @@
 import logging
 import threading
-import time
 from importlib import import_module
 from PyQt5 import QtCore
 
@@ -78,15 +77,16 @@ class WebsiteController:
                 return
 
             self.site_interaction_module.bet(self.driver,
+                                             self.diag_signal,
                                              bookmaker,
                                              url,
                                              bet_size,
                                              total_nominal,
                                              total_koeff_type,
                                              total_koeff)
+
         except BaseException as ex:
             print(ex)
-        time.sleep(10)
         self.thread_pause_event.clear()
         self.__send_diag_message(f"Закончен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
 

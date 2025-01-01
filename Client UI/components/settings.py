@@ -32,3 +32,4 @@ WEBDRIVER_DIR = {'linux': BASE_DIR / "components/browsers_control/chromedriver-l
 
 # Screenshots directory
 SCREENSHOTS_DIR = BASE_DIR / "screenshots"
+

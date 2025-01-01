@@ -42,8 +42,8 @@ class BrowserControl(QObject):
                 interaction_module = interaction_modules[bkmkr_name]
                 thread_pause_event = threading.Event()
                 website_controller = WebsiteController({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]},
-                                                 thread_pause_event,
-                                                 self.diag_signal)
+                                                       thread_pause_event,
+                                                       self.diag_signal)
                 control_thread = threading.Thread(target=website_controller.preload, daemon=True)
                 control_thread.start()
                 self.started_threads[bkmkr_name] = {'interaction_module': interaction_module,
@@ -92,7 +92,6 @@ class BrowserControl(QObject):
         first_bkmkr_thread = self.started_threads[first_bkmkr_name]['control_thread']
         second_bkmkr_thread = self.started_threads[second_bkmkr_name]['control_thread']
         if not first_bkmkr_thread.is_alive() or not second_bkmkr_thread.is_alive():
-            print("closing all")
             self.close_all_signal.emit()
             return
 
@@ -117,8 +116,6 @@ class BrowserControl(QObject):
                 self.threads_status_timer.setInterval(500)
                 self.threads_status_timer.timeout.connect(self.__survey_threads_status)
                 self.threads_status_timer.start()
-        # else:
-        #     self.finish_signal.emit()
 
     def __survey_threads_status(self) -> bool:
         """Опрос сотояний потоков управления сайтами букмекеров,

@@ -1,6 +1,7 @@
 import logging
 import time
 import selenium
+from PyQt5 import QtCore
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -11,7 +12,7 @@ logger = logging.getLogger('Client UI.components.browsers_control.websites_contr
 def preload(driver: selenium.webdriver, login: str, password: str):
     """Авторизация пользователя"""
     # нажатие кнопки ВХОД
-    WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'signIn')]"))).click()
+    WebDriverWait(driver, 60).until(EC.visibility_of_element_located((By.XPATH, "//button[contains(@class, 'signIn')]"))).click()
     # ввод ЛОГИНА
     element = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']")))
     element.click()
@@ -28,6 +29,8 @@ def preload(driver: selenium.webdriver, login: str, password: str):
 
 
 def bet(driver: selenium.webdriver,
+        diag_signal: QtCore.pyqtSignal,
+        bookmaker: str,
         url: str,
         bet_size: str,
         total_nominal: str,
