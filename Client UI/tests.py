@@ -1,4 +1,5 @@
 import os
+from time import sleep
 from datetime import datetime
 import logging
 from logging import handlers
@@ -6,6 +7,7 @@ from pathlib import Path
 
 import selenium
 from selenium import webdriver
+from selenium.webdriver import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
@@ -58,8 +60,10 @@ def start():
     total_nominal = '2.5'
     total_koeff_type = 'Больше'
     total_koeff = '1.6'
+    login = 'jangljungl@gmail.com'
+    password = '07112007a'
 
-    preload(driver, )
+    preload(driver, login, password)
     bet(driver, bookmaker, url, bet_size, total_nominal, total_koeff_type, total_koeff)
 
 def preload(driver: selenium.webdriver, login: str, password: str) -> None:
@@ -79,7 +83,7 @@ def preload(driver: selenium.webdriver, login: str, password: str) -> None:
     element2.send_keys(password)
     # нажатие кнопки ВОЙТИ в окне авторизации
     WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//button[contains(@class, 'login__button')]"))).click()
-
+    sleep(3)
 
 def bet(driver: selenium.webdriver,
         bookmaker: str,
@@ -90,18 +94,23 @@ def bet(driver: selenium.webdriver,
         total_koeff: str) -> None:
     """Размещение ставки"""
 
+    def close_coupon(webdriver: selenium.webdriver) -> None:
+        """Закрытие купона ставки"""
+
+        try:
+            WebDriverWait(webdriver, 2).until(
+                EC.presence_of_element_located((By.XPATH, '//button[text()="Очистить"]'))).click()
+            WebDriverWait(webdriver, 2).until(
+                EC.presence_of_element_located((By.XPATH, '//button[text()="Удалить"]'))).click()
+            message = f'Купон {bookmaker} от ставки закрыт'
+            logger.info(f'{message}')
+        except BaseException as ex:
+            message = f'Не удалось закрытие купона {bookmaker} (возможно купоны отсутствуют или были закрыты ранее)'
+            logger.info(f'{message} {ex}')
+
     driver.get(url=url)
     # закрытие купона тотала, если он остался от предыдущей ставки
-    try:
-        driver.implicitly_wait(2)
-        element = driver.find_element(By.XPATH, '//button[@class="bet-slip-event-card__remove"]')
-        element.click()
-        logger.info(f'Купон {bookmaker} от предыдущей ставки закрыт после загрузки страницы найденного события')
-    except BaseException as ex:
-        message = f'Не удалось закрытие купона {bookmaker} сразу после загрузки страницы (возможно он ранее был закрыт)'
-        logger.info(f'{message}: {ex}')
-
-
+    close_coupon(driver)
     # проверка достаточности баланса
     try:
         driver.implicitly_wait(10)
@@ -136,7 +145,8 @@ def bet(driver: selenium.webdriver,
     # попытка нажать на кнопку с нужным тоталом (открыть купон тотала)
     try:
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
-            f"//span[text()='Тотал']/ancestor::div[@class='sport-event-details-market-group__header']/following-sibling::div[@class='sport-event-details-market-group__content']/descendant::span[contains(text(),'{total_nominal}')]"))).click()
+            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total_nominal}')]"))).click()
+        logger.info('Тотал успешно найден, кнопка нажата')
     except BaseException as ex:
         message = f'Попытка нажать на кнопку с нужным тоталом (открыть купон тотала) букмекера {bookmaker} неудачна'
         logger.info(f'{message}: {ex}')
@@ -144,12 +154,33 @@ def bet(driver: selenium.webdriver,
         # попытка закрыть всплывающее окно уведомления
         driver.find_element(By.XPATH, "//button[contains(text(),'Позже')]").click()
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
-            f"//span[text()='Тотал']/ancestor::div[@class='sport-event-details-market-group__header']/following-sibling::div[@class='sport-event-details-market-group__content']/descendant::span[contains(text(),'{total_nominal}')]"))).click()
+            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total_nominal}')]"))).click()
     except:
         message = f'Попытка закрыть всплывающее окно {bookmaker} для открытия купона Тотала неудачна. Ставка не будет сделана'
         logger.info(message)
         return
 
+    # беттинг
+    # if Preload.betting_on:  # если автоматический беттинг разрешен пробуем поставить
+    # ввод значения ставки
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, '//input[contains(@class,"stake-input__value")]')))
+        element.click()
+        element.send_keys(Keys.CONTROL+'A')
+        element.send_keys(Keys.DELETE)
+        element.send_keys(bet_size)
+        if int(element.get_attribute('value')) != int(bet_size):
+            raise Exception
+        message = f'Значение ставки на событие {bookmaker} введено успешно'
+        logger.info(message)
+    except BaseException as ex:
+        message = f'Не удалось ввести значение ставки на событие {bookmaker} {url}.Ставка не будет сделана'
+        logger.info(f'{message}: {ex}')
+        close_coupon(driver)
+    sleep(10)
+    driver.close()
+    driver.quit()
 
 class Driver:
     """Класс вебдрайвера для управления браузером"""
