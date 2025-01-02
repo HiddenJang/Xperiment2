@@ -1,6 +1,7 @@
 import logging
 import time
 import selenium
+from PyQt5 import QtCore
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -23,12 +24,14 @@ def preload(driver: selenium.webdriver, login: str, password: str) -> None:
     element6.click()
 
 
-def bet(driver: selenium.webdriver,
-        url: str,
-        bet_size: str,
-        total_nominal: str,
-        total_koeff_type: str,
-        total_koeff: str) -> None:
+def bet_preparing(driver: selenium.webdriver,
+                  iag_signal: QtCore.pyqtSignal,
+                  bookmaker: str,
+                  url: str,
+                  bet_size: str,
+                  total_nominal: str,
+                  total_koeff_type: str,
+                  total_koeff: str) -> None:
     """Размещение ставки"""
     time.sleep(10)
 

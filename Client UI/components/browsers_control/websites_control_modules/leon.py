@@ -39,7 +39,7 @@ def preload(driver: selenium.webdriver, login: str, password: str) -> None:
     WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//button[contains(@class, 'login__button')]"))).click()
 
 
-def bet(driver: selenium.webdriver,
+def bet_preparing(driver: selenium.webdriver,
         diag_signal: QtCore.pyqtSignal,
         bookmaker: str,
         url: str,
@@ -49,13 +49,18 @@ def bet(driver: selenium.webdriver,
         total_koeff: str) -> None:
     """Размещение ставки"""
 
-    def close_coupon(webdriver: selenium.webdriver) -> None:
+    if total_koeff_type == 'under':
+        total = f'Меньше ({total_nominal})'
+    else:
+        total = f'Больше ({total_nominal})'
+
+    def close_coupon() -> None:
         """Закрытие купона ставки"""
-        nonlocal diag_signal
+        nonlocal diag_signal, driver
         try:
-            WebDriverWait(webdriver, 2).until(
+            WebDriverWait(driver, 2).until(
                 EC.presence_of_element_located((By.XPATH, '//button[text()="Очистить"]'))).click()
-            WebDriverWait(webdriver, 2).until(
+            WebDriverWait(driver, 2).until(
                 EC.presence_of_element_located((By.XPATH, '//button[text()="Удалить"]'))).click()
             message = f'Купон {bookmaker} от ставки закрыт'
             logger.info(f'{message}')
@@ -65,7 +70,7 @@ def bet(driver: selenium.webdriver,
         diag_signal.emit(message)
 
     # закрытие купона тотала, если он остался от предыдущей ставки
-    close_coupon(driver)
+    close_coupon()
     # проверка достаточности баланса
     try:
         driver.implicitly_wait(10)
@@ -111,10 +116,10 @@ def bet(driver: selenium.webdriver,
     # нажатие кнопки с нужным номиналом тотала (открытие купона тотала)
     try:
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
-            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total_nominal}')]"))).click()
-        logger.info(f'Кнопка с номиналом тотала {bookmaker} найдена и нажата успешно')
+            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
+        logger.info(f'Кнопка с {total} букмекара {bookmaker} найдена и нажата успешно')
     except BaseException as ex:
-        message = f'Попытка нажать на кнопку с нужным тоталом (открыть купон тотала) букмекера {bookmaker} неудачна'
+        message = f'Попытка нажать на кнопку {total} (открыть купон тотала) букмекера {bookmaker} неудачна'
         TelegramService.send_text(message)
         logger.info(f'{message}: {ex}')
         diag_signal.emit(message)
@@ -122,7 +127,7 @@ def bet(driver: selenium.webdriver,
         # попытка закрыть всплывающее окно уведомления
         driver.find_element(By.XPATH, "//button[contains(text(),'Позже')]").click()
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
-            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total_nominal}')]"))).click()
+            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
     except:
         message = f'Попытка закрыть всплывающее окно {bookmaker} для открытия купона тотала неудачна. Ставка не будет сделана'
         TelegramService.send_text(message)
@@ -152,4 +157,30 @@ def bet(driver: selenium.webdriver,
         logger.info(f'{message}: {ex}')
 
         get_screenshot(driver, bookmaker)
-        close_coupon(driver)
+        close_coupon()
+        return
+
+    # получение актуального коэффициента на нужный тотал и сравнение с установленным
+    try:
+        control_koeff = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, '//span[contains(@class, "slip-list-item__current-odd")]')))
+        control_koeff = float(control_koeff.text)
+        if control_koeff < float(total_koeff):
+            message = f'Ставка на событие {bookmaker} не сделана, контрольный коэффициент перед ставкой меньше установленного ({control_koeff}<{total_koeff})'
+            TelegramService.send_text(message)
+            logger.info(message)
+
+            get_screenshot(driver, bookmaker)
+            close_coupon()
+            return
+        message = f'Контрольный коэффициент {bookmaker} перед ставкой выше установленного ({control_koeff}>{total_koeff})'
+        logger.info(message)
+    except BaseException as ex:
+        message = f'Не удалось получить контрольный коэффициент {bookmaker}. Ставка не будет сделана'
+        TelegramService.send_text(message)
+        logger.info(f'{message}: {ex}')
+
+        get_screenshot(driver, bookmaker)
+        close_coupon()
+        return
+

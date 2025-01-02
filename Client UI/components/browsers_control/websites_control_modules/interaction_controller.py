@@ -13,14 +13,15 @@ class WebsiteController:
 
     def __init__(self, common_auth_data: dict,
                  thread_pause_event: threading.Event,
+                 thread_bet_event: threading.Event,
                  diag_signal: QtCore.pyqtSignal):
         self.common_auth_data = common_auth_data
         self.thread_pause_event = thread_pause_event
+        self.thread_bet_event = thread_bet_event
         self.diag_signal = diag_signal
 
         self.preloaded = False
         self.close_request = False
-        self.bet_prohibition = True
         self.event_data = {}
         self.bet_params = {}
         self.site_interaction_module = import_module(f'.browsers_control.websites_control_modules.{self.common_auth_data["bkmkr_name"]}',
@@ -54,10 +55,9 @@ class WebsiteController:
                 self.__send_diag_message(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
                 self.__quit()
                 return
-            self.bet_prohibition = True
             self.bet()
 
-    def bet(self) -> None:
+    def bet_preparing(self) -> None:
         """Размещение ставки"""
         self.__send_diag_message(f"Запущен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
         try:

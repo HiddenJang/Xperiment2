@@ -28,7 +28,7 @@ def preload(driver: selenium.webdriver, login: str, password: str):
         EC.visibility_of_element_located((By.XPATH, "//button[contains(@class, 'balanceButton')]")))
 
 
-def bet(driver: selenium.webdriver,
+def bet_preparing(driver: selenium.webdriver,
         diag_signal: QtCore.pyqtSignal,
         bookmaker: str,
         url: str,

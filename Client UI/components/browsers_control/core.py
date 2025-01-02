@@ -25,6 +25,10 @@ class BrowserControl(QObject):
         self.threads_status_timer = QtCore.QTimer()
         self.betting_status_timer = QtCore.QTimer()
 
+        self.first_bkmkr_bet_prohibition = bool
+        self.second_bkmkr_bet_prohibition = bool
+
+
     def preload_sites_and_authorize(self):
         """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
         interaction_modules = self.__get_site_interaction_modules()
@@ -41,15 +45,18 @@ class BrowserControl(QObject):
             if auth_data.get(bkmkr_name):
                 interaction_module = interaction_modules[bkmkr_name]
                 thread_pause_event = threading.Event()
+                thread_bet_event = threading.Event()
                 website_controller = WebsiteController({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]},
                                                        thread_pause_event,
+                                                       thread_bet_event,
                                                        self.diag_signal)
                 control_thread = threading.Thread(target=website_controller.preload, daemon=True)
                 control_thread.start()
                 self.started_threads[bkmkr_name] = {'interaction_module': interaction_module,
                                                     'controller_instance': website_controller,
                                                     'control_thread': control_thread,
-                                                    'thread_pause_event': thread_pause_event}
+                                                    'thread_pause_event': thread_pause_event,
+                                                    'thread_bet_event': thread_bet_event,}
         if not self.started_threads:
             self.diag_signal.emit("Процесс автоматического управления не запущен. "
                                   "Отсутвуют требуемые модули управления или данные авторизации для доступных модулей")
@@ -72,8 +79,10 @@ class BrowserControl(QObject):
                     self.started_threads[second_bkmkr_name]['controller_instance'].preloaded:
                 self.started_threads[first_bkmkr_name]['controller_instance'].bet_params = BrowserControl.bet_params
                 self.started_threads[first_bkmkr_name]['controller_instance'].event_data = event_data[0]
+
                 self.started_threads[second_bkmkr_name]['controller_instance'].bet_params = BrowserControl.bet_params
                 self.started_threads[second_bkmkr_name]['controller_instance'].event_data = event_data[1]
+
                 first_thread_pause_event = self.started_threads[first_bkmkr_name]['thread_pause_event']
                 second_thread_pause_event = self.started_threads[second_bkmkr_name]['thread_pause_event']
 
