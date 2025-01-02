@@ -24,7 +24,7 @@ def preload(driver: selenium.webdriver, login: str, password: str) -> None:
     element6.click()
 
 
-def bet_preparing(driver: selenium.webdriver,
+def prepare_for_bet(driver: selenium.webdriver,
                   iag_signal: QtCore.pyqtSignal,
                   bookmaker: str,
                   url: str,
@@ -34,4 +34,4 @@ def bet_preparing(driver: selenium.webdriver,
                   total_koeff: str) -> None:
     """Размещение ставки"""
     time.sleep(10)
-
+    return True

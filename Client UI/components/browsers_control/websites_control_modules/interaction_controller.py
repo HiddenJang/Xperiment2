@@ -26,6 +26,7 @@ class WebsiteController:
         self.bet_params = {}
         self.site_interaction_module = import_module(f'.browsers_control.websites_control_modules.{self.common_auth_data["bkmkr_name"]}',
                                     package='components')
+        self.prepared_for_bet = None
 
     def preload(self):
         """Открытие страницы БК и авторизация пользователя"""
@@ -57,7 +58,7 @@ class WebsiteController:
                 return
             self.bet()
 
-    def bet_preparing(self) -> None:
+    def bet(self) -> None:
         """Размещение ставки"""
         self.__send_diag_message(f"Запущен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
         try:
@@ -76,14 +77,15 @@ class WebsiteController:
                 self.thread_pause_event.clear()
                 return
 
-            self.site_interaction_module.bet(self.driver,
-                                             self.diag_signal,
-                                             bookmaker,
-                                             url,
-                                             bet_size,
-                                             total_nominal,
-                                             total_koeff_type,
-                                             total_koeff)
+            self.prepared_for_bet = self.site_interaction_module.prepare_for_bet(self.driver,
+                                                                                 self.diag_signal,
+                                                                                 bookmaker,
+                                                                                 url,
+                                                                                 bet_size,
+                                                                                 total_nominal,
+                                                                                 total_koeff_type,
+                                                                                 total_koeff)
+            self.thread_bet_event.wait()
 
         except BaseException as ex:
             self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно",

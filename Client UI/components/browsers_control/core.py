@@ -17,6 +17,10 @@ class BrowserControl(QObject):
     close_all_signal = QtCore.pyqtSignal()
     bet_params = {}
 
+    prohibitions = {}
+    # first_bkmkr_bet_prohibition = True
+    # second_bkmkr_bet_prohibition = True
+
     def __init__(self, control_settings: dict):
         super(BrowserControl, self).__init__()
         self.control_settings = control_settings
@@ -24,10 +28,6 @@ class BrowserControl(QObject):
         self.bet_in_progress = False
         self.threads_status_timer = QtCore.QTimer()
         self.betting_status_timer = QtCore.QTimer()
-
-        self.first_bkmkr_bet_prohibition = bool
-        self.second_bkmkr_bet_prohibition = bool
-
 
     def preload_sites_and_authorize(self):
         """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
@@ -97,7 +97,7 @@ class BrowserControl(QObject):
                 return
 
     def __survey_betting_status(self, first_bkmkr_name: str, second_bkmkr_name: str) -> None:
-        """Опрос процессов размещения ставок,
+        """Опрос потоков размещения ставок,
                 True - в работе, False - завершены/не запущены"""
         first_bkmkr_thread = self.started_threads[first_bkmkr_name]['control_thread']
         second_bkmkr_thread = self.started_threads[second_bkmkr_name]['control_thread']
