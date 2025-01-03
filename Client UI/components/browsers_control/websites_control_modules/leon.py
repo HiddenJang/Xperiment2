@@ -20,6 +20,21 @@ def get_screenshot(driver: selenium.webdriver, bookmaker: str) -> None:
     TelegramService.send_photo(screenshot_name)
 
 
+def close_coupon(driver: selenium.webdriver, diag_signal: QtCore.pyqtSignal, bookmaker: str) -> None:
+    """Закрытие купона ставки"""
+    try:
+        WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.XPATH, '//button[text()="Очистить"]'))).click()
+        WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.XPATH, '//button[text()="Удалить"]'))).click()
+        message = f'Купон {bookmaker} от ставки закрыт'
+        logger.info(f'{message}')
+    except BaseException as ex:
+        message = f'Не удалось закрытие купона {bookmaker} (возможно купоны отсутствуют или были закрыты ранее)'
+        logger.info(f'{message} {ex}')
+    diag_signal.emit(message)
+
+
 def preload(driver: selenium.webdriver, login: str, password: str) -> None:
     """Авторизация пользователя"""
     # нажатие кнопки ВОЙТИ
@@ -40,37 +55,22 @@ def preload(driver: selenium.webdriver, login: str, password: str) -> None:
 
 
 def prepare_for_bet(driver: selenium.webdriver,
-        diag_signal: QtCore.pyqtSignal,
-        bookmaker: str,
-        url: str,
-        bet_size: str,
-        total_nominal: str,
-        total_koeff_type: str,
-        total_koeff: str) -> None:
-    """Размещение ставки"""
+                    diag_signal: QtCore.pyqtSignal,
+                    bookmaker: str,
+                    url: str,
+                    bet_size: str,
+                    total_nominal: str,
+                    total_koeff_type: str,
+                    total_koeff: str) -> bool | None:
+    """Подготовка к размещению ставки"""
 
     if total_koeff_type == 'under':
         total = f'Меньше ({total_nominal})'
     else:
         total = f'Больше ({total_nominal})'
 
-    def close_coupon() -> None:
-        """Закрытие купона ставки"""
-        nonlocal diag_signal, driver
-        try:
-            WebDriverWait(driver, 2).until(
-                EC.presence_of_element_located((By.XPATH, '//button[text()="Очистить"]'))).click()
-            WebDriverWait(driver, 2).until(
-                EC.presence_of_element_located((By.XPATH, '//button[text()="Удалить"]'))).click()
-            message = f'Купон {bookmaker} от ставки закрыт'
-            logger.info(f'{message}')
-        except BaseException as ex:
-            message = f'Не удалось закрытие купона {bookmaker} (возможно купоны отсутствуют или были закрыты ранее)'
-            logger.info(f'{message} {ex}')
-        diag_signal.emit(message)
-
     # закрытие купона тотала, если он остался от предыдущей ставки
-    close_coupon()
+    close_coupon(driver, diag_signal, bookmaker)
     # проверка достаточности баланса
     try:
         driver.implicitly_wait(10)
@@ -138,7 +138,6 @@ def prepare_for_bet(driver: selenium.webdriver,
         return
 
     # беттинг
-    #if Preload.betting_on:  # если автоматический беттинг разрешен пробуем поставить
     # ввод значения ставки
     try:
         element = WebDriverWait(driver, 10).until(
@@ -157,7 +156,7 @@ def prepare_for_bet(driver: selenium.webdriver,
         logger.info(f'{message}: {ex}')
 
         get_screenshot(driver, bookmaker)
-        close_coupon()
+        close_coupon(driver, diag_signal, bookmaker)
         return
 
     # получение актуального коэффициента на нужный тотал и сравнение с установленным
@@ -171,7 +170,7 @@ def prepare_for_bet(driver: selenium.webdriver,
             logger.info(message)
 
             get_screenshot(driver, bookmaker)
-            close_coupon()
+            close_coupon(driver, diag_signal, bookmaker)
             return
         message = f'Контрольный коэффициент {bookmaker} перед ставкой выше или равен установленному ({control_koeff}>={total_koeff})'
         logger.info(message)
@@ -181,11 +180,35 @@ def prepare_for_bet(driver: selenium.webdriver,
         logger.info(f'{message}: {ex}')
 
         get_screenshot(driver, bookmaker)
-        close_coupon()
+        close_coupon(driver, diag_signal, bookmaker)
         return
 
     return True
 
 
-def bet():
-    return True
+def bet(driver: selenium.webdriver,
+        diag_signal: QtCore.pyqtSignal,
+        bookmaker: str,
+        url: str,
+        bet_size: str,
+        total_nominal: str,
+        total_koeff_type: str,
+        total_koeff: str) -> bool | None:
+    """Размещение ставки"""
+
+    # нажатие кнопки "Заключить пари"
+    try:
+        driver.find_element(By.XPATH, "//button[@data-test-el='bet-slip-button_summary']").click()
+        message = f'Кнопка ЗАКЛЮЧИТЬ ПАРИ {bookmaker} успешно нажата'
+        TelegramService.send_text(message)
+        logger.info(message)
+
+        return True
+    except BaseException as ex:
+        message = f'Не удалось нажать кнопку ЗАКЛЮЧИТЬ ПАРИ {bookmaker}. Ставка не будет сделана'
+        TelegramService.send_text(message)
+        logger.info(f'{message}: {ex}')
+
+        get_screenshot(driver, bookmaker)
+        close_coupon(driver, diag_signal, bookmaker)
+
