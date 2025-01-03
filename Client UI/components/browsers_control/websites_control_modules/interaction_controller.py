@@ -54,6 +54,7 @@ class WebsiteController:
         while True:
             self.thread_bet_event.clear()
             self.prepared_for_bet = False
+            self.stop_betting = False
 
             self.thread_pause_event.wait()
             if self.close_request:

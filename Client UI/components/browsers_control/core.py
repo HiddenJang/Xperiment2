@@ -135,6 +135,7 @@ class BrowserControl(QObject):
             self.bet_preparing_interval_timer.stop()
 
     def __stop_betting(self, first_bkmkr_name: str, second_bkmkr_name: str):
+        """Прерывание процесса размещения ставки при отсутствии готовности одного из букмекеров"""
         self.started_threads[first_bkmkr_name]['controller_instance'].stop_betting = True
         self.started_threads[second_bkmkr_name]['controller_instance'].stop_betting = True
         first_thread_bet_event = self.started_threads[first_bkmkr_name]['thread_bet_event']
@@ -153,6 +154,8 @@ class BrowserControl(QObject):
                 thread_bet_event = self.started_threads[bkmkr_name]['thread_bet_event']
                 thread_bet_event.set()
 
+            if self.bet_preparing_interval_timer.isActive():
+                self.bet_preparing_interval_timer.stop()
             if self.bet_prohibitions_timer.isActive():
                 self.bet_prohibitions_timer.stop()
             if self.betting_status_timer.isActive():
