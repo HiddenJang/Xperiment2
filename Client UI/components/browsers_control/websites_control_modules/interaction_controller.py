@@ -26,7 +26,8 @@ class WebsiteController:
         self.bet_params = {}
         self.site_interaction_module = import_module(f'.browsers_control.websites_control_modules.{self.common_auth_data["bkmkr_name"]}',
                                     package='components')
-        self.prepared_for_bet = None
+        self.prepared_for_bet = False
+        self.stop_betting = False
 
     def preload(self):
         """Открытие страницы БК и авторизация пользователя"""
@@ -51,9 +52,11 @@ class WebsiteController:
             return
 
         while True:
+            self.thread_bet_event.clear()
+            self.prepared_for_bet = False
+
             self.thread_pause_event.wait()
             if self.close_request:
-                self.__send_diag_message(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
                 self.__quit()
                 return
             self.bet()
@@ -85,20 +88,39 @@ class WebsiteController:
                                                                                  total_nominal,
                                                                                  total_koeff_type,
                                                                                  total_koeff)
-            self.thread_bet_event.wait()
+            if self.prepared_for_bet:
+                self.thread_bet_event.wait()
+
+                if self.close_request:
+                    self.__quit()
+                    return
+                elif self.stop_betting:
+                    self.__send_diag_message(
+                        f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} прерван. Нет готовности второго букмекера")
+                    self.thread_pause_event.clear()
+                    return
+                bet_placed = self.site_interaction_module.bet()
+
+                if bet_placed:
+                    self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} размещена успешно")
+                else:
+                    self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} не размещена")
+            else:
+                self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно. Нет готовности к размещению ставки")
+                self.thread_pause_event.clear()
+                return
 
         except BaseException as ex:
             self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно",
                                      exception=ex)
             self.thread_pause_event.clear()
             return
-
+        self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} завершен")
         self.thread_pause_event.clear()
-        self.__send_diag_message(f"Закончен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
 
     def __send_diag_message(self, diag_mess: str, exception: BaseException = '', status: str = 'info') -> None:
         """Отправка диагностических сообщений в логгер и приложение"""
-        log_info = diag_mess + ': ' + str(exception)
+        log_info = diag_mess + ' ' + str(exception)
         match status:
             case 'debug':
                 logger.debug(log_info)
@@ -118,5 +140,6 @@ class WebsiteController:
         try:
             self.driver.close()
             self.driver.quit()
+            self.__send_diag_message(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
         except BaseException:
             pass

@@ -37,6 +37,9 @@ def prepare_for_bet(driver: selenium.webdriver,
         total_koeff_type: str,
         total_koeff: str) -> None:
     """Размещение ставки"""
-    time.sleep(10)
+    time.sleep(5)
     return True
 
+
+def bet():
+    return True

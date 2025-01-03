@@ -102,7 +102,7 @@ def prepare_for_bet(driver: selenium.webdriver,
 
         # попытка закрыть всплывающее окно уведомления
         driver.implicitly_wait(0)
-        driver.find_element(By.XPATH, "//button[text()='Позже']").click()
+        driver.find_element(By.XPATH, "//svg[@role='presentation']").click()
         driver.find_element(By.XPATH, "//button[text()='Тоталы']").click()
     except:
         message = f'Попытка закрыть всплывающее окно {bookmaker} для открытия вкладки Тоталы неудачна. Ставка не будет сделана'
@@ -125,7 +125,7 @@ def prepare_for_bet(driver: selenium.webdriver,
         diag_signal.emit(message)
 
         # попытка закрыть всплывающее окно уведомления
-        driver.find_element(By.XPATH, "//button[contains(text(),'Позже')]").click()
+        driver.find_element(By.XPATH, "//svg[@role='presentation']").click()
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
             f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
     except:
@@ -173,7 +173,7 @@ def prepare_for_bet(driver: selenium.webdriver,
             get_screenshot(driver, bookmaker)
             close_coupon()
             return
-        message = f'Контрольный коэффициент {bookmaker} перед ставкой выше установленного ({control_koeff}>{total_koeff})'
+        message = f'Контрольный коэффициент {bookmaker} перед ставкой выше или равен установленному ({control_koeff}>={total_koeff})'
         logger.info(message)
     except BaseException as ex:
         message = f'Не удалось получить контрольный коэффициент {bookmaker}. Ставка не будет сделана'
@@ -184,4 +184,8 @@ def prepare_for_bet(driver: selenium.webdriver,
         close_coupon()
         return
 
+    return True
+
+
+def bet():
     return True
