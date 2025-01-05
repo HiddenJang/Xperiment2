@@ -24,8 +24,10 @@ def get_screenshot(driver: selenium.webdriver, bookmaker: str) -> None:
 def close_coupon(driver: selenium.webdriver, diag_signal: QtCore.pyqtSignal, bookmaker: str) -> None:
     """Закрытие купона ставки"""
     try:
+        driver.implicitly_wait(2)
         driver.find_element(By.XPATH, '//button[text()="Очистить"]').click()
         driver.find_element(By.XPATH, '//button[text()="Удалить"]').click()
+        driver.implicitly_wait(0)
         message = f'Купон {bookmaker} от ставки закрыт'
         logger.info(message)
     except BaseException as ex:
@@ -74,7 +76,7 @@ def prepare_for_bet(driver: selenium.webdriver,
     else:
         total = f'Больше ({total_nominal})'
 
-    driver.implicitly_wait(0)
+
     # закрытие купона тотала, если он остался от предыдущей ставки
     close_coupon(driver, diag_signal, bookmaker)
     # проверка достаточности баланса
@@ -300,18 +302,22 @@ def bet(driver: selenium.webdriver,
             balance = element.text.split(',')[0]
             if float(balance) < float(start_balance):
                 message = f'Есть изменение баланса {bookmaker}'
+                result = True
                 break
             else:
                 message = f'Нет изменения баланса {bookmaker}'
+                result = None
             sleep(1)
         TelegramService.send_text(message)
         logger.info(message)
         diag_signal.emit(message)
+
     except BaseException as ex:
         message = f'Не удалось получить баланс {bookmaker}'
         TelegramService.send_text(message)
         logger.info(f'{message}: {ex}')
         diag_signal.emit(message)
         get_screenshot(driver, bookmaker)
-        return
+        result = None
 
+    return result
