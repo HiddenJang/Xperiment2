@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, Qt
 from PyQt5.QtWidgets import QMainWindow, QLabel
 from PyQt5.QtCore import QThread, QSettings, QTimer, QObject
 from apscheduler.schedulers.qt import QtScheduler
@@ -351,6 +351,9 @@ class DesktopApp(QMainWindow):
         ## Label ##
         for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
             self.settings.setValue(label.objectName(), label.text())
+        ## CheckBox ##
+        for check_box in self.ui.desktopClient.findChildren(QtWidgets.QCheckBox):
+            self.settings.setValue(check_box.objectName(), check_box.isChecked())
 
     def load_settings(self) -> None:
         try:
@@ -382,6 +385,12 @@ class DesktopApp(QMainWindow):
             for label in self.ui.desktopClient.findChildren(QtWidgets.QLabel):
                 if self.settings.value(label.objectName()):
                     label.setText(self.settings.value(label.objectName()))
+            ## CheckBox ##
+            for check_box in self.ui.desktopClient.findChildren(QtWidgets.QCheckBox):
+                if self.settings.value(check_box.objectName()) == 'true':
+                    check_box.setChecked(True)
+                elif self.settings.value(check_box.objectName()) == 'false':
+                    check_box.setChecked(False)
 
             ## Browser control settings window ##
             self.browser_control_set_window.set_control_settings_from_env()

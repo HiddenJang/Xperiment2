@@ -106,6 +106,7 @@ class WebsiteController:
                         f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} прерван. Нет готовности второго букмекера")
                     self.thread_pause_event.clear()
                     return
+                self.__send_diag_message(f"Получена готовность обоих букмекеров к ставке. Запущены последние короткие тесты {self.common_auth_data['bkmkr_name']}")
 
                 self.last_test_completed = self.site_interaction_module.last_test(self.driver,
                                                                                   self.diag_signal,
@@ -132,6 +133,11 @@ class WebsiteController:
                         self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} размещена успешно")
                     else:
                         self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} не размещена")
+                else:
+                    self.__send_diag_message(
+                        f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно. Не пройдены последние короткие проверки")
+                    self.thread_pause_event.clear()
+                    return
             else:
                 self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно. Нет готовности к размещению ставки")
                 self.thread_pause_event.clear()

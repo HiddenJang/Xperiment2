@@ -48,6 +48,7 @@ class BrowserControl(QObject):
                 thread_bet_event = threading.Event()
                 website_controller = WebsiteController({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]},
                                                        thread_pause_event,
+                                                       thread_last_test_event,
                                                        thread_bet_event,
                                                        self.diag_signal)
                 control_thread = threading.Thread(target=website_controller.preload, daemon=True)
