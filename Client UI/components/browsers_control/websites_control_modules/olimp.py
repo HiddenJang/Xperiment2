@@ -41,5 +41,16 @@ def prepare_for_bet(driver: selenium.webdriver,
     return True
 
 
-def bet():
+def last_test(driver: selenium.webdriver,
+              diag_signal: QtCore.pyqtSignal,
+              bookmaker: str,
+              total_koeff: str) -> bool | None:
+    """Проведение последних коротких проверок перед совершением ставки"""
+    return True
+
+def bet(driver: selenium.webdriver,
+        diag_signal: QtCore.pyqtSignal,
+        bookmaker: str,
+        imitation: bool) -> bool | None:
+    """Размещение ставки"""
     return True

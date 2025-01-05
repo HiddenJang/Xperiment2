@@ -26,6 +26,7 @@ class BrowserControl(QObject):
         self.betting_status_timer = QtCore.QTimer()
         self.bet_prohibitions_timer = QtCore.QTimer()
         self.bet_preparing_interval_timer = QtCore.QTimer()
+        self.last_test_timer = QtCore.QTimer()
 
     def preload_sites_and_authorize(self):
         """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
@@ -43,6 +44,7 @@ class BrowserControl(QObject):
             if auth_data.get(bkmkr_name):
                 interaction_module = interaction_modules[bkmkr_name]
                 thread_pause_event = threading.Event()
+                thread_last_test_event = threading.Event()
                 thread_bet_event = threading.Event()
                 website_controller = WebsiteController({'bkmkr_name': bkmkr_name, 'auth_data': auth_data[bkmkr_name]},
                                                        thread_pause_event,
@@ -54,7 +56,8 @@ class BrowserControl(QObject):
                                                     'controller_instance': website_controller,
                                                     'control_thread': control_thread,
                                                     'thread_pause_event': thread_pause_event,
-                                                    'thread_bet_event': thread_bet_event,}
+                                                    'thread_last_test_event': thread_last_test_event,
+                                                    'thread_bet_event': thread_bet_event}
         if not self.started_threads:
             self.diag_signal.emit("Процесс автоматического управления не запущен. "
                                   "Отсутвуют требуемые модули управления или данные авторизации для доступных модулей")
@@ -97,7 +100,6 @@ class BrowserControl(QObject):
                     self.bet_prohibitions_timer.setInterval(500)
                     self.bet_prohibitions_timer.timeout.connect(lambda: self.__survey_bet_prohibitions_status(first_bkmkr_name, second_bkmkr_name))
                     self.bet_prohibitions_timer.start()
-
                 return
 
     def __survey_betting_status(self, first_bkmkr_name: str, second_bkmkr_name: str) -> None:
@@ -113,6 +115,9 @@ class BrowserControl(QObject):
         second_bkmkr_thread_pause_event = self.started_threads[second_bkmkr_name]['thread_pause_event']
         if not first_bkmkr_thread_pause_event.is_set() and not second_bkmkr_thread_pause_event.is_set():
             self.bet_in_progress = False
+            if self.bet_prohibitions_timer.isActive():
+                self.bet_prohibitions_timer.stop()
+
 
     def __survey_bet_prohibitions_status(self, first_bkmkr_name: str, second_bkmkr_name: str) -> None:
         """Опрос готовностей к размещению ставок"""
@@ -120,28 +125,51 @@ class BrowserControl(QObject):
         first_prepared_for_bet = self.started_threads[first_bkmkr_name]['controller_instance'].prepared_for_bet
         second_prepared_for_bet = self.started_threads[second_bkmkr_name]['controller_instance'].prepared_for_bet
 
+        first_last_test_completed = self.started_threads[first_bkmkr_name]['controller_instance'].last_test_completed
+        second_last_test_completed = self.started_threads[second_bkmkr_name]['controller_instance'].last_test_completed
+
         if first_prepared_for_bet and second_prepared_for_bet:
             first_thread_bet_event = self.started_threads[first_bkmkr_name]['thread_bet_event']
             second_thread_bet_event = self.started_threads[second_bkmkr_name]['thread_bet_event']
             first_thread_bet_event.set()
             second_thread_bet_event.set()
-            return
+
+            if not self.last_test_timer.isActive():
+                self.last_test_timer.setInterval(3000)
+                self.last_test_timer.timeout.connect(lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
+                self.last_test_timer.start()
+
+            if first_last_test_completed and second_last_test_completed:
+                first_thread_last_test_event = self.started_threads[first_bkmkr_name]['thread_last_test_event']
+                second_thread_last_test_event = self.started_threads[second_bkmkr_name]['thread_last_test_event']
+                first_thread_last_test_event.set()
+                second_thread_last_test_event.set()
+
         elif first_prepared_for_bet or second_prepared_for_bet:
             if not self.bet_preparing_interval_timer.isActive():
                 self.bet_preparing_interval_timer.setInterval(10000)
                 self.bet_preparing_interval_timer.timeout.connect(lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
                 self.bet_preparing_interval_timer.start()
+
         elif self.bet_preparing_interval_timer.isActive():
             self.bet_preparing_interval_timer.stop()
+            if self.last_test_timer.isActive():
+                self.last_test_timer.stop()
 
     def __stop_betting(self, first_bkmkr_name: str, second_bkmkr_name: str):
         """Прерывание процесса размещения ставки при отсутствии готовности одного из букмекеров"""
         self.started_threads[first_bkmkr_name]['controller_instance'].stop_betting = True
         self.started_threads[second_bkmkr_name]['controller_instance'].stop_betting = True
+
         first_thread_bet_event = self.started_threads[first_bkmkr_name]['thread_bet_event']
         second_thread_bet_event = self.started_threads[second_bkmkr_name]['thread_bet_event']
         first_thread_bet_event.set()
         second_thread_bet_event.set()
+
+        first_thread_last_test_event = self.started_threads[first_bkmkr_name]['thread_last_test_event']
+        second_thread_last_test_event = self.started_threads[second_bkmkr_name]['thread_last_test_event']
+        first_thread_last_test_event.set()
+        second_thread_last_test_event.set()
 
     def close_browsers(self) -> None:
         """Закрытие браузеров"""
