@@ -2,6 +2,7 @@ import logging
 import threading
 from importlib import import_module
 from PyQt5 import QtCore
+from selenium.common import TimeoutException
 
 from .. import webdriver
 from ... import settings
@@ -81,8 +82,10 @@ class WebsiteController:
 
             try:
                 self.driver.get(url=url)
+            except TimeoutException:
+                self.__send_diag_message(f'Превышение времени ожидания открытия страницы события {bookmaker}. Попытка продолжить')
             except BaseException as ex:
-                self.__send_diag_message(f'Не удалось открыть url: {url}', exception=ex)
+                self.__send_diag_message(f'Не удалось открыть url {bookmaker}: {url}', exception=ex)
                 self.thread_pause_event.clear()
                 return
 
@@ -95,6 +98,7 @@ class WebsiteController:
                                                                                  total_koeff_type,
                                                                                  total_koeff)
             if self.prepared_for_bet:
+                self.__send_diag_message(f"Получена готовность {self.common_auth_data['bkmkr_name']} к ставке")
                 # ожидание готовности обоих букмекеров
                 self.thread_bet_event.wait()
 
@@ -127,12 +131,13 @@ class WebsiteController:
                     bet_placed = self.site_interaction_module.bet(self.driver,
                                                                   self.diag_signal,
                                                                   bookmaker,
+                                                                  self.prepared_for_bet,
                                                                   imitation)
 
                     if bet_placed:
                         self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} размещена успешно")
                     else:
-                        self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} не размещена")
+                        self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} не размещена, либо результат неизвестен")
                 else:
                     self.__send_diag_message(
                         f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно. Не пройдены последние короткие проверки")

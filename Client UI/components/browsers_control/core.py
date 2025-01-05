@@ -93,7 +93,7 @@ class BrowserControl(QObject):
                 self.bet_in_progress = True
 
                 if not self.betting_status_timer.isActive():
-                    self.betting_status_timer.setInterval(500)
+                    self.betting_status_timer.setInterval(1000)
                     self.betting_status_timer.timeout.connect(lambda: self.__survey_betting_status(first_bkmkr_name, second_bkmkr_name))
                     self.betting_status_timer.start()
 
@@ -119,10 +119,8 @@ class BrowserControl(QObject):
             if self.bet_prohibitions_timer.isActive():
                 self.bet_prohibitions_timer.stop()
 
-
     def __survey_bet_prohibitions_status(self, first_bkmkr_name: str, second_bkmkr_name: str) -> None:
         """Опрос готовностей к размещению ставок"""
-
         first_prepared_for_bet = self.started_threads[first_bkmkr_name]['controller_instance'].prepared_for_bet
         second_prepared_for_bet = self.started_threads[second_bkmkr_name]['controller_instance'].prepared_for_bet
 

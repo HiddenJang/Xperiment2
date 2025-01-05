@@ -2,6 +2,8 @@ import logging
 import os.path
 import sys
 
+from selenium.common import TimeoutException
+
 from .. import settings
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -35,7 +37,11 @@ class Driver:
         opts.add_experimental_option('detach', True)
         try:
             driver = webdriver.Chrome(options=opts, service=s)
-            driver.get(url=self.base_url)
+            driver.set_page_load_timeout(5)
+            try:
+                driver.get(url=self.base_url)
+            except TimeoutException:
+                logger.info('превышение времени ожидания открытия страницы')
             return {'driver': driver, 'status': 'Webdriver успешно подключен', 'ex': ''}
         except BaseException as ex:
             logger.error(ex)

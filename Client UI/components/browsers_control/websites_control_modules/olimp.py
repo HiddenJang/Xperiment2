@@ -35,10 +35,11 @@ def prepare_for_bet(driver: selenium.webdriver,
         bet_size: str,
         total_nominal: str,
         total_koeff_type: str,
-        total_koeff: str) -> None:
+        total_koeff: str) -> str | None:
     """Размещение ставки"""
     time.sleep(5)
-    return True
+    balance = '100'
+    return balance
 
 
 def last_test(driver: selenium.webdriver,
@@ -46,11 +47,13 @@ def last_test(driver: selenium.webdriver,
               bookmaker: str,
               total_koeff: str) -> bool | None:
     """Проведение последних коротких проверок перед совершением ставки"""
-    return False
+    time.sleep(1)
+    return True
 
 def bet(driver: selenium.webdriver,
         diag_signal: QtCore.pyqtSignal,
         bookmaker: str,
+        start_balance: str,
         imitation: bool) -> bool | None:
     """Размещение ставки"""
     return True
