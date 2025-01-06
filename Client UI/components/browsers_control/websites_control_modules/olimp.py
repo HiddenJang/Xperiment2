@@ -45,13 +45,18 @@ class SiteInteraction:
         """Закрытие купона ставки"""
         try:
             self.driver.implicitly_wait(2)
-            self.driver.find_element(By.XPATH, '//button[text()="Очистить"]').click()
-            self.driver.find_element(By.XPATH, '//button[text()="Удалить"]').click()
+            self.driver.find_element(By.XPATH, '//button[contains(@class, "clear")]').click()
             self.driver.implicitly_wait(0)
             self.__send_diag_message(f'Купон {self.bookmaker} от ставки закрыт')
         except BaseException as ex:
             self.__send_diag_message(
                 f'Не удалось закрытие купона {self.bookmaker} (возможно купоны отсутствуют или были закрыты ранее)', ex)
+
+    def __quit(self, message: str, ex: BaseException = '') -> None:
+        """Прекращение процесса размещения ставки"""
+        self.__send_diag_message(message, ex)
+        self.__get_screenshot()
+        self.__close_coupon()
 
     def preload(self) -> bool | Exception:
         """Авторизация пользователя"""
@@ -80,8 +85,88 @@ class SiteInteraction:
 
     def prepare_for_bet(self, event_data: dict, bet_params: dict) -> bool | None:
         """Размещение ставки"""
-        sleep(5)
-        self.start_balance = '100'
+        """Подготовка к размещению ставки"""
+        bookmaker = event_data["bookmaker"]
+        bet_size = bet_params[bookmaker]['bet_size']
+        min_koeff = bet_params[bookmaker]['min_koeff']
+        total_nominal = list(event_data['runners'].keys())[0]
+        total_koeff_type = list(event_data['runners'][total_nominal].keys())[0]
+
+        if total_koeff_type == 'under':
+            total = f'Меньше ({total_nominal})'
+        else:
+            total = f'Больше ({total_nominal})'
+
+        # закрытие купона тотала, если он остался от предыдущей ставки
+        self.__close_coupon()
+        # проверка достаточности баланса
+        try:
+            element = WebDriverWait(self.driver, 5).until(
+                EC.visibility_of_element_located((By.XPATH, "//span[contains(@title, 'Пополнить баланс')]")))
+            self.start_balance = element.text
+            if float(self.start_balance) < float(bet_size):
+                self.__send_diag_message(
+                    f'Ставка на событие {self.bookmaker} не будет сделана, баланс меньше размера ставки')
+                return
+            else:
+                self.__send_diag_message(f'Баланс {self.bookmaker} получен и больше размера ставки')
+        except BaseException as ex:
+            self.__send_diag_message(f'Не удалось получить баланс {self.bookmaker}. Ставка не будет сделана', ex)
+            self.__get_screenshot()
+            return
+
+        # переключение на вкладку ТОТАЛЫ
+        try:
+            WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, "//div[text()='Тоталы']"))).click()
+        except BaseException as ex:
+            self.__send_diag_message(f'Попытка открыть вкладку "Тоталы" букмекера {self.bookmaker} неудачна', ex)
+            self.__get_screenshot()
+            return
+
+        # нажатие кнопки с нужным номиналом тотала (открытие купона тотала)
+        try:
+            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH,
+                                                                            f"//div[text()='Тотал']/ancestor::div[contains(@class, 'accordionHead')]/following-sibling::div[contains(@class, 'accordionContent')]/div/div[contains(@class, 'outcomes')]/descendant::span[contains(text(),'{total}')]"))).click()
+            logger.info(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата успешно')
+        except BaseException as ex:
+            self.__send_diag_message(
+                f'Попытка нажать на кнопку {total} (открыть купон тотала) букмекера {self.bookmaker} неудачна', ex)
+            self.__get_screenshot()
+            return
+
+        # ввод значения ставки
+        try:
+            element = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Сумма")]')))
+            element.click()
+            element.send_keys(Keys.CONTROL + 'A')
+            element.send_keys(Keys.DELETE)
+            element.send_keys(bet_size)
+            if int(element.get_attribute('value')) != int(bet_size):
+                raise Exception
+            self.__send_diag_message(f'Значение ставки на событие {self.bookmaker} введено успешно')
+        except BaseException as ex:
+            self.__quit(f'Не удалось ввести значение ставки на событие {self.bookmaker}.Ставка не будет сделана', ex)
+            return
+
+        # получение текущего коэффициента ставки на нужный тотал и сравнение с установленным
+        try:
+            control_koeff = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//span[contains(@data-qa, "betCardCoeff")]')))
+            control_koeff = float(control_koeff.text)
+            if control_koeff < float(min_koeff):
+                self.__send_diag_message(
+                    f'Ставка на событие {self.bookmaker} не сделана, текущий коэффициент ставки меньше установленного ({control_koeff}<{min_koeff})')
+                self.__get_screenshot()
+                self.__close_coupon()
+                return
+            self.__send_diag_message(
+                f'Текущий коэффициент ставки {self.bookmaker} выше или равен установленному ({control_koeff}>={min_koeff})')
+        except BaseException as ex:
+            self.__quit(f'Не удалось получить текущий коэффициент ставки {self.bookmaker}. Ставка не будет сделана', ex)
+            return
+
         return True
 
     def last_test(self, bet_params: dict) -> bool | None:
