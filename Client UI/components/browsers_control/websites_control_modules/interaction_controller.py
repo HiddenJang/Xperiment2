@@ -156,7 +156,6 @@ class WebsiteController:
         self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} завершен")
         self.thread_pause_event.clear()
 
-
     def __send_diag_message(self, diag_mess: str, exception: BaseException = '', status: str = 'info') -> None:
         """Отправка диагностических сообщений в логгер и приложение"""
         log_info = diag_mess + ' ' + str(exception)

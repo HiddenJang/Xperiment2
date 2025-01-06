@@ -615,40 +615,20 @@
     <zorder>label_scanSettings</zorder>
     <zorder>checkBox_telegramMessageSwitch</zorder>
    </widget>
-   <widget class="QListWidget" name="listWidget_diagnostics">
-    <property name="geometry">
-     <rect>
-      <x>5</x>
-      <y>390</y>
-      <width>555</width>
-      <height>161</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_systemInfo">
-    <property name="geometry">
-     <rect>
-      <x>187</x>
-      <y>370</y>
-      <width>171</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Системная информация</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
    <widget class="QFrame" name="frame_autoBetSettings">
     <property name="geometry">
      <rect>
       <x>564</x>
-      <y>0</y>
+      <y>1</y>
       <width>296</width>
-      <height>551</height>
+      <height>370</height>
      </rect>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>16777215</height>
+     </size>
     </property>
     <property name="styleSheet">
      <string notr="true">border-top-color: rgb(0, 0, 0);</string>
@@ -685,7 +665,7 @@
      <property name="geometry">
       <rect>
        <x>59</x>
-       <y>474</y>
+       <y>190</y>
        <width>181</width>
        <height>25</height>
       </rect>
@@ -750,7 +730,7 @@
      <property name="geometry">
       <rect>
        <x>88</x>
-       <y>508</y>
+       <y>224</y>
        <width>151</width>
        <height>21</height>
       </rect>
@@ -804,6 +784,50 @@
       <number>10</number>
      </property>
     </widget>
+   </widget>
+   <widget class="QWidget" name="verticalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>380</y>
+      <width>861</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>2</number>
+     </property>
+     <property name="sizeConstraint">
+      <enum>QLayout::SetDefaultConstraint</enum>
+     </property>
+     <property name="leftMargin">
+      <number>4</number>
+     </property>
+     <property name="bottomMargin">
+      <number>4</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="label_systemInfo">
+       <property name="text">
+        <string>Системная информация</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QListWidget" name="listWidget_diagnostics">
+       <property name="maximumSize">
+        <size>
+         <width>853</width>
+         <height>150</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

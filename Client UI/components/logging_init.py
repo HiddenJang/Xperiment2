@@ -33,8 +33,8 @@ def init_logger(name):
     fh = handlers.RotatingFileHandler(
         filename=settings.FILENAME,
         encoding="UTF-8",
-        maxBytes=300000,
-        backupCount=5,
+        maxBytes=settings.MAX_BYTES_FILE_SIZE,
+        backupCount=settings.LOG_FILES_COUNT,
     )
     fh.setFormatter(logging.Formatter(settings.FORMAT))
     fh.setLevel(LOGLEVEL)

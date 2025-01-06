@@ -90,6 +90,8 @@ class DesktopApp(QMainWindow):
         self.ui.pushButton_closeBrowsers.clicked.connect(self.close_browsers)
 
         self.ui.checkBox_telegramMessageSwitch.clicked.connect(self.enable_telegram_messages)
+        if self.ui.checkBox_telegramMessageSwitch.isChecked():
+            self.enable_telegram_messages()
 
     ###### Auto betting ######
 

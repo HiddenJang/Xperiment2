@@ -16,6 +16,8 @@ FORMAT = "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
 LOGS_PATH = BASE_DIR / "logs"
 FILENAME = LOGS_PATH / "gui_logs.log"
 LOGLEVEL = "DEBUG"
+MAX_BYTES_FILE_SIZE = 300000
+LOG_FILES_COUNT = 10
 
 # Default server api
 DEFAULT_API_URL = 'http://127.0.0.1:8000/api/v1/start/'
@@ -26,9 +28,12 @@ BOOKMAKERS = {'betboom': 'https://betboom.ru/',
               'olimp': 'https://www.olimp.bet/',
               'xstavka': 'https://1xstavka.ru/'}
 
-# Webdriver directory (base dir - browsers_control)
+# Webdriver settings
+# directory (base dir /--/ browsers_control)
 WEBDRIVER_DIR = {'linux': BASE_DIR / "components/browsers_control/chromedriver-linux64/chromedriver",
                  'win32': BASE_DIR / "components\\browsers_control\\chromedriver\\chromedriver.exe"}
+# page loading timeout
+PAGE_LOAD_TIMEOUT = 5
 
 # Screenshots directory
 SCREENSHOTS_DIR = BASE_DIR / "screenshots"

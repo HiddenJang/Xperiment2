@@ -37,11 +37,11 @@ class Driver:
         opts.add_experimental_option('detach', True)
         try:
             driver = webdriver.Chrome(options=opts, service=s)
-            driver.set_page_load_timeout(5)
+            driver.set_page_load_timeout(settings.PAGE_LOAD_TIMEOUT)
             try:
                 driver.get(url=self.base_url)
             except TimeoutException:
-                logger.info('превышение времени ожидания открытия страницы')
+                logger.info(f'Превышение времени ожидания открытия стартовой страницы {self.base_url}. Попытка продолжить')
             return {'driver': driver, 'status': 'Webdriver успешно подключен', 'ex': ''}
         except BaseException as ex:
             logger.error(ex)
