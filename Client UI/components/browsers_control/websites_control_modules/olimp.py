@@ -128,7 +128,7 @@ class SiteInteraction:
         try:
             WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH,
                                                                             f"//div[text()='Тотал']/ancestor::div[contains(@class, 'accordionHead')]/following-sibling::div[contains(@class, 'accordionContent')]/div/div[contains(@class, 'outcomes')]/descendant::span[contains(text(),'{total}')]"))).click()
-            logger.info(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата успешно')
+            self.__send_diag_message(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата успешно')
         except BaseException as ex:
             self.__send_diag_message(
                 f'Попытка нажать на кнопку {total} (открыть купон тотала) букмекера {self.bookmaker} неудачна', ex)
@@ -216,7 +216,7 @@ class SiteInteraction:
                 self.__quit(
                     f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Сделать ставку> недоступна. Ставка не будет сделана')
                 return
-            self.__send_diag_message(f'Кнопка <Сделать ставку> найдена')
+            self.__send_diag_message(f'Кнопка <Сделать ставку> {self.bookmaker} найдена')
         except BaseException as ex:
             self.__quit(
                 f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Сделать ставку> не найдена. Ставка не будет сделана',

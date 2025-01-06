@@ -143,7 +143,7 @@ class SiteInteraction:
         try:
             WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH,
                 f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
-            logger.info(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата успешно')
+            self.__send_diag_message(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата успешно')
         except BaseException as ex:
             self.__send_diag_message(f'Попытка нажать на кнопку {total} (открыть купон тотала) букмекера {self.bookmaker} неудачна', ex)
             ## попытка закрыть всплывающее окно уведомления
@@ -223,7 +223,7 @@ class SiteInteraction:
             if 'заключить пари' not in button_name.lower():
                 self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Заключить пари> недоступна. Ставка не будет сделана')
                 return
-            self.__send_diag_message(f'Кнопка <Заключить пари> найдена')
+            self.__send_diag_message(f'Кнопка <Заключить пари> {self.bookmaker} найдена')
         except BaseException as ex:
             self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Заключить пари> не найдена. Ставка не будет сделана', ex)
             return
