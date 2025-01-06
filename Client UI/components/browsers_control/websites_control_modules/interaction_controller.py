@@ -24,38 +24,37 @@ class WebsiteController:
         self.thread_bet_event = thread_bet_event
         self.diag_signal = diag_signal
 
+        site_interaction_module = import_module(
+            f'.browsers_control.websites_control_modules.{self.common_auth_data["bkmkr_name"]}',
+            package='components')
+        self.SiteInteractionClass = getattr(site_interaction_module, 'SiteInteraction')
+
+        self.bookmaker = self.common_auth_data['bkmkr_name']
         self.preloaded = False
         self.close_request = False
-        self.event_data = {}
-        self.bet_params = {}
-        self.site_interaction_module = import_module(f'.browsers_control.websites_control_modules.{self.common_auth_data["bkmkr_name"]}',
-                                    package='components')
-        self.site_interaction_class = getattr(self.site_interaction_module, 'ClassName')
-
         self.prepared_for_bet = False
         self.last_test_completed = False
         self.stop_betting = False
 
+        self.event_data = {}
+        self.bet_params = {}
+
     def preload(self):
         """Открытие страницы БК и авторизация пользователя"""
-        driver_dict = webdriver.Driver(settings.BOOKMAKERS.get(self.common_auth_data['bkmkr_name'])).get_driver()
+        driver_dict = webdriver.Driver(settings.BOOKMAKERS.get(self.bookmaker)).get_driver()
         self.driver = driver_dict['driver']
         if not self.driver:
-            self.__send_diag_message(f"Сайт {self.common_auth_data['bkmkr_name']} {driver_dict['status']}",
+            self.__send_diag_message(f"Сайт {self.bookmaker} {driver_dict['status']}",
                                      exception=driver_dict['ex'],
                                      status='error')
             return
-        login = self.common_auth_data['auth_data']['login']
-        password = self.common_auth_data['auth_data']['password']
 
+        self.site_interaction_instance = self.SiteInteractionClass(self.driver, self.diag_signal, self.common_auth_data)
         try:
-
-            self.site_interaction_module.preload(self.driver, login, password)
-            self.__send_diag_message(
-                f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
-            self.preloaded = True
+            self.preloaded = self.site_interaction_instance.preload()
+            self.__send_diag_message(f'Сайт {self.bookmaker} загружен, авторизация пройдена успешно')
         except BaseException as ex:
-            self.__send_diag_message(f'Ошибка авторизации {self.common_auth_data["bkmkr_name"]}', exception=ex)
+            self.__send_diag_message(f'Ошибка авторизации {self.bookmaker}', exception=ex)
             self.__quit()
             return
 
@@ -73,36 +72,22 @@ class WebsiteController:
 
     def bet(self) -> None:
         """Размещение ставки"""
-        self.__send_diag_message(f"Запущен процесс размещения ставки {self.common_auth_data['bkmkr_name']}")
+        self.__send_diag_message(f"Запущен процесс размещения ставки {self.bookmaker}")
         try:
-            print(self.event_data)
-            bookmaker = self.event_data["bookmaker"]
             url = self.event_data["url"]
-            bet_size = self.bet_params[self.common_auth_data['bkmkr_name']]['bet_size']
-            min_koeff = self.bet_params[self.common_auth_data['bkmkr_name']]['min_koeff']
-            total_nominal = list(self.event_data['runners'].keys())[0]
-            total_koeff_type = list(self.event_data['runners'][total_nominal].keys())[0]
-            imitation = self.bet_params['bet_imitation']
-
             try:
                 self.driver.get(url=url)
             except TimeoutException:
-                self.__send_diag_message(f'Превышение времени ожидания открытия страницы события {bookmaker}. Попытка продолжить')
+                self.__send_diag_message(f'Превышение времени ожидания открытия страницы события {self.bookmaker}. Попытка продолжить')
             except BaseException as ex:
-                self.__send_diag_message(f'Не удалось открыть url {bookmaker}: {url}', exception=ex)
+                self.__send_diag_message(f'Не удалось открыть url {self.bookmaker}: {url}', exception=ex)
                 self.thread_pause_event.clear()
                 return
 
-            self.prepared_for_bet = self.site_interaction_module.prepare_for_bet(self.driver,
-                                                                                 self.diag_signal,
-                                                                                 bookmaker,
-                                                                                 url,
-                                                                                 bet_size,
-                                                                                 total_nominal,
-                                                                                 total_koeff_type,
-                                                                                 min_koeff)
+            self.prepared_for_bet = self.site_interaction_instance.prepare_for_bet(self.event_data, self.bet_params)
+
             if self.prepared_for_bet:
-                self.__send_diag_message(f"Получена готовность {self.common_auth_data['bkmkr_name']} к ставке")
+                self.__send_diag_message(f"Получена готовность {self.bookmaker} к ставке")
                 # ожидание готовности обоих букмекеров
                 self.thread_bet_event.wait()
 
@@ -111,15 +96,12 @@ class WebsiteController:
                     return
                 elif self.stop_betting:
                     self.__send_diag_message(
-                        f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} прерван. Нет готовности второго букмекера")
+                        f"Процесс размещения ставки {self.bookmaker} прерван. Нет готовности второго букмекера")
                     self.thread_pause_event.clear()
                     return
-                self.__send_diag_message(f"Получена готовность обоих букмекеров к ставке. Запущены последние короткие тесты {self.common_auth_data['bkmkr_name']}")
+                self.__send_diag_message(f"Получена готовность обоих букмекеров к ставке. Запущены последние короткие тесты {self.bookmaker}")
 
-                self.last_test_completed = self.site_interaction_module.last_test(self.driver,
-                                                                                  self.diag_signal,
-                                                                                  bookmaker,
-                                                                                  min_koeff)
+                self.last_test_completed = self.site_interaction_instance.last_test(self.bet_params)
                 if self.last_test_completed:
                     # ожидание результатов последней короткой проверки
                     self.thread_last_test_event.wait()
@@ -128,37 +110,32 @@ class WebsiteController:
                         return
                     elif self.stop_betting:
                         self.__send_diag_message(
-                            f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} прерван. Нет общей готовности обоих букмекеров после проведения последней короткой проверки")
+                            f"Процесс размещения ставки {self.bookmaker} прерван. Нет общей готовности обоих букмекеров после проведения последней короткой проверки")
                         self.thread_pause_event.clear()
                         return
 
-                    bet_placed = self.site_interaction_module.bet(self.driver,
-                                                                  self.diag_signal,
-                                                                  bookmaker,
-                                                                  self.prepared_for_bet,
-                                                                  imitation)
-
+                    bet_placed = self.site_interaction_instance.bet(self.bet_params)
                     if bet_placed:
-                        self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} размещена успешно")
+                        self.__send_diag_message(f"Ставка {self.bookmaker} размещена успешно")
                         WebsiteController.excluded_urls.append(url)
                     else:
-                        self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} не размещена, либо результат неизвестен")
+                        self.__send_diag_message(f"Ставка {self.bookmaker} не размещена, либо результат неизвестен")
                 else:
                     self.__send_diag_message(
-                        f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно. Не пройдены последние короткие проверки")
+                        f"Процесс размещения ставки {self.bookmaker} окончен неудачно. Не пройдены последние короткие проверки")
                     self.thread_pause_event.clear()
                     return
             else:
-                self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно. Нет готовности к размещению ставки")
+                self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} окончен неудачно. Нет готовности к размещению ставки")
                 self.thread_pause_event.clear()
                 return
 
         except BaseException as ex:
-            self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} окончен неудачно",
+            self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} окончен неудачно",
                                      exception=ex)
             self.thread_pause_event.clear()
             return
-        self.__send_diag_message(f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} завершен")
+        self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} завершен")
         self.thread_pause_event.clear()
 
     def __send_diag_message(self, diag_mess: str, exception: BaseException = '', status: str = 'info') -> None:
@@ -183,6 +160,6 @@ class WebsiteController:
         try:
             self.driver.close()
             self.driver.quit()
-            self.__send_diag_message(f'Сайт {self.common_auth_data["bkmkr_name"]} закрыт')
+            self.__send_diag_message(f'Сайт {self.bookmaker} закрыт')
         except BaseException:
             pass

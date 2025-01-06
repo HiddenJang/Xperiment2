@@ -15,348 +15,265 @@ from ...telegram_message_service import TelegramService
 logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.leon')
 
 
-def get_screenshot(driver: selenium.webdriver, bookmaker: str) -> None:
-    """Скриншот и отправка скриншота в telegram"""
-    screenshot_name = settings.SCREENSHOTS_DIR / f"{bookmaker}-{str(datetime.now()).replace(':', '-')}.png"
-    driver.get_screenshot_as_file(screenshot_name)
-    TelegramService.send_photo(screenshot_name)
+class SiteInteraction:
+    """Класс управления сайтом букмекера"""
+    def __init__(self,
+                 driver: selenium.webdriver,
+                 diag_signal: QtCore.pyqtSignal,
+                 common_auth_data: dict):
+        self.driver = driver
+        self.common_auth_data = common_auth_data
+        self.diag_signal = diag_signal
 
-def send_diag_message(message: str,
-                      logger: bool = True) -> None:
-    """Отправка диагностики"""
-    pass
+        self.bookmaker = self.common_auth_data['bkmkr_name']
+        self.start_balance = '0'
 
-def close_coupon(driver: selenium.webdriver, diag_signal: QtCore.pyqtSignal, bookmaker: str) -> None:
-    """Закрытие купона ставки"""
-    try:
-        driver.implicitly_wait(2)
-        driver.find_element(By.XPATH, '//button[text()="Очистить"]').click()
-        driver.find_element(By.XPATH, '//button[text()="Удалить"]').click()
-        driver.implicitly_wait(0)
-        message = f'Купон {bookmaker} от ставки закрыт'
-        logger.info(message)
-    except BaseException as ex:
-        message = f'Не удалось закрытие купона {bookmaker} (возможно купоны отсутствуют или были закрыты ранее)'
-        logger.info(f'{message} {ex}')
-    diag_signal.emit(message)
+    def __get_screenshot(self) -> None:
+        """Скриншот и отправка скриншота в telegram"""
+        screenshot_name = settings.SCREENSHOTS_DIR / f"{self.bookmaker}-{str(datetime.now()).replace(':', '-')}.png"
+        self.driver.get_screenshot_as_file(screenshot_name)
+        TelegramService.send_photo(screenshot_name)
 
+    def __send_diag_message(self, message: str, ex: BaseException = '') -> None:
+        """Отправка диагностики"""
+        logger.info(f'{message} {str(ex)}')
+        TelegramService.send_text(message)
+        self.diag_signal.emit(message)
 
-def preload(driver: selenium.webdriver, login: str, password: str) -> None:
-    """Авторизация пользователя"""
-    # нажатие кнопки ВОЙТИ
-    WebDriverWait(driver, 60).until(EC.visibility_of_element_located((By.XPATH, "//a[@href='/login']"))).click()
-    # нажатие вкладки EMAIL
-    WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//span[contains(text(),'E-mail')]"))).click()
-    # очитска полей ЛОГИН и ПАРОЛЬ и ввод данных авторизации
-    element1 = WebDriverWait(driver, 60).until(
-        EC.presence_of_element_located((By.XPATH, "//input[@name='login']")))
-    element2 = WebDriverWait(driver, 60).until(
-        EC.presence_of_element_located((By.XPATH, "//input[@name='password']")))
-    element1.clear()
-    element2.clear()
-    element1.send_keys(login)
-    element2.send_keys(password)
-    # нажатие кнопки ВОЙТИ в окне авторизации
-    WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//button[contains(@class, 'login__button')]"))).click()
-    # проверка отображения баланса
-    driver.implicitly_wait(20)
-    element = driver.find_element(By.XPATH, '//div[contains(@class, "balance__text")]')
-    balance = element.text.split(',')[0]
-    driver.implicitly_wait(0)
-    if not float(balance) >= 0:
-        raise Exception
+    def __close_coupon(self) -> None:
+        """Закрытие купона ставки"""
+        try:
+            self.driver.implicitly_wait(2)
+            self.driver.find_element(By.XPATH, '//button[text()="Очистить"]').click()
+            self.driver.find_element(By.XPATH, '//button[text()="Удалить"]').click()
+            self.driver.implicitly_wait(0)
+            self.__send_diag_message(f'Купон {self.bookmaker} от ставки закрыт')
+        except BaseException as ex:
+            self.__send_diag_message(f'Не удалось закрытие купона {self.bookmaker} (возможно купоны отсутствуют или были закрыты ранее)', ex)
 
-
-def prepare_for_bet(driver: selenium.webdriver,
-                    diag_signal: QtCore.pyqtSignal,
-                    bookmaker: str,
-                    url: str,
-                    bet_size: str,
-                    total_nominal: str,
-                    total_koeff_type: str,
-                    min_koeff: str) -> str | None:
-    """Подготовка к размещению ставки"""
-    if total_koeff_type == 'under':
-        total = f'Меньше ({total_nominal})'
-    else:
-        total = f'Больше ({total_nominal})'
-
-
-    # закрытие купона тотала, если он остался от предыдущей ставки
-    close_coupon(driver, diag_signal, bookmaker)
-    # проверка достаточности баланса
-    try:
-        element = WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located((By.XPATH, '//div[contains(@class, "balance__text")]')))
+    def preload(self) -> bool | Exception:
+        """Авторизация пользователя"""
+        login = self.common_auth_data['auth_data']['login']
+        password = self.common_auth_data['auth_data']['password']
+        # нажатие кнопки ВОЙТИ
+        WebDriverWait(self.driver, 60).until(EC.visibility_of_element_located((By.XPATH, "//a[@href='/login']"))).click()
+        # нажатие вкладки EMAIL
+        WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//span[contains(text(),'E-mail')]"))).click()
+        # очитска полей ЛОГИН и ПАРОЛЬ и ввод данных авторизации
+        element1 = WebDriverWait(self.driver, 60).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@name='login']")))
+        element2 = WebDriverWait(self.driver, 60).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@name='password']")))
+        element1.clear()
+        element2.clear()
+        element1.send_keys(login)
+        element2.send_keys(password)
+        # нажатие кнопки ВОЙТИ в окне авторизации
+        WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//button[contains(@class, 'login__button')]"))).click()
+        # проверка отображения баланса
+        self.driver.implicitly_wait(20)
+        element = self.driver.find_element(By.XPATH, '//div[contains(@class, "balance__text")]')
         balance = element.text.split(',')[0]
-
-        if float(balance) < float(bet_size):
-            message = f'Ставка на событие {bookmaker} не будет сделана, баланс меньше размера ставки'
-            TelegramService.send_text(message)
-            logger.info(message)
-            diag_signal.emit(message)
-            return
+        self.driver.implicitly_wait(0)
+        if not float(balance) >= 0:
+            raise Exception
         else:
-            message = f'Баланс {bookmaker} получен и больше размера ставки'
-            TelegramService.send_text(message)
-            logger.info(message)
-            diag_signal.emit(message)
-    except BaseException as ex:
-        message = f'Не удалось получить баланс {bookmaker}. Ставка не будет сделана'
-        TelegramService.send_text(message)
-        logger.info(f'{message}: {ex}')
-        diag_signal.emit(message)
-        get_screenshot(driver, bookmaker)
-        return
+            return True
 
-    # попытка закрыть всплывающее окно уведомления
-    try:
-        WebDriverWait(driver, 1).until(
-            EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
-        logger.info(f'Всплывающее окно уведомления закрыто')
-    except BaseException as ex:
-        logger.info(f'Всплывающее окно уведомления не найдено, {ex}')
+    def prepare_for_bet(self, event_data: dict, bet_params: dict) -> bool | None:
+        """Подготовка к размещению ставки"""
+        bookmaker = event_data["bookmaker"]
+        bet_size = bet_params[bookmaker]['bet_size']
+        min_koeff = bet_params[bookmaker]['min_koeff']
+        total_nominal = list(event_data['runners'].keys())[0]
+        total_koeff_type = list(event_data['runners'][total_nominal].keys())[0]
 
-    # переключение на вкладку ТОТАЛЫ
-    try:
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.XPATH, "//button[text()='Тоталы']"))).click()
-    except BaseException as ex:
-        message = f'Попытка открыть вкладку "Тоталы" букмекера {bookmaker} неудачна'
-        TelegramService.send_text(message)
-        logger.info(f'{message}: {ex}')
-        diag_signal.emit(message)
+        if total_koeff_type == 'under':
+            total = f'Меньше ({total_nominal})'
+        else:
+            total = f'Больше ({total_nominal})'
+
+        # закрытие купона тотала, если он остался от предыдущей ставки
+        self.__close_coupon()
+        # проверка достаточности баланса
+        try:
+            element = WebDriverWait(self.driver, 5).until(
+                EC.visibility_of_element_located((By.XPATH, '//div[contains(@class, "balance__text")]')))
+            self.start_balance = element.text.split(',')[0]
+            if float(self.start_balance) < float(bet_size):
+                self.__send_diag_message(f'Ставка на событие {self.bookmaker} не будет сделана, баланс меньше размера ставки')
+                return
+            else:
+                self.__send_diag_message(f'Баланс {self.bookmaker} получен и больше размера ставки')
+        except BaseException as ex:
+            self.__send_diag_message(f'Не удалось получить баланс {self.bookmaker}. Ставка не будет сделана', ex)
+            self.__get_screenshot()
+            return
 
         # попытка закрыть всплывающее окно уведомления
-        WebDriverWait(driver, 1).until(
-            EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
-        driver.find_element(By.XPATH, "//button[text()='Тоталы']").click()
-    except:
-        message = f'Попытка закрыть всплывающее окно {bookmaker} для открытия вкладки Тоталы неудачна. Ставка не будет сделана'
-        TelegramService.send_text(message)
-        logger.info(message)
-        diag_signal.emit(message)
+        try:
+            WebDriverWait(self.driver, 1).until(
+                EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
+            logger.info(f'Всплывающее окно уведомления закрыто')
+        except BaseException as ex:
+            logger.info(f'Всплывающее окно уведомления не найдено, {ex}')
 
-        get_screenshot(driver, bookmaker)
-        return
-
-    # нажатие кнопки с нужным номиналом тотала (открытие купона тотала)
-    try:
-        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH,
-            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
-        logger.info(f'Кнопка {total} букмекара {bookmaker} найдена и нажата успешно')
-    except BaseException as ex:
-        message = f'Попытка нажать на кнопку {total} (открыть купон тотала) букмекера {bookmaker} неудачна'
-        TelegramService.send_text(message)
-        logger.info(f'{message}: {ex}')
-        diag_signal.emit(message)
-
-        # # попытка закрыть всплывающее окно уведомления
-        WebDriverWait(driver, 1).until(
-            EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
-        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH,
-            f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
-    except:
-        message = f'Попытка закрыть всплывающее окно {bookmaker} для открытия купона тотала неудачна. Ставка не будет сделана'
-        TelegramService.send_text(message)
-        logger.info(message)
-        diag_signal.emit(message)
-
-        get_screenshot(driver, bookmaker)
-        return
-
-    # беттинг
-    # ввод значения ставки
-    try:
-        element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, '//input[contains(@class,"stake-input__value")]')))
-        element.click()
-        element.send_keys(Keys.CONTROL + 'A')
-        element.send_keys(Keys.DELETE)
-        element.send_keys(bet_size)
-        if int(element.get_attribute('value')) != int(bet_size):
-            raise Exception
-        message = f'Значение ставки на событие {bookmaker} введено успешно'
-        diag_signal.emit(message)
-        logger.info(message)
-    except BaseException as ex:
-        message = f'Не удалось ввести значение ставки на событие {bookmaker} {url}.Ставка не будет сделана'
-        TelegramService.send_text(message)
-        diag_signal.emit(message)
-        logger.info(f'{message}: {ex}')
-
-        get_screenshot(driver, bookmaker)
-        close_coupon(driver, diag_signal, bookmaker)
-        return
-
-    # получение текущего коэффициента ставки на нужный тотал и сравнение с установленным
-    try:
-        control_koeff = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, '//span[contains(@class, "slip-list-item__current-odd")]')))
-        control_koeff = float(control_koeff.text)
-        if control_koeff < float(min_koeff):
-            message = f'Ставка на событие {bookmaker} не сделана, текущий коэффициент ставки меньше установленного ({control_koeff}<{min_koeff})'
-            TelegramService.send_text(message)
-            diag_signal.emit(message)
-            logger.info(message)
-
-            get_screenshot(driver, bookmaker)
-            close_coupon(driver, diag_signal, bookmaker)
+        # переключение на вкладку ТОТАЛЫ
+        try:
+            WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, "//button[text()='Тоталы']"))).click()
+        except BaseException as ex:
+            self.__send_diag_message(f'Попытка открыть вкладку "Тоталы" букмекера {self.bookmaker} неудачна', ex)
+            ## попытка закрыть всплывающее окно уведомления
+            WebDriverWait(self.driver, 1).until(
+                EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
+            self.driver.find_element(By.XPATH, "//button[text()='Тоталы']").click()
+        except:
+            self.__send_diag_message(f'Попытка закрыть всплывающее окно {self.bookmaker} для открытия вкладки Тоталы неудачна. Ставка не будет сделана')
+            self.__get_screenshot()
             return
-        message = f'Текущий коэффициент ставки {bookmaker} выше или равен установленному ({control_koeff}>={min_koeff})'
-        TelegramService.send_text(message)
-        diag_signal.emit(message)
-        logger.info(message)
-    except BaseException as ex:
-        message = f'Не удалось получить текущий коэффициент ставки {bookmaker}. Ставка не будет сделана'
-        TelegramService.send_text(message)
-        diag_signal.emit(message)
-        logger.info(f'{message}: {ex}')
 
-        get_screenshot(driver, bookmaker)
-        close_coupon(driver, diag_signal, bookmaker)
-        return
-
-    return balance
-
-
-def last_test(driver: selenium.webdriver,
-              diag_signal: QtCore.pyqtSignal,
-              bookmaker: str,
-              min_koeff: str) -> bool | None:
-    """Проведение последних коротких проверок перед совершением ставки"""
-    # повторная проверка коэффициента на нужный тотал и сравнение с установленным
-    try:
-        control_koeff = driver.find_element(By.XPATH, '//span[contains(@class, "slip-list-item__current-odd")]')
-        control_koeff = float(control_koeff.text)
-        if control_koeff < float(min_koeff):
-            message = f'Не пройдена последняя контрольная проверка {bookmaker}. Коэффициент в купоне меньше установленного ({control_koeff}<{min_koeff}). Ставка не будет сделана'
-            TelegramService.send_text(message)
-            diag_signal.emit(message)
-            logger.info(message)
-
-            get_screenshot(driver, bookmaker)
-            close_coupon(driver, diag_signal, bookmaker)
+        # нажатие кнопки с нужным номиналом тотала (открытие купона тотала)
+        try:
+            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH,
+                f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
+            logger.info(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата успешно')
+        except BaseException as ex:
+            self.__send_diag_message(f'Попытка нажать на кнопку {total} (открыть купон тотала) букмекера {self.bookmaker} неудачна', ex)
+            ## попытка закрыть всплывающее окно уведомления
+            WebDriverWait(self.driver, 1).until(
+                EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
+            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH,
+                f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
+        except:
+            self.__send_diag_message(f'Попытка закрыть всплывающее окно {self.bookmaker} для открытия купона тотала неудачна. Ставка не будет сделана')
+            self.__get_screenshot()
             return
-        message = f'Коэффициент в купоне {bookmaker} перед ставкой выше или равен установленному ({control_koeff}>={min_koeff})'
-        TelegramService.send_text(message)
-        diag_signal.emit(message)
-        logger.info(message)
-    except BaseException as ex:
-        message = f'Не пройдена последняя контрольная проверка {bookmaker}. Не удалось получить коэффициент в купоне. Ставка не будет сделана'
-        TelegramService.send_text(message)
-        diag_signal.emit(message)
-        logger.info(f'{message}: {ex}')
 
-        get_screenshot(driver, bookmaker)
-        close_coupon(driver, diag_signal, bookmaker)
-        return
-    #  проверка доступности размещения ставки по информации в купоне
-    try:
-        element = driver.find_element(By.XPATH, "//div[contains(@class, 'slip-list-item__blocked-message')]")
-        bet_availability = element.text
-        if 'Недоступно для ставок' in bet_availability:
-            message = f'Не пройдена последняя контрольная проверка {bookmaker}. Совершение ставки недоступно по информации в купоне. Ставка не будет сделана'
-            TelegramService.send_text(message)
-            diag_signal.emit(message)
-            logger.info(message)
-
-            get_screenshot(driver, bookmaker)
-            close_coupon(driver, diag_signal, bookmaker)
+        # ввод значения ставки
+        try:
+            element = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//input[contains(@class,"stake-input__value")]')))
+            element.click()
+            element.send_keys(Keys.CONTROL + 'A')
+            element.send_keys(Keys.DELETE)
+            element.send_keys(bet_size)
+            if int(element.get_attribute('value')) != int(bet_size):
+                raise Exception
+            self.__send_diag_message(f'Значение ставки на событие {self.bookmaker} введено успешно')
+        except BaseException as ex:
+            self.__send_diag_message(f'Не удалось ввести значение ставки на событие {self.bookmaker}.Ставка не будет сделана', ex)
+            self.__get_screenshot()
+            self.__close_coupon()
             return
-    except NoSuchElementException:
-        message = f'Купон {bookmaker} доступен для ставки (надпись <Недоступно для ставок> отсутсвует в купоне)'
-        TelegramService.send_text(message)
-        diag_signal.emit(message)
-        logger.info(message)
-    except BaseException as ex:
-        message = f'Не пройдена последняя контрольная проверка {bookmaker}. Невозможно подтвердить доступность ставки по информации в купоне. Ставка не будет сделана'
-        TelegramService.send_text(message)
-        logger.info(f'{message}: {ex}')
-        diag_signal.emit(message)
 
-        get_screenshot(driver, bookmaker)
-        close_coupon(driver, diag_signal, bookmaker)
-        return
-    # проверка наличия кнопки ЗАКЛЮЧИТЬ ПАРИ
-    try:
-        element = driver.find_element(By.XPATH, "//button[contains(@data-test-attr-mode, 'ready_to_place_bet')]")
-        button_name = element.text
-        if 'заключить пари' not in button_name.lower():
-            message = f'Не пройдена последняя контрольная проверка {bookmaker}. Кнопка <Заключить пари> недоступна. Ставка не будет сделана'
-            TelegramService.send_text(message)
-            diag_signal.emit(message)
-            logger.info(message)
-
-            get_screenshot(driver, bookmaker)
-            close_coupon(driver, diag_signal, bookmaker)
+        # получение текущего коэффициента ставки на нужный тотал и сравнение с установленным
+        try:
+            control_koeff = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//span[contains(@class, "slip-list-item__current-odd")]')))
+            control_koeff = float(control_koeff.text)
+            if control_koeff < float(min_koeff):
+                self.__send_diag_message(f'Ставка на событие {self.bookmaker} не сделана, текущий коэффициент ставки меньше установленного ({control_koeff}<{min_koeff})')
+                self.__get_screenshot()
+                self.__close_coupon()
+                return
+            self.__send_diag_message(f'Текущий коэффициент ставки {self.bookmaker} выше или равен установленному ({control_koeff}>={min_koeff})')
+        except BaseException as ex:
+            self.__send_diag_message(f'Не удалось получить текущий коэффициент ставки {self.bookmaker}. Ставка не будет сделана', ex)
+            self.__get_screenshot()
+            self.__close_coupon()
             return
-        message = f'Кнопка <Заключить пари> найдена'
-        TelegramService.send_text(message)
-        diag_signal.emit(message)
-        logger.info(message)
-    except BaseException as ex:
-        message = f'Не пройдена последняя контрольная проверка {bookmaker}. Кнопка <Заключить пари> не найдена. Ставка не будет сделана'
-        TelegramService.send_text(message)
-        logger.info(f'{message}: {ex}')
-        diag_signal.emit(message)
 
-        get_screenshot(driver, bookmaker)
-        close_coupon(driver, diag_signal, bookmaker)
-        return
+        return True
 
-    message = f'Последняя контрольная проверка пройдена. Букмекер {bookmaker} готов к ставке'
-    TelegramService.send_text(message)
-    logger.info(message)
-    diag_signal.emit(message)
-    return True
+    def last_test(self, bet_params: dict) -> bool | None:
+        """Проведение последних коротких проверок перед совершением ставки"""
+        min_koeff = bet_params[self.bookmaker]['min_koeff']
+        # повторная проверка коэффициента на нужный тотал и сравнение с установленным
+        try:
+            control_koeff = self.driver.find_element(By.XPATH, '//span[contains(@class, "slip-list-item__current-odd")]')
+            control_koeff = float(control_koeff.text)
+            if control_koeff < float(min_koeff):
+                self.__send_diag_message(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Коэффициент в купоне меньше установленного ({control_koeff}<{min_koeff}). Ставка не будет сделана')
+                self.__get_screenshot()
+                self.__close_coupon()
+                return
+            self.__send_diag_message(f'Коэффициент в купоне {self.bookmaker} перед ставкой выше или равен установленному ({control_koeff}>={min_koeff})')
+        except BaseException as ex:
+            self.__send_diag_message(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Не удалось получить коэффициент в купоне. Ставка не будет сделана', ex)
+            self.__get_screenshot()
+            self.__close_coupon()
+            return
 
+        #  проверка доступности размещения ставки по информации в купоне
+        try:
+            element = self.driver.find_element(By.XPATH, "//div[contains(@class, 'slip-list-item__blocked-message')]")
+            bet_availability = element.text
+            if 'Недоступно для ставок' in bet_availability:
+                self.__send_diag_message(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Совершение ставки недоступно по информации в купоне. Ставка не будет сделана')
+                self.__get_screenshot()
+                self.__close_coupon()
+                return
+        except NoSuchElementException as ex:
+            self.__send_diag_message(f'Купон {self.bookmaker} доступен для ставки (надпись <Недоступно для ставок> отсутсвует в купоне)', ex)
+        except BaseException as ex:
+            self.__send_diag_message(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Невозможно подтвердить доступность ставки по информации в купоне. Ставка не будет сделана', ex)
+            self.__get_screenshot()
+            self.__close_coupon()
+            return
 
-def bet(driver: selenium.webdriver,
-        diag_signal: QtCore.pyqtSignal,
-        bookmaker: str,
-        start_balance: str,
-        imitation: bool) -> bool | None:
-    """Размещение ставки"""
-    # нажатие кнопки "Заключить пари"
-    try:
-        if not imitation:
-            driver.find_element(By.XPATH, "//button[@data-test-el='bet-slip-button_summary']").click()
-            message = f'Кнопка ЗАКЛЮЧИТЬ ПАРИ {bookmaker} успешно нажата'
-        else:
-            message = f'Кнопка ЗАКЛЮЧИТЬ ПАРИ {bookmaker} успешно нажата (в режиме имитации)'
-        TelegramService.send_text(message)
-        logger.info(message)
-    except BaseException as ex:
-        message = f'Не удалось нажать кнопку ЗАКЛЮЧИТЬ ПАРИ {bookmaker}. Ставка не будет сделана'
-        TelegramService.send_text(message)
-        logger.info(f'{message}: {ex}')
+        # проверка наличия кнопки ЗАКЛЮЧИТЬ ПАРИ
+        try:
+            element = self.driver.find_element(By.XPATH, "//button[contains(@data-test-attr-mode, 'ready_to_place_bet')]")
+            button_name = element.text
+            if 'заключить пари' not in button_name.lower():
+                self.__send_diag_message(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Заключить пари> недоступна. Ставка не будет сделана')
+                self.__get_screenshot()
+                self.__close_coupon()
+                return
+            self.__send_diag_message(f'Кнопка <Заключить пари> найдена')
+        except BaseException as ex:
+            self.__send_diag_message(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Заключить пари> не найдена. Ставка не будет сделана', ex)
+            self.__get_screenshot()
+            self.__close_coupon()
+            return
 
-        get_screenshot(driver, bookmaker)
-        close_coupon(driver, diag_signal, bookmaker)
-    # проверка изменения баланса после ставки
-    try:
-        for i in range(30):
-            element = driver.find_element(By.XPATH, '//div[contains(@class, "balance__text")]')
-            balance = element.text.split(',')[0]
-            if float(balance) < float(start_balance) or imitation:
-                message = f'Есть изменение баланса {bookmaker}'
-                result = True
-                break
+        self.__send_diag_message(f'Последняя контрольная проверка пройдена. Букмекер {self.bookmaker} готов к ставке')
+        return True
+
+    def bet(self, bet_params: dict) -> bool | None:
+        """Размещение ставки"""
+        imitation = bet_params['bet_imitation']
+        # нажатие кнопки "Заключить пари"
+        try:
+            if not imitation:
+                self.driver.find_element(By.XPATH, "//button[@data-test-el='bet-slip-button_summary']").click()
+                self.__send_diag_message(f'Кнопка ЗАКЛЮЧИТЬ ПАРИ {self.bookmaker} успешно нажата')
             else:
-                message = f'Нет изменения баланса {bookmaker}'
-                result = None
-            sleep(1)
-        TelegramService.send_text(message)
-        logger.info(message)
-        diag_signal.emit(message)
+                self.__send_diag_message(f'Кнопка ЗАКЛЮЧИТЬ ПАРИ {self.bookmaker} успешно нажата (в режиме имитации)')
+                self.__get_screenshot()
+                self.__close_coupon()
+        except BaseException as ex:
+            self.__send_diag_message(f'Не удалось нажать кнопку ЗАКЛЮЧИТЬ ПАРИ {self.bookmaker}. Ставка не будет сделана', ex)
+            self.__get_screenshot()
+            self.__close_coupon()
+        # проверка изменения баланса после ставки
+        try:
+            for i in range(30):
+                element = self.driver.find_element(By.XPATH, '//div[contains(@class, "balance__text")]')
+                balance = element.text.split(',')[0]
+                if float(balance) < float(self.start_balance) or imitation:
+                    self.__send_diag_message(f'Есть изменение баланса {self.bookmaker}')
+                    result = True
+                    break
+                else:
+                    self.__send_diag_message(f'Нет изменения баланса {self.bookmaker}')
+                    result = None
+                sleep(1)
+        except BaseException as ex:
+            self.__send_diag_message(f'Не удалось получить баланс {self.bookmaker}', ex)
+            self.__get_screenshot()
+            result = None
 
-    except BaseException as ex:
-        message = f'Не удалось получить баланс {bookmaker}'
-        TelegramService.send_text(message)
-        logger.info(f'{message}: {ex}')
-        diag_signal.emit(message)
-        get_screenshot(driver, bookmaker)
-        result = None
-
-    return result
+        self.__get_screenshot()
+        return result
