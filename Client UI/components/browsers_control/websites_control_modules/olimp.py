@@ -152,9 +152,11 @@ class SiteInteraction:
 
         # получение текущего коэффициента ставки на нужный тотал и сравнение с установленным
         try:
+            self.driver.implicitly_wait(2)
             control_koeff = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, '//span[contains(@data-qa, "betCardCoeff")]')))
             control_koeff = float(control_koeff.text)
+            self.driver.implicitly_wait(0)
             if control_koeff < float(min_koeff):
                 self.__send_diag_message(
                     f'Ставка на событие {self.bookmaker} не сделана, текущий коэффициент ставки меньше установленного ({control_koeff}<{min_koeff})')

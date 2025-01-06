@@ -2,6 +2,7 @@ import logging
 import threading
 from importlib import import_module
 from PyQt5 import QtCore
+from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QObject
 
 from .. import settings
@@ -22,11 +23,11 @@ class BrowserControl(QObject):
         self.control_settings = control_settings
         self.started_threads = {}
         self.bet_in_progress = False
-        self.threads_status_timer = QtCore.QTimer()
-        self.betting_status_timer = QtCore.QTimer()
-        self.bet_prohibitions_timer = QtCore.QTimer()
-        self.bet_preparing_interval_timer = QtCore.QTimer()
-        self.last_test_timer = QtCore.QTimer()
+        self.threads_status_timer = QTimer()
+        self.betting_status_timer = QTimer()
+        self.bet_prohibitions_timer = QTimer()
+        self.bet_preparing_interval_timer = QTimer()
+        self.last_test_timer = QTimer()
 
     def preload_sites_and_authorize(self):
         """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
@@ -96,12 +97,12 @@ class BrowserControl(QObject):
                 self.bet_in_progress = True
 
                 if not self.betting_status_timer.isActive():
-                    self.betting_status_timer.setInterval(1500)
+                    self.betting_status_timer.setInterval(500)
                     self.betting_status_timer.timeout.connect(lambda: self.__survey_betting_status(first_bkmkr_name, second_bkmkr_name))
                     self.betting_status_timer.start()
 
                 if not self.bet_prohibitions_timer.isActive():
-                    self.bet_prohibitions_timer.setInterval(1000)
+                    self.bet_prohibitions_timer.setInterval(500)
                     self.bet_prohibitions_timer.timeout.connect(lambda: self.__survey_bet_prohibitions_status(first_bkmkr_name, second_bkmkr_name))
                     self.bet_prohibitions_timer.start()
                 return
@@ -119,31 +120,37 @@ class BrowserControl(QObject):
         second_bkmkr_thread_pause_event = self.started_threads[second_bkmkr_name]['thread_pause_event']
         if not first_bkmkr_thread_pause_event.is_set() and not second_bkmkr_thread_pause_event.is_set():
             self.bet_in_progress = False
-            if self.bet_prohibitions_timer.isActive():
-                self.bet_prohibitions_timer.stop()
+            self.last_test_timer.stop()
+            self.bet_preparing_interval_timer.stop()
+            self.bet_prohibitions_timer.stop()
 
     def __survey_bet_prohibitions_status(self, first_bkmkr_name: str, second_bkmkr_name: str) -> None:
         """Опрос готовностей к размещению ставок"""
         first_prepared_for_bet = self.started_threads[first_bkmkr_name]['controller_instance'].prepared_for_bet
         second_prepared_for_bet = self.started_threads[second_bkmkr_name]['controller_instance'].prepared_for_bet
 
-        first_last_test_completed = self.started_threads[first_bkmkr_name]['controller_instance'].last_test_completed
-        second_last_test_completed = self.started_threads[second_bkmkr_name]['controller_instance'].last_test_completed
+        if not first_prepared_for_bet and not second_prepared_for_bet:
+            self.bet_preparing_interval_timer.stop()
+            self.last_test_timer.stop()
 
-        if first_prepared_for_bet and second_prepared_for_bet:
+        elif first_prepared_for_bet and second_prepared_for_bet:
             self.bet_preparing_interval_timer.stop()
 
             first_thread_bet_event = self.started_threads[first_bkmkr_name]['thread_bet_event']
             second_thread_bet_event = self.started_threads[second_bkmkr_name]['thread_bet_event']
             first_thread_bet_event.set()
             second_thread_bet_event.set()
-
             if not self.last_test_timer.isActive():
                 self.last_test_timer.setInterval(5000)
                 self.last_test_timer.timeout.connect(lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
                 self.last_test_timer.start()
 
+            first_last_test_completed = self.started_threads[first_bkmkr_name]['controller_instance'].last_test_completed
+            second_last_test_completed = self.started_threads[second_bkmkr_name]['controller_instance'].last_test_completed
+
             if first_last_test_completed and second_last_test_completed:
+                self.last_test_timer.stop()
+
                 first_thread_last_test_event = self.started_threads[first_bkmkr_name]['thread_last_test_event']
                 second_thread_last_test_event = self.started_threads[second_bkmkr_name]['thread_last_test_event']
                 first_thread_last_test_event.set()
@@ -154,11 +161,6 @@ class BrowserControl(QObject):
                 self.bet_preparing_interval_timer.setInterval(10000)
                 self.bet_preparing_interval_timer.timeout.connect(lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
                 self.bet_preparing_interval_timer.start()
-
-        elif self.bet_preparing_interval_timer.isActive():
-            self.bet_preparing_interval_timer.stop()
-            if self.last_test_timer.isActive():
-                self.last_test_timer.stop()
 
     def __stop_betting(self, first_bkmkr_name: str, second_bkmkr_name: str):
         """Прерывание процесса размещения ставки при отсутствии готовности одного из букмекеров"""
