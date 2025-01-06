@@ -194,7 +194,7 @@ class OlimpParser:
             for runner in event_data['outcomes']:
                 if runner.get('groupName') == 'Исход матча (основное время)':
                     if not runners_table['market']:
-                        runners_table['market'] = runner['tableType']
+                        runners_table['market'] = 'Победитель'
                         runners_table['runners'] = {'home': 0, 'draw': 0, 'away': 0}
                     match runner.get('shortName'):
                         case 'П1':
@@ -212,8 +212,8 @@ class OlimpParser:
             for runner in event_data['outcomes']:
                 if runner.get('tableType') == 'TOTAL':
                     if not runners_table['market']:
-                        runners_table['market'] = runner['tableType']
-                    handicap = runner.get('param')
+                        runners_table['market'] = 'Тотал'
+                    handicap = str(round(float(runner.get('param')), 1))
                     if not runners_table['runners'].get(handicap):
                         runners_table['runners'][handicap] = {'under': 'closed', 'over': 'closed'}
                     if "мен" in runner.get('unprocessedName'):
@@ -230,7 +230,7 @@ class OlimpParser:
             for runner in event_data['outcomes']:
                 if runner.get('tableType') == 'HANDICAP':
                     if not runners_table['market']:
-                        runners_table['market'] = runner['tableType']
+                        runners_table['market'] = 'Фора'
                     handicap = runner.get('param')
                     if not runners_table['runners'].get(handicap):
                         runners_table['runners'][handicap] = {'home': 'closed', 'away': 'closed'}
@@ -252,7 +252,7 @@ if __name__ == '__main__':
 
     olimp_parser = OlimpParser({
         'game_type': "Soccer",
-        'betline': "prematch",
+        'betline': "inplay",
         'market': "Тотал",
         'region': 'all',
         'league': 'all'

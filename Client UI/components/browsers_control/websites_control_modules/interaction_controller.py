@@ -74,6 +74,7 @@ class WebsiteController:
         """Размещение ставки"""
         self.__send_diag_message(f"Запущен процесс размещения ставки {self.bookmaker}")
         try:
+            print(self.event_data)
             url = self.event_data["url"]
             try:
                 self.driver.get(url=url)
