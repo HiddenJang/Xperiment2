@@ -96,12 +96,12 @@ class BrowserControl(QObject):
                 self.bet_in_progress = True
 
                 if not self.betting_status_timer.isActive():
-                    self.betting_status_timer.setInterval(1000)
+                    self.betting_status_timer.setInterval(1500)
                     self.betting_status_timer.timeout.connect(lambda: self.__survey_betting_status(first_bkmkr_name, second_bkmkr_name))
                     self.betting_status_timer.start()
 
                 if not self.bet_prohibitions_timer.isActive():
-                    self.bet_prohibitions_timer.setInterval(500)
+                    self.bet_prohibitions_timer.setInterval(1000)
                     self.bet_prohibitions_timer.timeout.connect(lambda: self.__survey_bet_prohibitions_status(first_bkmkr_name, second_bkmkr_name))
                     self.bet_prohibitions_timer.start()
                 return
@@ -131,13 +131,15 @@ class BrowserControl(QObject):
         second_last_test_completed = self.started_threads[second_bkmkr_name]['controller_instance'].last_test_completed
 
         if first_prepared_for_bet and second_prepared_for_bet:
+            self.bet_preparing_interval_timer.stop()
+
             first_thread_bet_event = self.started_threads[first_bkmkr_name]['thread_bet_event']
             second_thread_bet_event = self.started_threads[second_bkmkr_name]['thread_bet_event']
             first_thread_bet_event.set()
             second_thread_bet_event.set()
 
             if not self.last_test_timer.isActive():
-                self.last_test_timer.setInterval(3000)
+                self.last_test_timer.setInterval(5000)
                 self.last_test_timer.timeout.connect(lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
                 self.last_test_timer.start()
 

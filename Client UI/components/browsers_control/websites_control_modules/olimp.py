@@ -174,7 +174,7 @@ class SiteInteraction:
         min_koeff = bet_params[self.bookmaker]['min_koeff']
         # повторная проверка коэффициента на нужный тотал и сравнение с установленным
         try:
-            self.driver.implicitly_wait(5)
+            self.driver.implicitly_wait(1)
             control_koeff = self.driver.find_element(By.XPATH, '//span[contains(@data-qa, "betCardCoeff")]')
             control_koeff = float(control_koeff.text)
             self.driver.implicitly_wait(0)

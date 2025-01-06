@@ -193,8 +193,10 @@ class SiteInteraction:
         min_koeff = bet_params[self.bookmaker]['min_koeff']
         # повторная проверка коэффициента на нужный тотал и сравнение с установленным
         try:
+            self.driver.implicitly_wait(1)
             control_koeff = self.driver.find_element(By.XPATH, '//span[contains(@class, "slip-list-item__current-odd")]')
             control_koeff = float(control_koeff.text)
+            self.driver.implicitly_wait(0)
             if control_koeff < float(min_koeff):
                 self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Коэффициент в купоне меньше установленного ({control_koeff}<{min_koeff}). Ставка не будет сделана')
                 return
