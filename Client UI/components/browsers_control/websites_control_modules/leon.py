@@ -210,13 +210,13 @@ class SiteInteraction:
             if 'Недоступно для ставок' in bet_availability:
                 self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Совершение ставки недоступно по информации в купоне. Ставка не будет сделана')
                 return
-        except NoSuchElementException as ex:
-            self.__send_diag_message(f'Купон {self.bookmaker} доступен для ставки (надпись <Недоступно для ставок> отсутсвует в купоне)', ex)
+        except NoSuchElementException:
+            self.__send_diag_message(f'Купон {self.bookmaker} доступен для ставки (надпись <Недоступно для ставок> отсутсвует в купоне)')
         except BaseException as ex:
             self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Невозможно подтвердить доступность ставки по информации в купоне. Ставка не будет сделана', ex)
             return
 
-        # проверка наличия кнопки ЗАКЛЮЧИТЬ ПАРИ
+        # проверка наличия кнопки "Заключить пари"
         try:
             element = self.driver.find_element(By.XPATH, "//button[contains(@data-test-attr-mode, 'ready_to_place_bet')]")
             button_name = element.text
@@ -239,18 +239,18 @@ class SiteInteraction:
         try:
             if not imitation:
                 self.driver.find_element(By.XPATH, "//button[@data-test-el='bet-slip-button_summary']").click()
-                self.__send_diag_message(f'Кнопка ЗАКЛЮЧИТЬ ПАРИ {self.bookmaker} успешно нажата')
+                self.__send_diag_message(f'Кнопка <Заключить пари> {self.bookmaker} успешно нажата')
             else:
-                self.__quit(f'Кнопка ЗАКЛЮЧИТЬ ПАРИ {self.bookmaker} успешно нажата (в режиме имитации)')
+                self.__quit(f'Кнопка <Заключить пари> {self.bookmaker} успешно нажата (в режиме имитации)')
         except BaseException as ex:
-            self.__quit(f'Не удалось нажать кнопку ЗАКЛЮЧИТЬ ПАРИ {self.bookmaker}. Ставка не будет сделана', ex)
+            self.__quit(f'Не удалось нажать кнопку <Заключить пари> {self.bookmaker}. Ставка не будет сделана', ex)
 
         # проверка изменения баланса после ставки
         try:
             for i in range(30):
                 element = self.driver.find_element(By.XPATH, '//div[contains(@class, "balance__text")]')
                 balance = element.text.split(',')[0]
-                if float(balance) < float(self.start_balance) or imitation:
+                if (float(balance) < float(self.start_balance)) or imitation:
                     self.__send_diag_message(f'Есть изменение баланса {self.bookmaker}')
                     result = True
                     break

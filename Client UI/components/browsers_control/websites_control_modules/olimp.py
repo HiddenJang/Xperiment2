@@ -171,9 +171,92 @@ class SiteInteraction:
 
     def last_test(self, bet_params: dict) -> bool | None:
         """Проведение последних коротких проверок перед совершением ставки"""
-        sleep(1)
+        min_koeff = bet_params[self.bookmaker]['min_koeff']
+        # повторная проверка коэффициента на нужный тотал и сравнение с установленным
+        try:
+            self.driver.implicitly_wait(5)
+            control_koeff = self.driver.find_element(By.XPATH, '//span[contains(@data-qa, "betCardCoeff")]')
+            control_koeff = float(control_koeff.text)
+            self.driver.implicitly_wait(0)
+            if control_koeff < float(min_koeff):
+                self.__quit(
+                    f'Не пройдена последняя контрольная проверка {self.bookmaker}. Коэффициент в купоне меньше установленного ({control_koeff}<{min_koeff}). Ставка не будет сделана')
+                return
+            self.__send_diag_message(
+                f'Коэффициент в купоне {self.bookmaker} перед ставкой выше или равен установленному ({control_koeff}>={min_koeff})')
+        except BaseException as ex:
+            self.__quit(
+                f'Не пройдена последняя контрольная проверка {self.bookmaker}. Не удалось получить коэффициент в купоне. Ставка не будет сделана',
+                ex)
+            return
+
+        #  проверка доступности размещения ставки по информации в купоне
+        try:
+            element = self.driver.find_element(By.XPATH, "//span[contains(@class, 'warningMessage')]")
+            bet_availability = element.text
+            if 'Исход недоступен' in bet_availability:
+                self.__quit(
+                    f'Не пройдена последняя контрольная проверка {self.bookmaker}. Совершение ставки недоступно по информации в купоне. Ставка не будет сделана')
+                return
+        except NoSuchElementException as ex:
+            self.__send_diag_message(
+                f'Купон {self.bookmaker} доступен для ставки (надпись <Исход недоступен> отсутсвует в купоне)', ex)
+        except BaseException as ex:
+            self.__quit(
+                f'Не пройдена последняя контрольная проверка {self.bookmaker}. Невозможно подтвердить доступность ставки по информации в купоне. Ставка не будет сделана',
+                ex)
+            return
+
+        # проверка наличия кнопки "Сделать ставку"
+        try:
+            element = self.driver.find_element(By.XPATH,
+                                               "//div[contains(@class, 'makeBetButton')]/div[contains(@class, 'buttons')]/button[@type='submit']")
+            button_name = element.text
+            if 'сделать ставку' not in button_name.lower():
+                self.__quit(
+                    f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Сделать ставку> недоступна. Ставка не будет сделана')
+                return
+            self.__send_diag_message(f'Кнопка <Сделать ставку> найдена')
+        except BaseException as ex:
+            self.__quit(
+                f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Сделать ставку> не найдена. Ставка не будет сделана',
+                ex)
+            return
+
+        self.__send_diag_message(f'Последняя контрольная проверка пройдена. Букмекер {self.bookmaker} готов к ставке')
+
         return True
 
     def bet(self, bet_params: dict) -> bool | None:
         """Размещение ставки"""
-        return True
+        imitation = bet_params['bet_imitation']
+
+        # нажатие кнопки "Сделать ставку"
+        try:
+            if not imitation:
+                self.driver.find_element(By.XPATH, "//div[contains(@class, 'makeBetButton')]/div[contains(@class, 'buttons')]/button[@type='submit']").click()
+                self.__send_diag_message(f'Кнопка <Сделать ставку> {self.bookmaker} успешно нажата')
+            else:
+                self.__quit(f'Кнопка <Сделать ставку> {self.bookmaker} успешно нажата (в режиме имитации)')
+        except BaseException as ex:
+            self.__quit(f'Не удалось нажать кнопку <Сделать ставку> {self.bookmaker}. Ставка не будет сделана', ex)
+
+        # проверка изменения баланса после ставки
+        try:
+            for i in range(30):
+                element = self.driver.find_element(By.XPATH, "//span[contains(@title, 'Пополнить баланс')]")
+                balance = element.text
+                if (float(balance) < float(self.start_balance)) or imitation:
+                    self.__send_diag_message(f'Есть изменение баланса {self.bookmaker}')
+                    result = True
+                    break
+                else:
+                    self.__send_diag_message(f'Нет изменения баланса {self.bookmaker}')
+                    result = None
+                sleep(1)
+        except BaseException as ex:
+            self.__send_diag_message(f'Не удалось получить баланс {self.bookmaker}', ex)
+            result = None
+
+        self.__get_screenshot()
+        return result
