@@ -42,7 +42,6 @@ class BrowserControl(QObject):
 
         for bkmkr_name in interaction_modules.keys():
             if auth_data.get(bkmkr_name):
-                interaction_module = interaction_modules[bkmkr_name]
                 thread_pause_event = threading.Event()
                 thread_last_test_event = threading.Event()
                 thread_bet_event = threading.Event()
@@ -53,8 +52,7 @@ class BrowserControl(QObject):
                                                        self.diag_signal)
                 control_thread = threading.Thread(target=website_controller.preload, daemon=True)
                 control_thread.start()
-                self.started_threads[bkmkr_name] = {'interaction_module': interaction_module,
-                                                    'controller_instance': website_controller,
+                self.started_threads[bkmkr_name] = {'controller_instance': website_controller,
                                                     'control_thread': control_thread,
                                                     'thread_pause_event': thread_pause_event,
                                                     'thread_last_test_event': thread_last_test_event,

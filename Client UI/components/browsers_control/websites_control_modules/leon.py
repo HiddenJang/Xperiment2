@@ -21,6 +21,10 @@ def get_screenshot(driver: selenium.webdriver, bookmaker: str) -> None:
     driver.get_screenshot_as_file(screenshot_name)
     TelegramService.send_photo(screenshot_name)
 
+def send_diag_message(message: str,
+                      logger: bool = True) -> None:
+    """Отправка диагностики"""
+    pass
 
 def close_coupon(driver: selenium.webdriver, diag_signal: QtCore.pyqtSignal, bookmaker: str) -> None:
     """Закрытие купона ставки"""
@@ -87,7 +91,7 @@ def prepare_for_bet(driver: selenium.webdriver,
         balance = element.text.split(',')[0]
 
         if float(balance) < float(bet_size):
-            message = f'Ставка на событие {bookmaker} {url} не будет сделана, баланс меньше размера ставки'
+            message = f'Ставка на событие {bookmaker} не будет сделана, баланс меньше размера ставки'
             TelegramService.send_text(message)
             logger.info(message)
             diag_signal.emit(message)
@@ -330,7 +334,6 @@ def bet(driver: selenium.webdriver,
 
         get_screenshot(driver, bookmaker)
         close_coupon(driver, diag_signal, bookmaker)
-
     # проверка изменения баланса после ставки
     try:
         for i in range(30):

@@ -30,6 +30,8 @@ class WebsiteController:
         self.bet_params = {}
         self.site_interaction_module = import_module(f'.browsers_control.websites_control_modules.{self.common_auth_data["bkmkr_name"]}',
                                     package='components')
+        self.site_interaction_class = getattr(self.site_interaction_module, 'ClassName')
+
         self.prepared_for_bet = False
         self.last_test_completed = False
         self.stop_betting = False
@@ -47,6 +49,7 @@ class WebsiteController:
         password = self.common_auth_data['auth_data']['password']
 
         try:
+
             self.site_interaction_module.preload(self.driver, login, password)
             self.__send_diag_message(
                 f'Сайт {self.common_auth_data["bkmkr_name"]} загружен, авторизация пройдена успешно')
