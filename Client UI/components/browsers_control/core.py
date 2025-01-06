@@ -72,7 +72,12 @@ class BrowserControl(QObject):
         """Разместить ставки на одно из найденных событий"""
         for event_data in events_data:
             first_bkmkr_name = event_data[0]['bookmaker']
+            first_bkmkr_url = event_data[0]['url']
             second_bkmkr_name = event_data[1]['bookmaker']
+            second_bkmkr_url = event_data[1]['url']
+
+            if first_bkmkr_url in WebsiteController.excluded_urls or second_bkmkr_url in WebsiteController.excluded_urls:
+                continue
 
             if self.started_threads.get(first_bkmkr_name) and \
                     self.started_threads.get(second_bkmkr_name) and \

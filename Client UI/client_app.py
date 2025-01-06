@@ -143,8 +143,10 @@ class DesktopApp(QMainWindow):
 
     def get_autobet_settings(self) -> dict:
         """Получение состояний элементов GUI фрейма НАСТРОЙКИ АВТОМАТИЧЕСКИХ СТАВОК"""
-        return {self.ui.comboBox_firstBkmkr.currentText().lower(): self.ui.spinBox_betSizeFirst.value(),
-                self.ui.comboBox_secondBkmkr.currentText().lower(): self.ui.spinBox_betSizeSecond.value(),
+        return {self.ui.comboBox_firstBkmkr.currentText().lower(): {'bet_size': self.ui.spinBox_betSizeFirst.value(),
+                                                                    'min_koeff': self.ui.doubleSpinBox_minKfirstBkmkr.value()},
+                self.ui.comboBox_secondBkmkr.currentText().lower(): {'bet_size': self.ui.spinBox_betSizeSecond.value(),
+                                                                     'min_koeff': self.ui.doubleSpinBox_minKsecondBkmkr.value()},
                 'bet_imitation': self.ui.checkBox_betImitation.isChecked()}
 
     ###### Test connection slots ######

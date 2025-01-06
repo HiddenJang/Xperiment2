@@ -24,8 +24,11 @@ def preload(driver: selenium.webdriver, login: str, password: str):
     # нажатие кнопки ВОЙТИ после ввода логина и пароля
     driver.find_element(By.XPATH, "//button[@type='submit']").click()
     # проверка завершения авторизации
-    WebDriverWait(driver, 60).until(
-        EC.visibility_of_element_located((By.XPATH, "//button[contains(@class, 'balanceButton')]")))
+    balance = WebDriverWait(driver, 60).until(
+        EC.visibility_of_element_located((By.XPATH, "//span[contains(@title, 'Пополнить баланс')]")))
+    balance = balance.text
+    if not float(balance) >= 0:
+        raise Exception
 
 
 def prepare_for_bet(driver: selenium.webdriver,
@@ -35,7 +38,7 @@ def prepare_for_bet(driver: selenium.webdriver,
         bet_size: str,
         total_nominal: str,
         total_koeff_type: str,
-        total_koeff: str) -> str | None:
+        min_koeff: str) -> str | None:
     """Размещение ставки"""
     time.sleep(5)
     balance = '100'
@@ -45,7 +48,7 @@ def prepare_for_bet(driver: selenium.webdriver,
 def last_test(driver: selenium.webdriver,
               diag_signal: QtCore.pyqtSignal,
               bookmaker: str,
-              total_koeff: str) -> bool | None:
+              min_koeff: str) -> bool | None:
     """Проведение последних коротких проверок перед совершением ставки"""
     time.sleep(1)
     return True

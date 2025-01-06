@@ -11,6 +11,7 @@ logger = logging.getLogger('Client UI.components.browsers_control.websites_contr
 
 
 class WebsiteController:
+    excluded_urls = []
 
     def __init__(self, common_auth_data: dict,
                  thread_pause_event: threading.Event,
@@ -74,10 +75,10 @@ class WebsiteController:
             print(self.event_data)
             bookmaker = self.event_data["bookmaker"]
             url = self.event_data["url"]
-            bet_size = self.bet_params[self.common_auth_data['bkmkr_name']]
+            bet_size = self.bet_params[self.common_auth_data['bkmkr_name']]['bet_size']
+            min_koeff = self.bet_params[self.common_auth_data['bkmkr_name']]['min_koeff']
             total_nominal = list(self.event_data['runners'].keys())[0]
             total_koeff_type = list(self.event_data['runners'][total_nominal].keys())[0]
-            total_koeff = self.event_data['runners'][total_nominal][total_koeff_type]
             imitation = self.bet_params['bet_imitation']
 
             try:
@@ -96,7 +97,7 @@ class WebsiteController:
                                                                                  bet_size,
                                                                                  total_nominal,
                                                                                  total_koeff_type,
-                                                                                 total_koeff)
+                                                                                 min_koeff)
             if self.prepared_for_bet:
                 self.__send_diag_message(f"Получена готовность {self.common_auth_data['bkmkr_name']} к ставке")
                 # ожидание готовности обоих букмекеров
@@ -115,7 +116,7 @@ class WebsiteController:
                 self.last_test_completed = self.site_interaction_module.last_test(self.driver,
                                                                                   self.diag_signal,
                                                                                   bookmaker,
-                                                                                  total_koeff)
+                                                                                  min_koeff)
                 if self.last_test_completed:
                     # ожидание результатов последней короткой проверки
                     self.thread_last_test_event.wait()
@@ -124,7 +125,7 @@ class WebsiteController:
                         return
                     elif self.stop_betting:
                         self.__send_diag_message(
-                            f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} прерван. Нет готовности одного из букмекеров после проведения последней короткой проверки")
+                            f"Процесс размещения ставки {self.common_auth_data['bkmkr_name']} прерван. Нет общей готовности обоих букмекеров после проведения последней короткой проверки")
                         self.thread_pause_event.clear()
                         return
 
@@ -136,6 +137,7 @@ class WebsiteController:
 
                     if bet_placed:
                         self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} размещена успешно")
+                        WebsiteController.excluded_urls.append(url)
                     else:
                         self.__send_diag_message(f"Ставка {self.common_auth_data['bkmkr_name']} не размещена, либо результат неизвестен")
                 else:
