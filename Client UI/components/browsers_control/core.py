@@ -51,7 +51,7 @@ class BrowserControl(QObject):
                                                        thread_last_test_event,
                                                        thread_bet_event,
                                                        self.diag_signal)
-                control_thread = threading.Thread(target=website_controller.preload, daemon=True)
+                control_thread = threading.Thread(target=website_controller.preload_and_authorize, daemon=True)
                 control_thread.start()
                 self.started_threads[bkmkr_name] = {'controller_instance': website_controller,
                                                     'control_thread': control_thread,

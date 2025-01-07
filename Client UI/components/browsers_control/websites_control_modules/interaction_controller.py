@@ -40,7 +40,7 @@ class WebsiteController:
         self.event_data = {}
         self.bet_params = {}
 
-    def preload(self):
+    def preload_and_authorize(self):
         """Открытие страницы БК и авторизация пользователя"""
         driver_dict = webdriver.Driver(settings.BOOKMAKERS.get(self.bookmaker)).get_driver()
         self.driver = driver_dict['driver']
@@ -70,74 +70,77 @@ class WebsiteController:
             if self.close_request:
                 self.__quit()
                 return
-            self.bet()
 
-    def bet(self) -> None:
-        """Размещение ставки"""
+            self.__prepare_website()
+
+    def __prepare_website(self) -> None:
+        """Запуск подготовки сайта букмекера к размещению ставки"""
         self.__send_diag_message(f"Запущен процесс размещения ставки {self.bookmaker}")
+
         try:
-            url = self.event_data["url"]
-            try:
-                self.driver.get(url=url)
-            except TimeoutException:
-                self.__send_diag_message(f'Превышение времени ожидания открытия страницы события {self.bookmaker}. Попытка продолжить', send_telegram=False)
-            except BaseException as ex:
-                self.__send_diag_message(f'Не удалось открыть url {self.bookmaker}: {url}', ex=ex)
-                self.thread_pause_event.clear()
-                return
-
-            self.prepared_for_bet = self.site_interaction_instance.prepare_for_bet(self.event_data, self.bet_params)
-
-            if self.prepared_for_bet:
-                self.__send_diag_message(f"Получена готовность {self.bookmaker} к ставке", send_telegram=False)
-                # ожидание готовности обоих букмекеров
-                self.thread_bet_event.wait()
-
-                if self.close_request:
-                    self.__quit()
-                    return
-                elif self.stop_betting:
-                    self.__send_diag_message(
-                        f"Процесс размещения ставки {self.bookmaker} прерван. Нет готовности второго букмекера")
-                    self.thread_pause_event.clear()
-                    return
-                self.__send_diag_message(f"Получена готовность обоих букмекеров к ставке. Запущены последние короткие тесты {self.bookmaker}", send_telegram=False)
-
-                self.last_test_completed = self.site_interaction_instance.last_test(self.bet_params)
-                if self.last_test_completed:
-                    # ожидание результатов последней короткой проверки
-                    self.thread_last_test_event.wait()
-                    if self.close_request:
-                        self.__quit()
-                        return
-                    elif self.stop_betting:
-                        self.__send_diag_message(
-                            f"Процесс размещения ставки {self.bookmaker} прерван. Нет общей готовности обоих букмекеров после проведения последней короткой проверки")
-                        self.thread_pause_event.clear()
-                        return
-
-                    bet_placed = self.site_interaction_instance.bet(self.bet_params)
-                    if bet_placed:
-                        self.__send_diag_message(f"Ставка {self.bookmaker} размещена успешно")
-                        WebsiteController.excluded_urls.append(url)
-                    else:
-                        self.__send_diag_message(f"Ставка {self.bookmaker} не размещена, либо результат неизвестен")
-                else:
-                    self.__send_diag_message(
-                        f"Процесс размещения ставки {self.bookmaker} окончен неудачно. Не пройдены последние короткие проверки")
-                    self.thread_pause_event.clear()
-                    return
-            else:
-                self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} окончен неудачно. Нет готовности к размещению ставки")
-                self.thread_pause_event.clear()
-                return
-
+            self.driver.get(url=self.event_data.get("url"))
+        except TimeoutException:
+            self.__send_diag_message(f'Превышение времени ожидания открытия страницы события {self.bookmaker}. Попытка продолжить', send_telegram=False)
         except BaseException as ex:
-            self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} окончен неудачно",
-                                     ex=ex)
+            self.__send_diag_message(f'Не удалось открыть url {self.bookmaker}:{self.event_data.get("url")}', ex=ex)
             self.thread_pause_event.clear()
             return
-        self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} завершен")
+
+        self.prepared_for_bet = self.site_interaction_instance.prepare_for_bet(self.event_data, self.bet_params)
+
+        if self.prepared_for_bet:
+            self.__send_diag_message(f"Получена готовность {self.bookmaker} к ставке", send_telegram=False)
+            # ожидание готовности обоих букмекеров
+            self.thread_bet_event.wait()
+
+            if self.close_request:
+                self.__quit()
+                return
+            elif self.stop_betting:
+                self.__send_diag_message(
+                    f"Процесс размещения ставки {self.bookmaker} прерван. Нет готовности второго букмекера")
+                self.thread_pause_event.clear()
+                return
+            self.__run_last_tests()
+        else:
+            self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} окончен неудачно. Нет готовности к размещению ставки")
+            self.thread_pause_event.clear()
+            return
+
+    def __run_last_tests(self) -> None:
+        """Запуск последних коротких проверок перед совершением ставки"""
+        self.__send_diag_message(f"Получена готовность обоих букмекеров к ставке. Запущены последние короткие тесты {self.bookmaker}", send_telegram=False)
+        self.last_test_completed = self.site_interaction_instance.last_test(self.bet_params)
+
+        if self.last_test_completed:
+            self.__send_diag_message(f"Последние короткие тесты {self.bookmaker} проведены успешно", send_telegram=False)
+            # ожидание результатов последней короткой проверки второго букмекера
+            self.thread_last_test_event.wait()
+
+            if self.close_request:
+                self.__quit()
+                return
+            elif self.stop_betting:
+                self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} прерван. Нет общей готовности обоих букмекеров после проведения последней короткой проверки")
+                self.thread_pause_event.clear()
+                return
+            self.__place_bet()
+        else:
+            self.__send_diag_message(f"Процесс размещения ставки прерван. Нет готовности {self.bookmaker} к размещению ставки после проведения последней короткой проверки")
+            self.thread_pause_event.clear()
+            return
+
+    def __place_bet(self) -> None:
+        """Размещение ставки"""
+        self.__send_diag_message(f"Последние короткие тесты обоих букмекеров проведены успешно", send_telegram=False)
+        bet_placed = self.site_interaction_instance.bet(self.bet_params)
+
+        if bet_placed:
+            self.__send_diag_message(f"Процесс размещения завершен. Ставка {self.bookmaker} размещена успешно")
+        else:
+            self.__send_diag_message(f"Процесс размещения завершен. Ставка {self.bookmaker} не размещена, либо результат неизвестен")
+
+        WebsiteController.excluded_urls.append(self.event_data.get("url"))
         self.thread_pause_event.clear()
 
     def __send_diag_message(self,

@@ -184,14 +184,12 @@ class SiteInteraction:
             self.driver.implicitly_wait(0)
             if control_koeff < float(min_koeff):
                 self.__quit(
-                    f'Не пройдена последняя контрольная проверка {self.bookmaker}. Коэффициент в купоне меньше установленного ({control_koeff}<{min_koeff}). Ставка не будет сделана')
+                    f'Коэффициент в купоне {self.bookmaker} меньше установленного ({control_koeff}<{min_koeff}). Ставка не будет сделана')
                 return
             self.__send_diag_message(
                 f'Коэффициент в купоне {self.bookmaker} перед ставкой выше или равен установленному ({control_koeff}>={min_koeff})', send_telegram=False)
         except BaseException as ex:
-            self.__quit(
-                f'Не пройдена последняя контрольная проверка {self.bookmaker}. Не удалось получить коэффициент в купоне. Ставка не будет сделана',
-                ex)
+            self.__quit(f'Не удалось получить коэффициент в купоне {self.bookmaker}. Ставка не будет сделана', ex)
             return
 
         #  проверка доступности размещения ставки по информации в купоне
@@ -199,8 +197,7 @@ class SiteInteraction:
             element = self.driver.find_element(By.XPATH, "//span[contains(@class, 'warningMessage')]")
             bet_availability = element.text
             if 'Исход недоступен' in bet_availability:
-                self.__quit(
-                    f'Не пройдена последняя контрольная проверка {self.bookmaker}. Совершение ставки недоступно по информации в купоне. Ставка не будет сделана')
+                self.__quit(f'Совершение ставки недоступно по информации в купоне {self.bookmaker}. Ставка не будет сделана')
                 return
             self.__send_diag_message(f'Купон {self.bookmaker} доступен для ставки (надпись <Исход недоступен> отсутсвует в купоне)', send_telegram=False)
         except NoSuchElementException as ex:
@@ -208,8 +205,7 @@ class SiteInteraction:
                 f'Купон {self.bookmaker} доступен для ставки (надпись <Исход недоступен> отсутсвует в купоне)', ex, send_telegram=False)
         except BaseException as ex:
             self.__quit(
-                f'Не пройдена последняя контрольная проверка {self.bookmaker}. Невозможно подтвердить доступность ставки по информации в купоне. Ставка не будет сделана',
-                ex)
+                f'Невозможно подтвердить доступность ставки по информации в купоне {self.bookmaker}. Ставка не будет сделана', ex)
             return
 
         # проверка наличия кнопки "Сделать ставку"
@@ -219,16 +215,16 @@ class SiteInteraction:
             button_name = element.text
             if 'сделать ставку' not in button_name.lower():
                 self.__quit(
-                    f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Сделать ставку> недоступна. Ставка не будет сделана')
+                    f'Кнопка <Сделать ставку> {self.bookmaker} недоступна. Ставка не будет сделана')
                 return
             self.__send_diag_message(f'Кнопка <Сделать ставку> {self.bookmaker} найдена', send_telegram=False)
         except BaseException as ex:
             self.__quit(
-                f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Сделать ставку> не найдена. Ставка не будет сделана',
+                f'Кнопка <Сделать ставку> {self.bookmaker} не найдена. Ставка не будет сделана',
                 ex)
             return
 
-        self.__send_diag_message(f'Последняя контрольная проверка пройдена. Букмекер {self.bookmaker} готов к ставке', send_telegram=False)
+        self.__send_diag_message(f'Букмекер {self.bookmaker} готов к ставке', send_telegram=False)
 
         return True
 
