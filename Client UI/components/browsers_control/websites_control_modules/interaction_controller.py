@@ -1,5 +1,6 @@
 import logging
 import threading
+from datetime import datetime
 from importlib import import_module
 from PyQt5 import QtCore
 from selenium.common import TimeoutException
@@ -61,16 +62,13 @@ class WebsiteController:
             return
 
         while True:
-            # self.thread_bet_event.clear()
-            # self.thread_last_test_event.clear()
-            # self.prepared_for_bet = False
-            # self.stop_betting = False
-
             self.thread_pause_event.wait()
+
             self.thread_bet_event.clear()
             self.thread_last_test_event.clear()
             self.prepared_for_bet = False
             self.stop_betting = False
+
             if self.close_request:
                 self.__quit()
                 return
@@ -139,8 +137,8 @@ class WebsiteController:
         self.__send_diag_message(f"Последние короткие тесты обоих букмекеров проведены успешно", send_telegram=False)
         bet_placed = self.site_interaction_instance.bet(self.bet_params)
 
-        if bet_placed:
-            self.__send_diag_message(f"Процесс размещения завершен. Ставка {self.bookmaker} размещена успешно")
+        if bet_placed['result']:
+            self.__send_diag_message(f"Процесс размещения завершен. Ставка {self.bookmaker} размещена успешно за {bet_placed['betting_time']}")
         else:
             self.__send_diag_message(f"Процесс размещения завершен. Ставка {self.bookmaker} не размещена, либо результат неизвестен")
 

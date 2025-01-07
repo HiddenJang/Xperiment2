@@ -89,6 +89,8 @@ class SiteInteraction:
 
     def prepare_for_bet(self, event_data: dict, bet_params: dict) -> bool | None:
         """Подготовка к размещению ставки"""
+        self.start_time = datetime.timestamp(datetime.now())
+
         bookmaker = event_data["bookmaker"]
         bet_size = bet_params[bookmaker]['bet_size']
         min_koeff = bet_params[bookmaker]['min_koeff']
@@ -237,10 +239,10 @@ class SiteInteraction:
         self.__send_diag_message(f'Букмекер {self.bookmaker} готов к ставке', send_telegram=False)
         return True
 
-    def bet(self, bet_params: dict) -> bool | None:
+    def bet(self, bet_params: dict) -> dict:
         """Размещение ставки"""
         imitation = bet_params['bet_imitation']
-
+        result = False
         # нажатие кнопки "Заключить пари"
         try:
             if not imitation:
@@ -250,6 +252,8 @@ class SiteInteraction:
                 self.__send_diag_message(f'Кнопка <Заключить пари> {self.bookmaker} успешно нажата (в режиме имитации)')
         except BaseException as ex:
             self.__quit(f'Не удалось нажать кнопку <Заключить пари> {self.bookmaker}. Ставка не будет сделана', ex)
+
+        self.betting_time = datetime.timestamp(datetime.now()) - self.start_time
 
         # проверка изменения баланса после ставки
         try:
@@ -262,11 +266,9 @@ class SiteInteraction:
                     break
                 else:
                     self.__send_diag_message(f'Нет изменения баланса {self.bookmaker}')
-                    result = None
                 sleep(1)
         except BaseException as ex:
             self.__send_diag_message(f'Не удалось получить баланс {self.bookmaker}', ex)
-            result = None
 
         self.__get_screenshot()
-        return result
+        return {'result': result, 'betting_time': self.betting_time}

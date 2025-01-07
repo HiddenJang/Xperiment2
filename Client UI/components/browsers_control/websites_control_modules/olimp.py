@@ -85,8 +85,9 @@ class SiteInteraction:
             return True
 
     def prepare_for_bet(self, event_data: dict, bet_params: dict) -> bool | None:
-        """Размещение ставки"""
         """Подготовка к размещению ставки"""
+        self.start_time = datetime.timestamp(datetime.now())
+
         bookmaker = event_data["bookmaker"]
         bet_size = bet_params[bookmaker]['bet_size']
         min_koeff = bet_params[bookmaker]['min_koeff']
@@ -154,12 +155,13 @@ class SiteInteraction:
 
         # получение текущего коэффициента ставки на нужный тотал и сравнение с установленным
         try:
-            WebDriverWait(self.driver, 2).until(
-                EC.presence_of_element_located((By.XPATH, '//span[contains(@data-qa, "betCardCoeff")]')))
-            control_koeff = WebDriverWait(self.driver, 2).until(
-                EC.presence_of_element_located((By.XPATH, '//span[contains(@data-qa, "betCardCoeff")]')))
+            for _ in range(10):
+                control_koeff = WebDriverWait(self.driver, 2).until(
+                    EC.presence_of_element_located((By.XPATH, '//span[contains(@data-qa, "betCardCoeff")]')))
+                print(f'iter = {_}')
+                if control_koeff.text:
+                    break
             control_koeff = float(control_koeff.text)
-
             if control_koeff < float(min_koeff):
                 self.__send_diag_message(
                     f'Ставка на событие {self.bookmaker} не сделана, текущий коэффициент ставки меньше установленного ({control_koeff}<{min_koeff})')
@@ -229,10 +231,10 @@ class SiteInteraction:
 
         return True
 
-    def bet(self, bet_params: dict) -> bool | None:
+    def bet(self, bet_params: dict) -> dict:
         """Размещение ставки"""
         imitation = bet_params['bet_imitation']
-
+        result = False
         # нажатие кнопки "Сделать ставку"
         try:
             if not imitation:
@@ -242,6 +244,8 @@ class SiteInteraction:
                 self.__send_diag_message(f'Кнопка <Сделать ставку> {self.bookmaker} успешно нажата (в режиме имитации)')
         except BaseException as ex:
             self.__quit(f'Не удалось нажать кнопку <Сделать ставку> {self.bookmaker}. Ставка не будет сделана', ex)
+
+        self.betting_time = datetime.timestamp(datetime.now()) - self.start_time
 
         # проверка изменения баланса после ставки
         try:
@@ -254,11 +258,9 @@ class SiteInteraction:
                     break
                 else:
                     self.__send_diag_message(f'Нет изменения баланса {self.bookmaker}')
-                    result = None
                 sleep(1)
         except BaseException as ex:
             self.__send_diag_message(f'Не удалось получить баланс {self.bookmaker}', ex)
-            result = None
 
         self.__get_screenshot()
-        return result
+        return {'result': result, 'betting_time': self.betting_time}
