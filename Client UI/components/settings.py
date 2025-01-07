@@ -38,3 +38,6 @@ PAGE_LOAD_TIMEOUT = 5
 # Screenshots directory
 SCREENSHOTS_DIR = BASE_DIR / "screenshots"
 
+# Statistic settings
+STATS_DIR = BASE_DIR / "statistic"
+STATS_FILE_NAME = STATS_DIR / "statistic.xlsx"
