@@ -213,7 +213,11 @@ class OlimpParser:
                 if runner.get('tableType') == 'TOTAL':
                     if not runners_table['market']:
                         runners_table['market'] = 'Тотал'
-                    handicap = str(round(float(runner.get('param')), 1))
+                    handicap = round(float(runner.get('param')), 1)
+                    if handicap.is_integer():
+                        handicap = str(int(handicap))
+                    else:
+                        handicap = str(handicap)
                     if not runners_table['runners'].get(handicap):
                         runners_table['runners'][handicap] = {'under': 'closed', 'over': 'closed'}
                     if "мен" in runner.get('unprocessedName'):

@@ -61,12 +61,16 @@ class WebsiteController:
             return
 
         while True:
+            # self.thread_bet_event.clear()
+            # self.thread_last_test_event.clear()
+            # self.prepared_for_bet = False
+            # self.stop_betting = False
+
+            self.thread_pause_event.wait()
             self.thread_bet_event.clear()
             self.thread_last_test_event.clear()
             self.prepared_for_bet = False
             self.stop_betting = False
-
-            self.thread_pause_event.wait()
             if self.close_request:
                 self.__quit()
                 return
