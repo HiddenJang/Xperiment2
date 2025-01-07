@@ -55,8 +55,8 @@ class SiteInteraction:
 
     def __quit(self, message: str, ex: BaseException = '') -> None:
         """Прекращение процесса размещения ставки"""
-        self.__send_diag_message(message, ex)
         self.__get_screenshot()
+        self.__send_diag_message(message, ex)
         self.__close_coupon()
 
     def preload(self) -> bool | Exception:
@@ -240,9 +240,9 @@ class SiteInteraction:
         try:
             if not imitation:
                 self.driver.find_element(By.XPATH, "//div[contains(@class, 'makeBetButton')]/div[contains(@class, 'buttons')]/button[@type='submit']").click()
-                self.__send_diag_message(f'Кнопка <Сделать ставку> {self.bookmaker} успешно нажата', send_telegram=False)
+                self.__send_diag_message(f'Кнопка <Сделать ставку> {self.bookmaker} успешно нажата')
             else:
-                self.__send_diag_message(f'Кнопка <Сделать ставку> {self.bookmaker} успешно нажата (в режиме имитации)', send_telegram=False)
+                self.__send_diag_message(f'Кнопка <Сделать ставку> {self.bookmaker} успешно нажата (в режиме имитации)')
         except BaseException as ex:
             self.__quit(f'Не удалось нажать кнопку <Сделать ставку> {self.bookmaker}. Ставка не будет сделана', ex)
 

@@ -6,6 +6,7 @@ from selenium.common import TimeoutException
 
 from .. import webdriver
 from ... import settings
+from ...telegram_message_service import TelegramService
 
 logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.interaction_controller')
 
@@ -45,8 +46,9 @@ class WebsiteController:
         self.driver = driver_dict['driver']
         if not self.driver:
             self.__send_diag_message(f"Сайт {self.bookmaker} {driver_dict['status']}",
-                                     exception=driver_dict['ex'],
-                                     status='error')
+                                     ex=driver_dict['ex'],
+                                     status='error',
+                                     send_telegram=False)
             return
 
         self.site_interaction_instance = self.SiteInteractionClass(self.driver, self.diag_signal, self.common_auth_data)
@@ -54,7 +56,7 @@ class WebsiteController:
             self.preloaded = self.site_interaction_instance.preload()
             self.__send_diag_message(f'Сайт {self.bookmaker} загружен, авторизация пройдена успешно')
         except BaseException as ex:
-            self.__send_diag_message(f'Ошибка авторизации {self.bookmaker}', exception=ex)
+            self.__send_diag_message(f'Ошибка авторизации {self.bookmaker}', ex=ex, send_telegram=False)
             self.__quit()
             return
 
@@ -78,16 +80,16 @@ class WebsiteController:
             try:
                 self.driver.get(url=url)
             except TimeoutException:
-                self.__send_diag_message(f'Превышение времени ожидания открытия страницы события {self.bookmaker}. Попытка продолжить')
+                self.__send_diag_message(f'Превышение времени ожидания открытия страницы события {self.bookmaker}. Попытка продолжить', send_telegram=False)
             except BaseException as ex:
-                self.__send_diag_message(f'Не удалось открыть url {self.bookmaker}: {url}', exception=ex)
+                self.__send_diag_message(f'Не удалось открыть url {self.bookmaker}: {url}', ex=ex)
                 self.thread_pause_event.clear()
                 return
 
             self.prepared_for_bet = self.site_interaction_instance.prepare_for_bet(self.event_data, self.bet_params)
 
             if self.prepared_for_bet:
-                self.__send_diag_message(f"Получена готовность {self.bookmaker} к ставке")
+                self.__send_diag_message(f"Получена готовность {self.bookmaker} к ставке", send_telegram=False)
                 # ожидание готовности обоих букмекеров
                 self.thread_bet_event.wait()
 
@@ -99,7 +101,7 @@ class WebsiteController:
                         f"Процесс размещения ставки {self.bookmaker} прерван. Нет готовности второго букмекера")
                     self.thread_pause_event.clear()
                     return
-                self.__send_diag_message(f"Получена готовность обоих букмекеров к ставке. Запущены последние короткие тесты {self.bookmaker}")
+                self.__send_diag_message(f"Получена готовность обоих букмекеров к ставке. Запущены последние короткие тесты {self.bookmaker}", send_telegram=False)
 
                 self.last_test_completed = self.site_interaction_instance.last_test(self.bet_params)
                 if self.last_test_completed:
@@ -132,15 +134,19 @@ class WebsiteController:
 
         except BaseException as ex:
             self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} окончен неудачно",
-                                     exception=ex)
+                                     ex=ex)
             self.thread_pause_event.clear()
             return
         self.__send_diag_message(f"Процесс размещения ставки {self.bookmaker} завершен")
         self.thread_pause_event.clear()
 
-    def __send_diag_message(self, diag_mess: str, exception: BaseException = '', status: str = 'info') -> None:
+    def __send_diag_message(self,
+                            diag_mess: str,
+                            ex: BaseException = '',
+                            status: str = 'info',
+                            send_telegram: bool = True) -> None:
         """Отправка диагностических сообщений в логгер и приложение"""
-        log_info = diag_mess + ' ' + str(exception)
+        log_info = f'{diag_mess} {str(ex)}'
         match status:
             case 'debug':
                 logger.debug(log_info)
@@ -153,6 +159,8 @@ class WebsiteController:
             case "critical":
                 logger.critical(log_info)
         self.diag_signal.emit(diag_mess)
+        if send_telegram:
+            TelegramService.send_text(diag_mess)
 
     def __quit(self) -> None:
         """Завершение работы"""
