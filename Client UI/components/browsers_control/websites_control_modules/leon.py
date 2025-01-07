@@ -34,11 +34,12 @@ class SiteInteraction:
         self.driver.get_screenshot_as_file(screenshot_name)
         TelegramService.send_photo(screenshot_name)
 
-    def __send_diag_message(self, message: str, ex: BaseException = '') -> None:
+    def __send_diag_message(self, message: str, ex: BaseException = '', send_telegram: bool = True) -> None:
         """Отправка диагностики"""
         logger.info(f'{message} {str(ex)}')
-        TelegramService.send_text(message)
         self.diag_signal.emit(message)
+        if send_telegram:
+            TelegramService.send_text(message)
 
     def __close_coupon(self) -> None:
         """Закрытие купона ставки"""
@@ -47,9 +48,9 @@ class SiteInteraction:
             self.driver.find_element(By.XPATH, '//button[text()="Очистить"]').click()
             self.driver.find_element(By.XPATH, '//button[text()="Удалить"]').click()
             self.driver.implicitly_wait(0)
-            self.__send_diag_message(f'Купон {self.bookmaker} от ставки закрыт')
+            self.__send_diag_message(f'Купон {self.bookmaker} от ставки закрыт', send_telegram=False)
         except BaseException as ex:
-            self.__send_diag_message(f'Не удалось закрытие купона {self.bookmaker} (возможно купоны отсутствуют или были закрыты ранее)', ex)
+            self.__send_diag_message(f'Не удалось закрытие купона {self.bookmaker} (возможно купоны отсутствуют или были закрыты ранее)', ex, send_telegram=False)
 
     def __quit(self, message: str, ex: BaseException = '') -> None:
         """Прекращение процесса размещения ставки"""
@@ -110,7 +111,7 @@ class SiteInteraction:
                 self.__send_diag_message(f'Ставка на событие {self.bookmaker} не будет сделана, баланс меньше размера ставки')
                 return
             else:
-                self.__send_diag_message(f'Баланс {self.bookmaker} получен и больше размера ставки')
+                self.__send_diag_message(f'Баланс {self.bookmaker} получен и больше размера ставки', send_telegram=False)
         except BaseException as ex:
             self.__send_diag_message(f'Не удалось получить баланс {self.bookmaker}. Ставка не будет сделана', ex)
             self.__get_screenshot()
@@ -120,14 +121,15 @@ class SiteInteraction:
         try:
             WebDriverWait(self.driver, 1).until(
                 EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
-            logger.info(f'Всплывающее окно уведомления закрыто')
+            logger.info(f'Всплывающее окно уведомления {self.bookmaker} закрыто')
         except BaseException as ex:
-            logger.info(f'Всплывающее окно уведомления не найдено, {ex}')
+            logger.info(f'Всплывающее окно уведомления {self.bookmaker} не найдено, {ex}')
 
         # переключение на вкладку ТОТАЛЫ
         try:
             WebDriverWait(self.driver, 5).until(
                 EC.presence_of_element_located((By.XPATH, "//button[text()='Тоталы']"))).click()
+            self.__send_diag_message(f'Вкладка "Тоталы" букмекера {self.bookmaker} нажата', send_telegram=False)
         except BaseException as ex:
             self.__send_diag_message(f'Попытка открыть вкладку "Тоталы" букмекера {self.bookmaker} неудачна', ex)
             ## попытка закрыть всплывающее окно уведомления
@@ -143,7 +145,7 @@ class SiteInteraction:
         try:
             WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH,
                 f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
-            self.__send_diag_message(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата успешно')
+            self.__send_diag_message(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата успешно', send_telegram=False)
         except BaseException as ex:
             self.__send_diag_message(f'Попытка нажать на кнопку {total} (открыть купон тотала) букмекера {self.bookmaker} неудачна', ex)
             ## попытка закрыть всплывающее окно уведомления
@@ -151,6 +153,7 @@ class SiteInteraction:
                 EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
             WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH,
                 f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
+            self.__send_diag_message(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата после закрытия всплывающего окно уведомления', send_telegram=False)
         except:
             self.__send_diag_message(f'Попытка закрыть всплывающее окно {self.bookmaker} для открытия купона тотала неудачна. Ставка не будет сделана')
             self.__get_screenshot()
@@ -166,7 +169,7 @@ class SiteInteraction:
             element.send_keys(bet_size)
             if int(element.get_attribute('value')) != int(bet_size):
                 raise Exception
-            self.__send_diag_message(f'Значение ставки на событие {self.bookmaker} введено успешно')
+            self.__send_diag_message(f'Значение ставки на событие {self.bookmaker} введено успешно', send_telegram=False)
         except BaseException as ex:
             self.__quit(f'Не удалось ввести значение ставки на событие {self.bookmaker}.Ставка не будет сделана', ex)
             return
@@ -181,7 +184,7 @@ class SiteInteraction:
                 self.__get_screenshot()
                 self.__close_coupon()
                 return
-            self.__send_diag_message(f'Текущий коэффициент ставки {self.bookmaker} выше или равен установленному ({control_koeff}>={min_koeff})')
+            self.__send_diag_message(f'Текущий коэффициент ставки {self.bookmaker} выше или равен установленному ({control_koeff}>={min_koeff})', send_telegram=False)
         except BaseException as ex:
             self.__quit(f'Не удалось получить текущий коэффициент ставки {self.bookmaker}. Ставка не будет сделана', ex)
             return
@@ -200,7 +203,7 @@ class SiteInteraction:
             if control_koeff < float(min_koeff):
                 self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Коэффициент в купоне меньше установленного ({control_koeff}<{min_koeff}). Ставка не будет сделана')
                 return
-            self.__send_diag_message(f'Коэффициент в купоне {self.bookmaker} перед ставкой выше или равен установленному ({control_koeff}>={min_koeff})')
+            self.__send_diag_message(f'Коэффициент в купоне {self.bookmaker} перед ставкой выше или равен установленному ({control_koeff}>={min_koeff})', send_telegram=False)
         except BaseException as ex:
             self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Не удалось получить коэффициент в купоне. Ставка не будет сделана', ex)
             return
@@ -212,8 +215,9 @@ class SiteInteraction:
             if 'Недоступно для ставок' in bet_availability:
                 self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Совершение ставки недоступно по информации в купоне. Ставка не будет сделана')
                 return
+            self.__send_diag_message(f'Купон {self.bookmaker} доступен для ставки (надпись <Недоступно для ставок> отсутсвует в купоне)', send_telegram=False)
         except NoSuchElementException:
-            self.__send_diag_message(f'Купон {self.bookmaker} доступен для ставки (надпись <Недоступно для ставок> отсутсвует в купоне)')
+            self.__send_diag_message(f'Купон {self.bookmaker} доступен для ставки (надпись <Недоступно для ставок> отсутсвует в купоне)', send_telegram=False)
         except BaseException as ex:
             self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Невозможно подтвердить доступность ставки по информации в купоне. Ставка не будет сделана', ex)
             return
@@ -225,12 +229,12 @@ class SiteInteraction:
             if 'заключить пари' not in button_name.lower():
                 self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Заключить пари> недоступна. Ставка не будет сделана')
                 return
-            self.__send_diag_message(f'Кнопка <Заключить пари> {self.bookmaker} найдена')
+            self.__send_diag_message(f'Кнопка <Заключить пари> {self.bookmaker} найдена', send_telegram=False)
         except BaseException as ex:
             self.__quit(f'Не пройдена последняя контрольная проверка {self.bookmaker}. Кнопка <Заключить пари> не найдена. Ставка не будет сделана', ex)
             return
 
-        self.__send_diag_message(f'Последняя контрольная проверка пройдена. Букмекер {self.bookmaker} готов к ставке')
+        self.__send_diag_message(f'Последняя контрольная проверка пройдена. Букмекер {self.bookmaker} готов к ставке', send_telegram=False)
         return True
 
     def bet(self, bet_params: dict) -> bool | None:
@@ -241,9 +245,9 @@ class SiteInteraction:
         try:
             if not imitation:
                 self.driver.find_element(By.XPATH, "//button[@data-test-el='bet-slip-button_summary']").click()
-                self.__send_diag_message(f'Кнопка <Заключить пари> {self.bookmaker} успешно нажата')
+                self.__send_diag_message(f'Кнопка <Заключить пари> {self.bookmaker} успешно нажата', send_telegram=False)
             else:
-                self.__quit(f'Кнопка <Заключить пари> {self.bookmaker} успешно нажата (в режиме имитации)')
+                self.__send_diag_message(f'Кнопка <Заключить пари> {self.bookmaker} успешно нажата (в режиме имитации)', send_telegram=False)
         except BaseException as ex:
             self.__quit(f'Не удалось нажать кнопку <Заключить пари> {self.bookmaker}. Ставка не будет сделана', ex)
 
