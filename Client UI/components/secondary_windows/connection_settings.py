@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QDialog
 
-from .templates.server_set_window_template import Ui_server_settings
+from ..templates.server_set_window_template import Ui_server_settings
 
 
 class ServerSettings(Ui_server_settings, QDialog):

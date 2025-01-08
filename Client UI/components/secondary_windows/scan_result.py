@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtWidgets import QDialog
 import webbrowser
-from .templates.result_window_template import Ui_Form_scanResults
+from ..templates.result_window_template import Ui_Form_scanResults
 
 
 class ResultWindow(Ui_Form_scanResults, QDialog):
@@ -33,9 +33,6 @@ class ResultWindow(Ui_Form_scanResults, QDialog):
         for row in range(1, self.ui.tableWidget_scanResults.rowCount()):
             self.ui.tableWidget_scanResults.removeRow(row)
         self.ui.tableWidget_scanResults.setRowCount(0)
-
-        # for column in (0, 3, 4, 5, 6):
-        #     self.ui.tableWidget_scanResults.horizontalHeader().setSectionResizeMode(column, QtWidgets.QHeaderView.ResizeToContents)
 
         match scan_result[0][0]["market"].lower():
             case "тотал" | "total" | "фора":

@@ -3,28 +3,28 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from PyQt5 import QtWidgets, QtCore, Qt
+from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow, QLabel
-from PyQt5.QtCore import QThread, QSettings, QTimer, QObject
+from PyQt5.QtCore import QThread, QSettings
 from apscheduler.schedulers.qt import QtScheduler
 
 from components import settings
-from components import logging_init
-from components.server_connection_service import Scanner
-from components.result_window import ResultWindow
-from components.server_settings_window import ServerSettings
-from components.browser_control_window import BrowserControlSettings
-from components.telegram_settings_window import TelegramSettings
+from components import logger_init
+from components.connection_service import Scanner
+from components.secondary_windows.scan_result import ResultWindow
+from components.secondary_windows.connection_settings import ServerSettings
+from components.secondary_windows.browser_control_settings import BrowserControlSettings
+from components.secondary_windows.telegram_settings import TelegramSettings
 from components.templates.client_app_template import Ui_MainWindow_client
 from components.browsers_control.core import BrowserControl
-from components.telegram_message_service import TelegramService
+from components.telegram import TelegramService
 
 ## Принудительное переключение рабочей директории ##
 file_path = Path(__file__).resolve().parent
 os.chdir(file_path)
 
 ## Инициализация логгера ##
-logging_init.init_logger('Client UI')
+logger_init.init_logger('Client UI')
 logger = logging.getLogger('Client UI.client_app')
 
 

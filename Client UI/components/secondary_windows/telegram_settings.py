@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QDialog
 
-from .templates.telegram_settings_window_template import Ui_telegram_settings
+from ..templates.telegram_settings_window_template import Ui_telegram_settings
 
 
 class TelegramSettings(Ui_telegram_settings, QDialog):

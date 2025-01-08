@@ -1,13 +1,12 @@
 import logging
 import threading
-from datetime import datetime
 from importlib import import_module
 from PyQt5 import QtCore
 from selenium.common import TimeoutException
 
 from .. import webdriver
 from ... import settings
-from ...telegram_message_service import TelegramService
+from ...telegram import TelegramService
 
 logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.interaction_controller')
 

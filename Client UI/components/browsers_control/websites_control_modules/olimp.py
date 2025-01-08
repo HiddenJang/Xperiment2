@@ -34,9 +34,9 @@ class SiteInteraction:
         screenshot_name = settings.SCREENSHOTS_DIR / f"{self.bookmaker}-{str(datetime.now()).replace(':', '-')}.png"
         try:
             self.driver.get_screenshot_as_file(screenshot_name)
+            TelegramService.send_photo(screenshot_name)
         except BaseException as ex:
             self.__send_diag_message(f"Не удалось сделать скриншот {self.bookmaker}", ex,  send_telegram=False)
-        TelegramService.send_photo(screenshot_name)
 
     def __send_diag_message(self, message: str, ex: BaseException = '', send_telegram: bool = True) -> None:
         """Отправка диагностики"""
