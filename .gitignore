@@ -9,3 +9,4 @@ config/
 /Client UI/screenshots/
 /Client UI/tests.py
 /db.sqlite3
+/Client UI/components/statistic/statistic.xlsx
