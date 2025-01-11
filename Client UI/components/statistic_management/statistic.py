@@ -90,6 +90,7 @@ class StatisticManager:
                 ws.cell(row=empty_row_num, column=4).value = '-'
                 ws.cell(row=empty_row_num, column=5).value = data['total_koeff']
             ws.cell(row=empty_row_num, column=6).value = data['screenshot_name']
+            ws.cell(row=empty_row_num, column=7).hyperlink = data['url']
             ws.cell(row=empty_row_num, column=7).value = data['url']
             ws.cell(row=empty_row_num, column=8).value = data['bet_size']
             if data['bet_imitation'] and event_num == 1:

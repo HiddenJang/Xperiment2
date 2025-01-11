@@ -36,7 +36,7 @@ class SiteInteraction:
         try:
             self.driver.get_screenshot_as_file(screenshot_name)
             TelegramService.send_photo(screenshot_name)
-            return screenshot_name
+            return str(screenshot_name)
         except BaseException as ex:
             self.__send_diag_message(f"Не удалось сделать скриншот {self.bookmaker}", ex,  send_telegram=False)
 
@@ -102,8 +102,8 @@ class SiteInteraction:
         self.bet_data_for_stats['bookmaker'] = bookmaker
         self.bet_data_for_stats['teams'] = event_data["teams"]
         self.bet_data_for_stats['url'] = event_data["url"]
-        self.bet_data_for_stats['total_nominal'] = bet_size
-        self.bet_data_for_stats['bet_size'] = total_nominal
+        self.bet_data_for_stats['total_nominal'] = total_nominal
+        self.bet_data_for_stats['bet_size'] = bet_size
         self.bet_data_for_stats['total_koeff_type'] = total_koeff_type
         self.bet_data_for_stats['date'] = event_data["date"]
 

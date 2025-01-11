@@ -124,13 +124,13 @@ class BrowserControl(QObject):
         first_bkmkr_thread_pause_event = self.started_threads[first_bkmkr_name]['thread_pause_event']
         second_bkmkr_thread_pause_event = self.started_threads[second_bkmkr_name]['thread_pause_event']
         if not first_bkmkr_thread_pause_event.is_set() and not second_bkmkr_thread_pause_event.is_set():
-            first_placed_bet_data = self.started_threads[second_bkmkr_name]['controller_instance'].placed_bet_data
+            first_placed_bet_data = self.started_threads[first_bkmkr_name]['controller_instance'].placed_bet_data
             second_placed_bet_data = self.started_threads[second_bkmkr_name]['controller_instance'].placed_bet_data
             if first_placed_bet_data and second_placed_bet_data:
                 event_data = [first_placed_bet_data, second_placed_bet_data]
                 self.statistic_manager.insert_data(event_data)
-                self.started_threads[first_bkmkr_name]['controller_instance'].self.placed_bet_data = {}
-                self.started_threads[second_bkmkr_name]['controller_instance'].self.placed_bet_data = {}
+                self.started_threads[first_bkmkr_name]['controller_instance'].placed_bet_data = {}
+                self.started_threads[second_bkmkr_name]['controller_instance'].placed_bet_data = {}
 
             self.bet_in_progress = False
             self.last_test_timer.stop()

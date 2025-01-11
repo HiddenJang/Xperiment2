@@ -35,7 +35,7 @@ class SiteInteraction:
         try:
             self.driver.get_screenshot_as_file(screenshot_name)
             TelegramService.send_photo(screenshot_name)
-            return screenshot_name
+            return str(screenshot_name)
         except BaseException as ex:
             self.__send_diag_message(f"Не удалось сделать скриншот {self.bookmaker}", ex, send_telegram=False)
 
@@ -146,13 +146,7 @@ class SiteInteraction:
                 EC.presence_of_element_located((By.XPATH, "//button[text()='Тоталы']"))).click()
             self.__send_diag_message(f'Вкладка "Тоталы" букмекера {self.bookmaker} нажата', send_telegram=False)
         except BaseException as ex:
-            self.__send_diag_message(f'Попытка открыть вкладку "Тоталы" букмекера {self.bookmaker} неудачна', ex)
-            ## попытка закрыть всплывающее окно уведомления
-            WebDriverWait(self.driver, 1).until(
-                EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
-            self.driver.find_element(By.XPATH, "//button[text()='Тоталы']").click()
-        except:
-            self.__send_diag_message(f'Попытка закрыть всплывающее окно {self.bookmaker} для открытия вкладки Тоталы неудачна. Ставка не будет сделана')
+            self.__send_diag_message(f'Попытка открыть вкладку "Тоталы" букмекера {self.bookmaker} неудачна. Ставка не будет сделана', ex)
             self.__get_screenshot()
             return
 
@@ -162,15 +156,7 @@ class SiteInteraction:
                 f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
             self.__send_diag_message(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата успешно', send_telegram=False)
         except BaseException as ex:
-            self.__send_diag_message(f'Попытка нажать на кнопку {total} (открыть купон тотала) букмекера {self.bookmaker} неудачна', ex)
-            ## попытка закрыть всплывающее окно уведомления
-            WebDriverWait(self.driver, 1).until(
-                EC.visibility_of_element_located((By.XPATH, "//svg[@role='presentation']"))).click()
-            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH,
-                f"//span[text()='Тотал']/ancestor::div[contains(@class, 'sport-event-details-market-group__header')]/following-sibling::div[contains(@class, 'sport-event-details-market-group__content')]/descendant::span[contains(text(),'{total}')]"))).click()
-            self.__send_diag_message(f'Кнопка {total} букмекара {self.bookmaker} найдена и нажата после закрытия всплывающего окно уведомления', send_telegram=False)
-        except:
-            self.__send_diag_message(f'Попытка закрыть всплывающее окно {self.bookmaker} для открытия купона тотала неудачна. Ставка не будет сделана')
+            self.__send_diag_message(f'Попытка нажать на кнопку {total} (открыть купон тотала) букмекера {self.bookmaker} неудачна. Ставка не будет сделана', ex)
             self.__get_screenshot()
             return
 
