@@ -4,7 +4,7 @@ from time import sleep
 
 from openpyxl import Workbook
 from openpyxl import load_workbook
-from openpyxl.styles import colors
+from openpyxl.styles import colors, Alignment
 from openpyxl.styles import Border, Side
 from openpyxl.styles import Font, Color
 from openpyxl.styles import PatternFill
@@ -12,21 +12,18 @@ from openpyxl.styles import PatternFill
 logger = logging.getLogger('Client UI.components.statistic_management.statistic')
 
 
-class Statistic:
+class StatisticManager:
     """Формирование статистики и запись в файл xlsx"""
-    columns = ("№  ", "Команды БК1", "Команды БК2", "ТМ/Коэфф. БК1", "ТБ/Коэфф. БК2", "ТБ/Коэфф. БК1", "ТМ/Коэфф. БК2",
-               "Коэффициент БК1", "Коэффициент БК2", "Скриншот БК1", "Скриншот БК2", "Ссылка БК1", "Ссылка БК2",
-               "Ставка БК1", "Результат БК1", "Банкрол БК1", "Ставка БК2", "Результат БК2", "Сумма голов", "Дата БК1",
-               "Дата БК2")
+    columns = ("№  ", "Команды", "Дата", "ТМ/Коэфф.", "ТБ/Коэфф.", "Скриншот", "Ссылка", "Ставка", "Баланс до",
+               "Баланс после", "Время размещения", "Сумма голов", "Результат", "Баланс")
     font = 'Calibri'
     font_size = 12
+    # задаем параметры границ ячеек
+    thins = Side(border_style="thin", color="000000")
+    double = Side(border_style="double", color="000000")
 
-    def __init__(self, imitation: bool, event_data: list):
-        self.imitation = imitation
-        self.event_data = event_data
-
-    #event: list, shotname_after: str, element_takecoeff: list, bet_size: int
-    def insert_data(self): # получение данных о найденном событии из модуля GraphicalMODULE_1 функция tree_on_select
+    def insert_data(self, event_data: list):
+        """Заполнение данными документа xlsx"""
         if not os.path.exists(settings.STATS_DIR):
             os.mkdir(settings.STATS_DIR)
 
@@ -42,9 +39,10 @@ class Statistic:
                 len_cell = len(str(cell.value))
                 new_width_col = len_cell * self.font_size ** (self.font_size * 0.01)
                 ws_betting.column_dimensions[cell.column_letter].width = new_width_col
+                ws_betting.column_dimensions[cell.column_letter].alignment = Alignment(horizontal="center")
 
             ws_betting.column_dimensions['B'].width = 30
-            ws_betting.column_dimensions['C'].width = 30
+
 
             ws_imitation = wb.copy_worksheet(ws_betting)
             ws_imitation.title = "Имитация ставок"
@@ -61,81 +59,47 @@ class Statistic:
                         return
                     sleep(0.5)
 
-        if self.imitation:
+        if event_data[0]['bet_imitation']:
             ws = wb["Имитация ставок"]
         else:
             ws = wb["Ставки на деньги"]
 
+        event_nums = []
+        for row in ws.iter_rows(min_row=2, max_col=1, max_row=len(ws['A'])):
+            for cell in row:
+                if cell.value:
+                    event_nums.append(int(cell.value))
+        if event_nums:
+            event_num = max(event_nums) + 1
+        else:
+            event_num = 1
+
+        for data in event_data:
+            empty_row_num = len(ws['A']) + 1
+            ws.cell(row=empty_row_num, column=1).value = event_num
+            ws.cell(row=empty_row_num, column=2).value = data['teams']
+            ws.cell(row=empty_row_num, column=3).value = data['date']
+            if data['total_koeff_type'] == 'under':
+                ws.cell(row=empty_row_num, column=4).value = data['total_koeff']
+                ws.cell(row=empty_row_num, column=5).value = '-'
+            else:
+                ws.cell(row=empty_row_num, column=4).value = '-'
+                ws.cell(row=empty_row_num, column=5).value = data['total_koeff']
+            ws.cell(row=empty_row_num, column=6).value = data['screenshot_name']
+            ws.cell(row=empty_row_num, column=7).value = data['url']
+            ws.cell(row=empty_row_num, column=8).value = data['bet_size']
+            ws.cell(row=empty_row_num, column=9).value = data['start_balance']
+            ws.cell(row=empty_row_num, column=10).value = data['balance_after_bet']
+            ws.cell(row=empty_row_num, column=11).value = data['betting_time']
+
         empty_row_num = len(ws['A']) + 1
+        for col in range(1, len(self.columns)+1):
+            cell = ws.cell(row=empty_row_num, column=col)
+            cell.fill = PatternFill(fgColor="000000", fill_type="solid")
+            cell.border = Border(top=self.double, bottom=self.double, left=self.thins, right=self.thins)
 
-
-        #     # стираем значения ИТОГО ранее занесенные в столбцы 15 и 18
-        #     ws.cell(row=row, column=15).value = None
-        #     ws.cell(row=row, column=18).value = None
-        # # проверки наличия в файле стартовых банкролов 10000 в соответствующих столбцах и присвоение последних значений банкролов
-        # for i in range(2, row+1):
-        #     if ws.cell(row=i, column=16).value != None:
-        #         bankrol_first = ws.cell(row=i, column=16).value
-        #         l+=1
-        #     if ws.cell(row=i, column=19).value != None:
-        #         bankrol_second = ws.cell(row=i, column=19).value
-        #         x+=1
-        # if l == 0:
-        #     bankrol_first = '10000'
-        # if x == 0:
-        #     bankrol_second = '10000'
-        # ws.cell(row=row, column=1, value=row) # внесение в первый столбец номера строки
-        # for i in range(0,len(event_data)-2):
-        #     ws.cell(row=row, column=(i+2), value=event_data[i])  # обращаясь к листу записываем по координатам ячейки (row,column) значение (данные), 4 штуки - имя, цена, и т.д.
-        # if element_takecoeff[0] == 'LEON':
-        #     if 'leon.ru' in event[6]:
-        #         ws.cell(row=row, column=8, value=element_takecoeff[1])
-        #         ws.cell(row=row, column=10, value=shotname_after)
-        #         ws.cell(row=row, column=14, value=bet_size)
-        #         ws.cell(row=row, column=16, value=(float(bankrol_first)-bet_size))
-        #     else:
-        #         ws.cell(row=row, column=9, value=element_takecoeff[1])
-        #         ws.cell(row=row, column=11, value=shotname_after)
-        #         ws.cell(row=row, column=17, value=bet_size)
-        #         ws.cell(row=row, column=19, value=(float(bankrol_second) - bet_size))
-        # elif element_takecoeff[0] == 'MELBET':
-        #     if 'melbet.ru' in event[6]:
-        #         ws.cell(row=row, column=8, value=element_takecoeff[1])
-        #         ws.cell(row=row, column=10, value=shotname_after)
-        #         ws.cell(row=row, column=14, value=bet_size)
-        #         ws.cell(row=row, column=16, value=(float(bankrol_first) - bet_size))
-        #     else:
-        #         ws.cell(row=row, column=9, value=element_takecoeff[1])
-        #         ws.cell(row=row, column=11, value=shotname_after)
-        #         ws.cell(row=row, column=17, value=bet_size)
-        #         ws.cell(row=row, column=19, value=(float(bankrol_second)-bet_size))
-        # elif element_takecoeff[0] == '1XBet':
-        #     if '1xlite' in event[6]:
-        #         ws.cell(row=row, column=8, value=element_takecoeff[1])
-        #         ws.cell(row=row, column=10, value=shotname_after)
-        #         ws.cell(row=row, column=14, value=bet_size)
-        #         ws.cell(row=row, column=16, value=(float(bankrol_first) - bet_size))
-        #     else:
-        #         ws.cell(row=row, column=9, value=element_takecoeff[1])
-        #         ws.cell(row=row, column=11, value=shotname_after)
-        #         ws.cell(row=row, column=17, value=bet_size)
-        #         ws.cell(row=row, column=19, value=(float(bankrol_second)-bet_size))
-        # elif element_takecoeff[0] == 'BETBOOM':
-        #     if 'betboom' in event[6]:
-        #         ws.cell(row=row, column=8, value=element_takecoeff[1])
-        #         ws.cell(row=row, column=10, value=shotname_after)
-        #         ws.cell(row=row, column=14, value=bet_size)
-        #         ws.cell(row=row, column=16, value=(float(bankrol_first) - bet_size))
-        #     else:
-        #         ws.cell(row=row, column=9, value=element_takecoeff[1])
-        #         ws.cell(row=row, column=11, value=shotname_after)
-        #         ws.cell(row=row, column=17, value=bet_size)
-        #         ws.cell(row=row, column=19, value=(float(bankrol_second)-bet_size))
-        # for i in range(len(event_data)-2,len(event_data)):
-        #     ws.cell(row=row, column=(i+6), value=event_data[i])
-
-        # asyncio.run(event_result(urls=event, row=row, bmaker=element_takecoeff[0]))
         wb.save(settings.STATS_FILE_NAME)
+
 
 if __name__ == '__main__':
     from pathlib import Path
@@ -143,7 +107,41 @@ if __name__ == '__main__':
     class settings:
         STATS_DIR = BASE_DIR / "statistic"
         STATS_FILE_NAME = STATS_DIR / "statistic.xlsx"
-    statistic = Statistic(imitation=False)
-    statistic.insert_data()
+    event_data = [{'balance_after_bet': 90,
+                   'betting_time': '100',
+                   'screenshot_name': 'D:/screenshots/leon.png',
+                   'bet_imitation': True,
+                   'start_balance': 100,
+                   'total_koeff': 2.1,
+                   'total_koeff_type': 'under',
+                   'bet_size': 10,
+                   'total_nominal': 2.5,
+                   'url': 'link',
+                   'teams': 'ЦСКА - Спартак',
+                   'bookmaker': 'leon',
+                   'date': '2025-01-12'},
+                  {'balance_after_bet': 110,
+                   'betting_time': '80',
+                   'screenshot_name': 'D:/screenshots/olimp.png',
+                   'bet_imitation': True,
+                   'start_balance': 120,
+                   'total_koeff': 2.1,
+                   'total_koeff_type': 'over',
+                   'bet_size': 10,
+                   'total_nominal': 2.5,
+                   'url': 'link',
+                   'teams': 'ЦСКА - Спартак',
+                   'bookmaker': 'olimp',
+                   'date': '2025-01-12'}]
+    statistic = StatisticManager()
+    statistic.insert_data(event_data)
 else:
     from .. import settings
+
+
+
+
+# ("№  ", "Команды БК1", "Команды БК2", "ТМ/Коэфф. БК1", "ТБ/Коэфф. БК2", "ТБ/Коэфф. БК1", "ТМ/Коэфф. БК2",
+#                "Коэффициент БК1", "Коэффициент БК2", "Скриншот БК1", "Скриншот БК2", "Ссылка БК1", "Ссылка БК2",
+#                "Ставка БК1", "Результат БК1", "Банкрол БК1", "Ставка БК2", "Результат БК2", "Сумма голов", "Дата БК1",
+#                "Дата БК2")

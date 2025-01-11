@@ -36,6 +36,7 @@ class WebsiteController:
         self.prepared_for_bet = False
         self.last_test_completed = False
         self.stop_betting = False
+        self.placed_bet_data = {}
 
         self.event_data = {}
         self.bet_params = {}
@@ -67,6 +68,7 @@ class WebsiteController:
             self.thread_last_test_event.clear()
             self.prepared_for_bet = False
             self.stop_betting = False
+            self.placed_bet_data = {}
 
             if self.close_request:
                 self.__quit()
@@ -137,10 +139,11 @@ class WebsiteController:
         bet_placed = self.site_interaction_instance.bet(self.bet_params)
 
         if bet_placed['result']:
-            self.__send_diag_message(f"Процесс размещения завершен. Ставка {self.bookmaker} размещена успешно за {bet_placed['betting_time']}")
+            self.__send_diag_message(f"Процесс размещения завершен. Ставка {self.bookmaker} размещена успешно за {bet_placed['bet_data_for_stats']['betting_time']}")
         else:
             self.__send_diag_message(f"Процесс размещения завершен. Ставка {self.bookmaker} не размещена, либо результат неизвестен")
 
+        self.placed_bet_data = bet_placed['bet_data_for_stats']
         WebsiteController.excluded_urls.append(self.event_data.get("url"))
         self.thread_pause_event.clear()
 

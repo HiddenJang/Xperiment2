@@ -10,7 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
 from ... import settings
-from ...telegram_message_service import TelegramService
+from ...telegram import TelegramService
 
 logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.olimp')
 
@@ -28,13 +28,15 @@ class SiteInteraction:
 
         self.bookmaker = self.common_auth_data['bkmkr_name']
         self.start_balance = '0'
+        self.bet_data_for_stats = {}
 
-    def __get_screenshot(self) -> None:
+    def __get_screenshot(self) -> str | None:
         """Скриншот и отправка скриншота в telegram"""
         screenshot_name = settings.SCREENSHOTS_DIR / f"{self.bookmaker}-{str(datetime.now()).replace(':', '-')}.png"
         try:
             self.driver.get_screenshot_as_file(screenshot_name)
             TelegramService.send_photo(screenshot_name)
+            return screenshot_name
         except BaseException as ex:
             self.__send_diag_message(f"Не удалось сделать скриншот {self.bookmaker}", ex,  send_telegram=False)
 
@@ -96,6 +98,14 @@ class SiteInteraction:
         min_koeff = bet_params[bookmaker]['min_koeff']
         total_nominal = list(event_data['runners'].keys())[0]
         total_koeff_type = list(event_data['runners'][total_nominal].keys())[0]
+
+        self.bet_data_for_stats['bookmaker'] = bookmaker
+        self.bet_data_for_stats['teams'] = event_data["teams"]
+        self.bet_data_for_stats['url'] = event_data["url"]
+        self.bet_data_for_stats['total_nominal'] = bet_size
+        self.bet_data_for_stats['bet_size'] = total_nominal
+        self.bet_data_for_stats['total_koeff_type'] = total_koeff_type
+        self.bet_data_for_stats['date'] = event_data["date"]
 
         if total_koeff_type == 'under':
             total = f'Меньше ({total_nominal})'
@@ -161,7 +171,7 @@ class SiteInteraction:
             for _ in range(10):
                 control_koeff = WebDriverWait(self.driver, 2).until(
                     EC.presence_of_element_located((By.XPATH, '//span[contains(@data-qa, "betCardCoeff")]')))
-                print(f'iter = {_}')
+                logger.info(f'iter = {_}')
                 if control_koeff.text:
                     break
             control_koeff = float(control_koeff.text)
@@ -194,6 +204,7 @@ class SiteInteraction:
                 return
             self.__send_diag_message(
                 f'Коэффициент в купоне {self.bookmaker} перед ставкой выше или равен установленному ({control_koeff}>={min_koeff})', send_telegram=False)
+            self.bet_data_for_stats["total_koeff"] = control_koeff
         except BaseException as ex:
             self.__quit(f'Не удалось получить коэффициент в купоне {self.bookmaker}. Ставка не будет сделана', ex)
             return
@@ -238,6 +249,8 @@ class SiteInteraction:
         """Размещение ставки"""
         imitation = bet_params['bet_imitation']
         result = False
+        self.bet_data_for_stats['start_balance'] = self.start_balance
+        self.bet_data_for_stats['bet_imitation'] = imitation
         # нажатие кнопки "Сделать ставку"
         try:
             if not imitation:
@@ -249,7 +262,8 @@ class SiteInteraction:
             self.__quit(f'Не удалось нажать кнопку <Сделать ставку> {self.bookmaker}. Ставка не будет сделана', ex)
 
         self.betting_time = datetime.timestamp(datetime.now()) - self.start_time
-
+        self.bet_data_for_stats['betting_time'] = self.betting_time
+        self.bet_data_for_stats['screenshot_name'] = self.__get_screenshot()
         # проверка изменения баланса после ставки
         try:
             for i in range(30):
@@ -258,6 +272,7 @@ class SiteInteraction:
                 if (float(balance) < float(self.start_balance)) or imitation:
                     self.__send_diag_message(f'Есть изменение баланса {self.bookmaker}')
                     result = True
+                    self.bet_data_for_stats['balance_after_bet'] = balance
                     break
                 else:
                     self.__send_diag_message(f'Нет изменения баланса {self.bookmaker}')
@@ -266,4 +281,4 @@ class SiteInteraction:
             self.__send_diag_message(f'Не удалось получить баланс {self.bookmaker}', ex)
 
         self.__get_screenshot()
-        return {'result': result, 'betting_time': self.betting_time}
+        return {'result': result, 'bet_data_for_stats': self.bet_data_for_stats}
