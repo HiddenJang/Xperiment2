@@ -20,6 +20,7 @@ class StatisticManager:
     font_size = 12
     thins = Side(border_style="thin", color="000000")
     double = Side(border_style="double", color="000000")
+    imitation_start_balance = 10000
 
     def insert_data(self, event_data: list):
         """Заполнение данными документа xlsx"""
@@ -91,9 +92,17 @@ class StatisticManager:
             ws.cell(row=empty_row_num, column=6).value = data['screenshot_name']
             ws.cell(row=empty_row_num, column=7).value = data['url']
             ws.cell(row=empty_row_num, column=8).value = data['bet_size']
-            ws.cell(row=empty_row_num, column=9).value = data['start_balance']
-            ws.cell(row=empty_row_num, column=10).value = data['balance_after_bet']
+            if data['bet_imitation'] and event_num == 1:
+                ws.cell(row=empty_row_num, column=9).value = self.imitation_start_balance
+                ws.cell(row=empty_row_num, column=10).value = self.imitation_start_balance - float(data['bet_size'])
+            elif data['bet_imitation'] and event_num > 1:
+                ws.cell(row=empty_row_num, column=9).value = ws.cell(row=empty_row_num-3, column=14).value
+                ws.cell(row=empty_row_num, column=10).value = ws.cell(row=empty_row_num-3, column=14).value - float(data['bet_size'])
+            else:
+                ws.cell(row=empty_row_num, column=9).value = data['start_balance']
+                ws.cell(row=empty_row_num, column=10).value = data['balance_after_bet']
             ws.cell(row=empty_row_num, column=11).value = data['betting_time']
+            ws.cell(row=empty_row_num, column=14).value = ws.cell(row=empty_row_num, column=10).value
 
         empty_row_num = len(ws['A']) + 1
         for col in range(1, len(self.columns)+1):
