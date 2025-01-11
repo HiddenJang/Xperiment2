@@ -18,7 +18,6 @@ class StatisticManager:
                "Баланс после", "Время размещения", "Сумма голов", "Результат", "Баланс")
     font = 'Calibri'
     font_size = 12
-    # задаем параметры границ ячеек
     thins = Side(border_style="thin", color="000000")
     double = Side(border_style="double", color="000000")
 
@@ -33,16 +32,20 @@ class StatisticManager:
             ws_betting.title = "Ставки на деньги"
             for col in range(1, len(self.columns)+1):
                 cell = ws_betting.cell(row=1, column=col, value=self.columns[col-1])
-
+                cell.alignment = Alignment(horizontal="center")
                 # выравнивание по ширине ячейки
                 cell.font = Font(name=self.font, size=self.font_size)
                 len_cell = len(str(cell.value))
-                new_width_col = len_cell * self.font_size ** (self.font_size * 0.01)
+                new_width_col = len_cell * self.font_size ** (self.font_size * 0.008)
                 ws_betting.column_dimensions[cell.column_letter].width = new_width_col
                 ws_betting.column_dimensions[cell.column_letter].alignment = Alignment(horizontal="center")
 
+            ws_betting.column_dimensions['F'].alignment = Alignment(horizontal="left")
+            ws_betting.column_dimensions['G'].alignment = Alignment(horizontal="left")
             ws_betting.column_dimensions['B'].width = 30
-
+            ws_betting.column_dimensions['C'].width = 12
+            ws_betting.column_dimensions['F'].width = 30
+            ws_betting.column_dimensions['G'].width = 30
 
             ws_imitation = wb.copy_worksheet(ws_betting)
             ws_imitation.title = "Имитация ставок"

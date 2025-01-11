@@ -41,6 +41,9 @@ class DesktopApp(QMainWindow):
         self.statusbar_message.setObjectName("statusbar_message")
         self.ui.statusbar.addWidget(self.statusbar_message)
         self._translate = QtCore.QCoreApplication.translate
+        self.ui.comboBox_firstBkmkr.addItems(settings.BOOKMAKERS.keys())
+        self.ui.comboBox_secondBkmkr.addItems(settings.BOOKMAKERS.keys())
+        self.ui.comboBox_secondBkmkr.setCurrentIndex(1)
         # создание экземпляров вспомогательных окон
         self.result_window = ResultWindow()
         self.server_set_window = ServerSettings()
@@ -171,7 +174,6 @@ class DesktopApp(QMainWindow):
         self.request_server_status()
 
     ##### Change GUI elements states #####
-
     def deactivate_elements(self, state: bool) -> None:
         """Деактивация/активация элементов после начала поиска"""
         self.ui.comboBox_firstBkmkr.setDisabled(state)

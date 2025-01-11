@@ -129,6 +129,8 @@ class BrowserControl(QObject):
             if first_placed_bet_data and second_placed_bet_data:
                 event_data = [first_placed_bet_data, second_placed_bet_data]
                 self.statistic_manager.insert_data(event_data)
+                self.started_threads[first_bkmkr_name]['controller_instance'].self.placed_bet_data = {}
+                self.started_threads[second_bkmkr_name]['controller_instance'].self.placed_bet_data = {}
 
             self.bet_in_progress = False
             self.last_test_timer.stop()
