@@ -89,7 +89,11 @@ class StatisticManager:
             else:
                 ws.cell(row=empty_row_num, column=4).value = '-'
                 ws.cell(row=empty_row_num, column=5).value = data['total_koeff']
-            ws.cell(row=empty_row_num, column=6).value = data['screenshot_name']
+            try:
+                screenshot_name = data['screenshot_name'].split('/')[-1]
+            except BaseException:
+                screenshot_name = data['screenshot_name']
+            ws.cell(row=empty_row_num, column=6).value = screenshot_name
             ws.cell(row=empty_row_num, column=7).hyperlink = data['url']
             ws.cell(row=empty_row_num, column=7).value = data['url']
             ws.cell(row=empty_row_num, column=8).value = data['bet_size']
@@ -112,6 +116,7 @@ class StatisticManager:
             cell.border = Border(top=self.double, bottom=self.double, left=self.thins, right=self.thins)
 
         wb.save(settings.STATS_FILE_NAME)
+        TelegramService.send_xlsx(settings.STATS_FILE_NAME)
 
 
 if __name__ == '__main__':
@@ -150,7 +155,7 @@ if __name__ == '__main__':
     statistic.insert_data(event_data)
 else:
     from .. import settings
-
+    from ..telegram import TelegramService
 
 
 
