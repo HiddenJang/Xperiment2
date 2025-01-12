@@ -44,6 +44,11 @@ class Driver:
                 logger.info(f'Превышение времени ожидания открытия стартовой страницы {self.base_url}. Попытка продолжить')
             return {'driver': driver, 'status': 'Webdriver успешно подключен', 'ex': ''}
         except BaseException as ex:
+            try:
+                driver.quit()
+                driver.close()
+            except BaseException:
+                pass
             logger.error(ex)
             return {'driver': None, 'status': f'Ошибка в работе webdriver', 'ex': ex}
 
