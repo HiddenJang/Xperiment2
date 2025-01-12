@@ -1,12 +1,14 @@
 import logging
 import threading
 from importlib import import_module
+from time import sleep
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QObject
 
 from .. import settings
-from .websites_control_modules.interaction_controller import WebsiteController
+from .websites_control_modules.interaction_controller import WebsiteController, ResultExtractor
 from ..statistic_management.statistic import StatisticManager
 
 
@@ -15,11 +17,13 @@ logger = logging.getLogger('Client UI.components.browsers_control.core')
 
 class BrowserControl(QObject):
     diag_signal = QtCore.pyqtSignal(str)
-    finish_signal = QtCore.pyqtSignal()
+    thread_finish_signal = QtCore.pyqtSignal()
     close_all_signal = QtCore.pyqtSignal()
+    bet_finish_signal = QtCore.pyqtSignal(list)
+    write_results_finish_signal = QtCore.pyqtSignal()
     bet_params = {}
 
-    def __init__(self, control_settings: dict):
+    def __init__(self, control_settings: dict = None):
         super(BrowserControl, self).__init__()
         self.control_settings = control_settings
         self.started_threads = {}
@@ -28,14 +32,19 @@ class BrowserControl(QObject):
         self.threads_status_timer = QTimer()
         self.betting_status_timer = QTimer()
         self.bet_prohibitions_timer = QTimer()
-        self.bet_preparing_interval_timer = QTimer()
         self.last_test_timer = QTimer()
-
+        self.preparing_interval_timer = QTimer()
         self.statistic_manager = StatisticManager()
-
 
     def preload_sites_and_authorize(self):
         """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
+        if not self.control_settings:
+            message = "Процесс автоматического управления не запущен.Отсутвуют данные авторизации для доступных модулей"
+            self.diag_signal.emit(message)
+            logger.info(message)
+            self.thread_finish_signal.emit()
+            return
+
         interaction_modules = self.__get_site_interaction_modules()
         auth_data = self.control_settings["auth_data"]
 
@@ -64,11 +73,10 @@ class BrowserControl(QObject):
                                                     'thread_last_test_event': thread_last_test_event,
                                                     'thread_bet_event': thread_bet_event}
         if not self.started_threads:
-            self.diag_signal.emit("Процесс автоматического управления не запущен. "
-                                  "Отсутвуют требуемые модули управления или данные авторизации для доступных модулей")
-            logger.info("Процесс автоматического управления не запущен. "
-                                  "Отсутвуют требуемые модули управления или данные авторизации для доступных модулей")
-            self.finish_signal.emit()
+            message = "Процесс автоматического управления не запущен. Отсутвуют требуемые модули управления или данные авторизации для доступных модулей"
+            self.diag_signal.emit(message)
+            logger.info(message)
+            self.thread_finish_signal.emit()
             return
         self.diag_signal.emit("Процесс автоматического управления запущен")
 
@@ -131,49 +139,42 @@ class BrowserControl(QObject):
                 self.statistic_manager.insert_data(event_data)
                 self.started_threads[first_bkmkr_name]['controller_instance'].placed_bet_data = {}
                 self.started_threads[second_bkmkr_name]['controller_instance'].placed_bet_data = {}
+            else:
+                event_data = []
 
             self.bet_in_progress = False
-            self.last_test_timer.stop()
-            self.bet_preparing_interval_timer.stop()
             self.bet_prohibitions_timer.stop()
+            self.betting_status_timer.stop()
+
+            self.bet_finish_signal.emit(event_data)
 
     def __survey_bet_prohibitions_status(self, first_bkmkr_name: str, second_bkmkr_name: str) -> None:
         """Опрос готовностей к размещению ставок"""
         first_prepared_for_bet = self.started_threads[first_bkmkr_name]['controller_instance'].prepared_for_bet
         second_prepared_for_bet = self.started_threads[second_bkmkr_name]['controller_instance'].prepared_for_bet
 
-        if not first_prepared_for_bet and not second_prepared_for_bet:
-            self.bet_preparing_interval_timer.stop()
-            self.last_test_timer.stop()
-
-        elif first_prepared_for_bet and second_prepared_for_bet:
-            self.bet_preparing_interval_timer.stop()
-
+        if first_prepared_for_bet and second_prepared_for_bet:
+            self.preparing_interval_timer.stop()
             first_thread_bet_event = self.started_threads[first_bkmkr_name]['thread_bet_event']
             second_thread_bet_event = self.started_threads[second_bkmkr_name]['thread_bet_event']
             first_thread_bet_event.set()
             second_thread_bet_event.set()
+
             if not self.last_test_timer.isActive():
-                self.last_test_timer.setInterval(5000)
-                self.last_test_timer.timeout.connect(lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
-                self.last_test_timer.start()
+                self.last_test_timer.singleShot(5000, lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
 
             first_last_test_completed = self.started_threads[first_bkmkr_name]['controller_instance'].last_test_completed
             second_last_test_completed = self.started_threads[second_bkmkr_name]['controller_instance'].last_test_completed
 
             if first_last_test_completed and second_last_test_completed:
                 self.last_test_timer.stop()
-
                 first_thread_last_test_event = self.started_threads[first_bkmkr_name]['thread_last_test_event']
                 second_thread_last_test_event = self.started_threads[second_bkmkr_name]['thread_last_test_event']
                 first_thread_last_test_event.set()
                 second_thread_last_test_event.set()
 
-        elif first_prepared_for_bet or second_prepared_for_bet:
-            if not self.bet_preparing_interval_timer.isActive():
-                self.bet_preparing_interval_timer.setInterval(10000)
-                self.bet_preparing_interval_timer.timeout.connect(lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
-                self.bet_preparing_interval_timer.start()
+        elif (first_prepared_for_bet or second_prepared_for_bet) and not self.preparing_interval_timer.isActive():
+            self.preparing_interval_timer.singleShot(10000, lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
 
     def __stop_betting(self, first_bkmkr_name: str, second_bkmkr_name: str):
         """Прерывание процесса размещения ставки при отсутствии готовности одного из букмекеров"""
@@ -201,12 +202,8 @@ class BrowserControl(QObject):
                 thread_bet_event = self.started_threads[bkmkr_name]['thread_bet_event']
                 thread_bet_event.set()
 
-            if self.bet_preparing_interval_timer.isActive():
-                self.bet_preparing_interval_timer.stop()
-            if self.bet_prohibitions_timer.isActive():
-                self.bet_prohibitions_timer.stop()
-            if self.betting_status_timer.isActive():
-                self.betting_status_timer.stop()
+            self.bet_prohibitions_timer.stop()
+            self.betting_status_timer.stop()
 
             if not self.threads_status_timer.isActive():
                 self.threads_status_timer.setInterval(500)
@@ -222,7 +219,7 @@ class BrowserControl(QObject):
             threads_in_work = threads_in_work or control_thread.is_alive()
 
         if not threads_in_work:
-            self.finish_signal.emit()
+            self.thread_finish_signal.emit()
         return threads_in_work
 
     @staticmethod
@@ -238,3 +235,20 @@ class BrowserControl(QObject):
             modules_dict[bkmkr_name] = module
         return modules_dict
 
+
+class BetResultExtractor(QObject):
+    """Класс получения и записи результатов событий, на которые сделаны ставки"""
+    diag_signal = QtCore.pyqtSignal(str)
+    results_extracted_signal = QtCore.pyqtSignal()
+
+    def __init__(self, event_data: list):
+        super(BetResultExtractor, self).__init__()
+        self.event_data = event_data
+
+    def write_event_result(self) -> None:
+        """Получение и запись результатов события в файл xlsx"""
+        logger.info('Запущен процесс извлечения результатов \n')
+        result_extractor = ResultExtractor(self.event_data, self.diag_signal)
+        event_result = result_extractor.extract_data()
+        logger.info(f'Окончен процесс извлечения результатов: {event_result} \n')
+        self.results_extracted_signal.emit()

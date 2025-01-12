@@ -1,6 +1,8 @@
 import logging
 import threading
 from importlib import import_module
+from time import sleep
+
 from PyQt5 import QtCore
 from selenium.common import TimeoutException
 
@@ -52,9 +54,9 @@ class WebsiteController:
                                      send_telegram=False)
             return
 
-        self.site_interaction_instance = self.SiteInteractionClass(self.driver, self.diag_signal, self.common_auth_data)
+        self.site_interaction_instance = self.SiteInteractionClass(self.driver, self.diag_signal, self.bookmaker)
         try:
-            self.preloaded = self.site_interaction_instance.preload()
+            self.preloaded = self.site_interaction_instance.preload(self.common_auth_data)
             self.__send_diag_message(f'Сайт {self.bookmaker} загружен, авторизация пройдена успешно')
         except BaseException as ex:
             self.__send_diag_message(f'Ошибка авторизации {self.bookmaker}', ex=ex, send_telegram=False)
@@ -178,3 +180,54 @@ class WebsiteController:
             self.__send_diag_message(f'Сайт {self.bookmaker} закрыт')
         except BaseException:
             pass
+
+
+class ResultExtractor:
+
+    def __init__(self, event_data: list, diag_signal: QtCore.pyqtSignal):
+        self.event_data = event_data
+        self.diag_signal = diag_signal
+
+    def extract_data(self) -> dict | None:
+        for bkmkr_data in self.event_data:
+            bookmaker = bkmkr_data["bookmaker"]
+            site_interaction_module = import_module(
+                f'.browsers_control.websites_control_modules.{bookmaker}',
+                package='components')
+            SiteInteractionClass = getattr(site_interaction_module, 'SiteInteraction')
+
+            driver_dict = webdriver.Driver(settings.BOOKMAKERS.get(bookmaker)).get_driver()
+            driver = driver_dict['driver']
+            if not driver:
+                self.__send_diag_message(f"Сайт {bookmaker} {driver_dict['status']}",
+                                         ex=driver_dict['ex'],
+                                         status='error')
+                continue
+            site_interaction_instance = SiteInteractionClass(driver, self.diag_signal, bookmaker)
+            event_result = site_interaction_instance.extract_event_result(bkmkr_data)
+            driver.close()
+            driver.quit()
+            if event_result and event_result.get('result'):
+                return event_result
+
+    def __send_diag_message(self,
+                            diag_mess: str,
+                            ex: BaseException = '',
+                            status: str = 'info',
+                            send_telegram: bool = True) -> None:
+        """Отправка диагностических сообщений в логгер и приложение"""
+        log_info = f'{diag_mess} {str(ex)}'
+        match status:
+            case 'debug':
+                logger.debug(log_info)
+            case 'info':
+                logger.info(log_info)
+            case "warning":
+                logger.warning(log_info)
+            case "error":
+                logger.error(log_info)
+            case "critical":
+                logger.critical(log_info)
+        self.diag_signal.emit(diag_mess)
+        if send_telegram:
+            TelegramService.send_text(diag_mess)

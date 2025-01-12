@@ -20,12 +20,11 @@ class SiteInteraction:
     def __init__(self,
                  driver: selenium.webdriver,
                  diag_signal: QtCore.pyqtSignal,
-                 common_auth_data: dict):
+                 bookmaker: str):
         self.driver = driver
-        self.common_auth_data = common_auth_data
         self.diag_signal = diag_signal
 
-        self.bookmaker = self.common_auth_data['bkmkr_name']
+        self.bookmaker = bookmaker
         self.start_balance = '0'
         self.bet_data_for_stats = {}
 
@@ -63,10 +62,10 @@ class SiteInteraction:
         self.__send_diag_message(message, ex)
         self.__close_coupon()
 
-    def preload(self) -> bool | Exception:
+    def preload(self, common_auth_data) -> bool | Exception:
         """Авторизация пользователя"""
-        login = self.common_auth_data['auth_data']['login']
-        password = self.common_auth_data['auth_data']['password']
+        login = common_auth_data['auth_data']['login']
+        password = common_auth_data['auth_data']['password']
         # нажатие кнопки ВОЙТИ
         WebDriverWait(self.driver, 60).until(EC.visibility_of_element_located((By.XPATH, "//a[@href='/login']"))).click()
         # нажатие вкладки EMAIL
@@ -279,3 +278,8 @@ class SiteInteraction:
 
         self.__get_screenshot()
         return {'result': result, 'bet_data_for_stats': self.bet_data_for_stats}
+
+    def extract_event_result(self, event_data: dict) -> dict:
+        """Получение результата события"""
+        sleep(10)
+        return {'bookmaker': 'leon', 'teams': 'ЦСКА - Спартак', 'result': {'home': '2', 'away': '0'}}

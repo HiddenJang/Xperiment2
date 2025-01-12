@@ -1,6 +1,7 @@
 import sys
 import logging
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 from PyQt5 import QtWidgets, QtCore
@@ -16,7 +17,7 @@ from components.secondary_windows.connection_settings import ServerSettings
 from components.secondary_windows.browser_control_settings import BrowserControlSettings
 from components.secondary_windows.telegram_settings import TelegramSettings
 from components.templates.client_app_template import Ui_MainWindow_client
-from components.browsers_control.core import BrowserControl
+from components.browsers_control.core import BrowserControl, BetResultExtractor
 from components.telegram import TelegramService
 
 ## Принудительное переключение рабочей директории ##
@@ -65,6 +66,7 @@ class DesktopApp(QMainWindow):
         self.thread_status_timer = QtCore.QTimer()
         # экземпляр потока для запуска автоматического управления браузером
         self.browser_control_thread = QThread()
+        self.result_extraction_thread = QThread()
 
     ###### Add handling functions #####
 
@@ -111,8 +113,9 @@ class DesktopApp(QMainWindow):
         self.browser_control.moveToThread(self.browser_control_thread)
         self.browser_control_thread.started.connect(self.browser_control.preload_sites_and_authorize)
         self.browser_control.diag_signal.connect(self.render_diagnostics)
-        self.browser_control.finish_signal.connect(self.browser_control_thread.quit)
-        self.browser_control.finish_signal.connect(self.browser_control.threads_status_timer.stop)
+        self.browser_control.bet_finish_signal.connect(self.write_event_result)
+        self.browser_control.thread_finish_signal.connect(self.browser_control_thread.quit)
+        self.browser_control.thread_finish_signal.connect(self.browser_control.threads_status_timer.stop)
         self.browser_control.close_all_signal.connect(self.close_browsers)
         self.browser_control_thread.start()
 
@@ -151,6 +154,16 @@ class DesktopApp(QMainWindow):
                 self.ui.comboBox_secondBkmkr.currentText().lower(): {'bet_size': self.ui.spinBox_betSizeSecond.value(),
                                                                      'min_koeff': self.ui.doubleSpinBox_minKsecondBkmkr.value()},
                 'bet_imitation': self.ui.checkBox_betImitation.isChecked()}
+
+    def write_event_result(self, event_data: list) -> None:
+        """Запуск процесса получения и записи результатов события в файл xlsx"""
+        if event_data:
+            self.bet_result_extractor = BetResultExtractor(event_data)
+            self.bet_result_extractor.moveToThread(self.result_extraction_thread)
+            self.result_extraction_thread.started.connect(self.bet_result_extractor.write_event_result)
+            self.bet_result_extractor.diag_signal.connect(self.render_diagnostics)
+            self.bet_result_extractor.results_extracted_signal.connect(self.result_extraction_thread.quit)
+            self.result_extraction_thread.start()
 
     ###### Test connection slots ######
 
