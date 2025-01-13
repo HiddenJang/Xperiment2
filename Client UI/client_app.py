@@ -19,6 +19,7 @@ from components.secondary_windows.telegram_settings import TelegramSettings
 from components.templates.client_app_template import Ui_MainWindow_client
 from components.browsers_control.core import BrowserControl, BetResultExtractor
 from components.telegram import TelegramService
+from components.statistic_management.statistic import StatisticManager
 
 ## Принудительное переключение рабочей директории ##
 file_path = Path(__file__).resolve().parent
@@ -52,7 +53,8 @@ class DesktopApp(QMainWindow):
         self.telegram_set_window = TelegramSettings()
         self.result_window_closed = True
         # загрузка установленных ранее пользователем состояний элементов GUI
-        self.settings = QSettings('client_app', 'Gcompany', self)
+        self.settings = QSettings('client_app', 'GuiSettings', self)
+        self.active_bets_list = QSettings('client_app', 'activeBetList', self)
         self.load_settings()
         # добавление обработчиков действий пользователя в GUI
         self.add_functions()
@@ -64,9 +66,10 @@ class DesktopApp(QMainWindow):
         self.request_server_status()
         # таймер опроса состояния потока автоматического управления браузером
         self.thread_status_timer = QtCore.QTimer()
-        # экземпляр потока для запуска автоматического управления браузером
-        self.browser_control_thread = QThread()
-        self.result_extraction_thread = QThread()
+        # экземпляр менеджера ститистики для взаимодействия с файлом статистики xlsx
+        self.statistic_manager = StatisticManager()
+        # проверка наличия активных ставок, по которым не получен результат
+
 
     ###### Add handling functions #####
 
@@ -109,11 +112,17 @@ class DesktopApp(QMainWindow):
         self.ui.pushButton_startAutoBet.setDisabled(True)
 
         control_settings = self.browser_control_set_window.get_control_settings()
+        excluded_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
+        control_settings['excluded_urls'] = excluded_urls
+
+        if hasattr(self, 'browser_control_thread'):
+            del self.browser_control_thread
+        self.browser_control_thread = QThread()
         self.browser_control = BrowserControl(control_settings)
         self.browser_control.moveToThread(self.browser_control_thread)
         self.browser_control_thread.started.connect(self.browser_control.preload_sites_and_authorize)
         self.browser_control.diag_signal.connect(self.render_diagnostics)
-        self.browser_control.bet_finish_signal.connect(self.write_event_result)
+        self.browser_control.bet_finish_signal.connect(self.add_event_to_active_bets_list_and_xlsx)
         self.browser_control.thread_finish_signal.connect(self.browser_control_thread.quit)
         self.browser_control.thread_finish_signal.connect(self.browser_control.threads_status_timer.stop)
         self.browser_control.close_all_signal.connect(self.close_browsers)
@@ -155,9 +164,19 @@ class DesktopApp(QMainWindow):
                                                                      'min_koeff': self.ui.doubleSpinBox_minKsecondBkmkr.value()},
                 'bet_imitation': self.ui.checkBox_betImitation.isChecked()}
 
-    def write_event_result(self, event_data: list) -> None:
+    def add_event_to_active_bets_list_and_xlsx(self, event_data) -> None:
+        """Добавление собятия, на которое сделана ставка, в реестр настроек для последующего получения результата"""
+        for bkmkr_data in event_data:
+            self.active_bets_list.setValue(bkmkr_data['url'], bkmkr_data)
+        if event_data:
+            self.statistic_manager.insert_data(event_data)
+
+    def write_event_result_to_xlsx(self, event_data: list) -> None:
         """Запуск процесса получения и записи результатов события в файл xlsx"""
         if event_data:
+            if hasattr(self, 'result_extraction_thread'):
+                del self.result_extraction_thread
+            self.result_extraction_thread = QThread()
             self.bet_result_extractor = BetResultExtractor(event_data)
             self.bet_result_extractor.moveToThread(self.result_extraction_thread)
             self.result_extraction_thread.started.connect(self.bet_result_extractor.write_event_result)

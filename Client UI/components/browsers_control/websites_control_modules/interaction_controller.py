@@ -1,7 +1,6 @@
 import logging
 import threading
 from importlib import import_module
-from time import sleep
 
 from PyQt5 import QtCore
 from selenium.common import TimeoutException
@@ -65,7 +64,6 @@ class WebsiteController:
 
         while True:
             self.thread_pause_event.wait()
-
             self.thread_bet_event.clear()
             self.thread_last_test_event.clear()
             self.prepared_for_bet = False

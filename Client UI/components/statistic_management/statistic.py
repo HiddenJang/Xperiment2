@@ -22,6 +22,7 @@ class StatisticManager:
     double = Side(border_style="double", color="000000")
     imitation_start_balance = 10000
 
+
     def insert_data(self, event_data: list):
         """Заполнение данными документа xlsx"""
         if not os.path.exists(settings.STATS_DIR):

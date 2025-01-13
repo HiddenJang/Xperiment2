@@ -1,7 +1,6 @@
 import logging
 import threading
 from importlib import import_module
-from time import sleep
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
@@ -9,7 +8,6 @@ from PyQt5.QtCore import QObject
 
 from .. import settings
 from .websites_control_modules.interaction_controller import WebsiteController, ResultExtractor
-from ..statistic_management.statistic import StatisticManager
 
 
 logger = logging.getLogger('Client UI.components.browsers_control.core')
@@ -23,7 +21,7 @@ class BrowserControl(QObject):
     write_results_finish_signal = QtCore.pyqtSignal()
     bet_params = {}
 
-    def __init__(self, control_settings: dict = None):
+    def __init__(self, control_settings: dict):
         super(BrowserControl, self).__init__()
         self.control_settings = control_settings
         self.started_threads = {}
@@ -34,7 +32,8 @@ class BrowserControl(QObject):
         self.bet_prohibitions_timer = QTimer()
         self.last_test_timer = QTimer()
         self.preparing_interval_timer = QTimer()
-        self.statistic_manager = StatisticManager()
+
+        WebsiteController.excluded_urls = self.control_settings['excluded_urls']
 
     def preload_sites_and_authorize(self):
         """Запуск потоков загрузки браузеров и авторизации на сайтах БК"""
@@ -136,7 +135,6 @@ class BrowserControl(QObject):
             second_placed_bet_data = self.started_threads[second_bkmkr_name]['controller_instance'].placed_bet_data
             if first_placed_bet_data and second_placed_bet_data:
                 event_data = [first_placed_bet_data, second_placed_bet_data]
-                self.statistic_manager.insert_data(event_data)
                 self.started_threads[first_bkmkr_name]['controller_instance'].placed_bet_data = {}
                 self.started_threads[second_bkmkr_name]['controller_instance'].placed_bet_data = {}
             else:
