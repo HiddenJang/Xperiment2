@@ -232,21 +232,3 @@ class BrowserControl(QObject):
                 continue
             modules_dict[bkmkr_name] = module
         return modules_dict
-
-
-class BetResultExtractor(QObject):
-    """Класс получения и записи результатов событий, на которые сделаны ставки"""
-    diag_signal = QtCore.pyqtSignal(str)
-    results_extracted_signal = QtCore.pyqtSignal()
-
-    def __init__(self, event_data: list):
-        super(BetResultExtractor, self).__init__()
-        self.event_data = event_data
-
-    def write_event_result(self) -> None:
-        """Получение и запись результатов события в файл xlsx"""
-        logger.info('Запущен процесс извлечения результатов \n')
-        result_extractor = ResultExtractor(self.event_data, self.diag_signal)
-        event_result = result_extractor.extract_data()
-        logger.info(f'Окончен процесс извлечения результатов: {event_result} \n')
-        self.results_extracted_signal.emit()

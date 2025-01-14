@@ -15,10 +15,8 @@ logger = logging.getLogger('Client UI.components.browsers_control.webdriver')
 class Driver:
     """Класс вебдрайвера для управления браузером"""
 
-    def __init__(self, base_url):
-        self.base_url = base_url
-
-    def get_driver(self) -> dict:
+    @staticmethod
+    def get_driver(url, headless: bool = None) -> dict:
         """Создание объекта вебдрайвера"""
         webdriver_file_path = settings.WEBDRIVER_DIR.get(sys.platform)
         if not os.path.exists(webdriver_file_path):
@@ -30,7 +28,8 @@ class Driver:
                     'ex': ''}
         s = Service(executable_path=webdriver_file_path)
         opts = Options()
-        # opts.add_argument('--headless') # запуск браузера в фоне
+        if headless:
+            opts.add_argument('--headless') # запуск браузера в фоне
         opts.add_argument("start-maximized")  # открыть в весь экран
         opts.add_experimental_option("excludeSwitches", ["enable-automation"])  # устанавливаем опции для эмуляции управления прользователем (чтобы сайт не догадался)
         opts.add_experimental_option('useAutomationExtension', False)
@@ -39,9 +38,9 @@ class Driver:
             driver = webdriver.Chrome(options=opts, service=s)
             driver.set_page_load_timeout(settings.PAGE_LOAD_TIMEOUT)
             try:
-                driver.get(url=self.base_url)
+                driver.get(url=url)
             except TimeoutException:
-                logger.info(f'Превышение времени ожидания открытия стартовой страницы {self.base_url}. Попытка продолжить')
+                logger.info(f'Превышение времени ожидания открытия стартовой страницы {url}. Попытка продолжить')
             return {'driver': driver, 'status': 'Webdriver успешно подключен', 'ex': ''}
         except BaseException as ex:
             try:

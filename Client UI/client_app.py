@@ -17,7 +17,8 @@ from components.secondary_windows.connection_settings import ServerSettings
 from components.secondary_windows.browser_control_settings import BrowserControlSettings
 from components.secondary_windows.telegram_settings import TelegramSettings
 from components.templates.client_app_template import Ui_MainWindow_client
-from components.browsers_control.core import BrowserControl, BetResultExtractor
+from components.browsers_control.core import BrowserControl
+from components.browsers_control.result_parsers import ResultParser
 from components.telegram import TelegramService
 from components.statistic_management.statistic import StatisticManager
 
@@ -69,7 +70,7 @@ class DesktopApp(QMainWindow):
         # экземпляр менеджера ститистики для взаимодействия с файлом статистики xlsx
         self.statistic_manager = StatisticManager()
         # проверка наличия активных ставок, по которым не получен результат
-
+        self.check_active_bets()
 
     ###### Add handling functions #####
 
@@ -103,6 +104,19 @@ class DesktopApp(QMainWindow):
 
     ###### Auto betting ######
 
+    def check_active_bets(self) -> None:
+        """Проверка наличия в реестре сделанных ставок, по которым не получен результат"""
+        active_bets_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
+        if hasattr(self, 'get_result_thread'):
+            del self.get_result_trhread
+        self.get_result_thread = QThread()
+        self.result_parser = ResultParser(active_bets_urls)
+        self.result_parser.moveToThread(self.get_result_thread)
+        self.get_result_thread.started.connect(self.result_parser.check_starter)
+        self.result_parser.finish_signal.connect(lambda: print('get_result_thread завершен'))
+        self.result_parser.finish_signal.connect(self.get_result_thread.quit)
+        self.get_result_thread.start()
+
     def preload_websites_and_authorize(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
         if not os.path.exists(settings.WEBDRIVER_DIR.get(sys.platform)):
@@ -130,7 +144,7 @@ class DesktopApp(QMainWindow):
 
     def close_browsers(self) -> None:
         """Закрытие браузеров"""
-        if self.browser_control_thread.isRunning():
+        if hasattr(self, 'browser_control_thread') and self.browser_control_thread.isRunning():
             try:
                 self.browser_control.close_browsers()
                 if not self.thread_status_timer.isActive():

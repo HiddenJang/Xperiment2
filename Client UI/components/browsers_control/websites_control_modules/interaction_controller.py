@@ -44,7 +44,7 @@ class WebsiteController:
 
     def preload_and_authorize(self):
         """Открытие страницы БК и авторизация пользователя"""
-        driver_dict = webdriver.Driver(settings.BOOKMAKERS.get(self.bookmaker)).get_driver()
+        driver_dict = webdriver.Driver.get_driver(settings.BOOKMAKERS.get(self.bookmaker))
         self.driver = driver_dict['driver']
         if not self.driver:
             self.__send_diag_message(f"Сайт {self.bookmaker} {driver_dict['status']}",
@@ -194,7 +194,7 @@ class ResultExtractor:
                 package='components')
             SiteInteractionClass = getattr(site_interaction_module, 'SiteInteraction')
 
-            driver_dict = webdriver.Driver(settings.BOOKMAKERS.get(bookmaker)).get_driver()
+            driver_dict = webdriver.Driver.get_driver(settings.BOOKMAKERS.get(bookmaker))
             driver = driver_dict['driver']
             if not driver:
                 self.__send_diag_message(f"Сайт {bookmaker} {driver_dict['status']}",

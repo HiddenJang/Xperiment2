@@ -38,3 +38,6 @@ gunicorn==22.0.0
 PyQt5~=5.15.11
 APScheduler~=3.10.4
 selenium~=4.26.1
+bs4~=0.0.2
+beautifulsoup4~=4.12.3
+openpyxl~=3.1.5

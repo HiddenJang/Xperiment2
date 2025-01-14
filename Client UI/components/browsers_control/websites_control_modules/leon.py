@@ -278,8 +278,3 @@ class SiteInteraction:
 
         self.__get_screenshot()
         return {'result': result, 'bet_data_for_stats': self.bet_data_for_stats}
-
-    def extract_event_result(self, event_data: dict) -> dict:
-        """Получение результата события"""
-        sleep(10)
-        return {'bookmaker': 'leon', 'teams': 'ЦСКА - Спартак', 'result': {'home': '2', 'away': '0'}}
