@@ -1,3 +1,5 @@
+import logging
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QObject
 from selenium.webdriver.common.by import By
@@ -6,6 +8,8 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from . import webdriver
 from .. import settings
+
+logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.interaction_controller')
 
 
 class ResultParser(QObject):
@@ -27,8 +31,11 @@ class ResultParser(QObject):
         else:
             self.diag_signal.emit(self.driver(event_url)['status'])
             return
-        element = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//span[contains(@class,'post-match-statistic-incident__score')]")))
-        result = element.text
-        print(result)
+        try:
+            element = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//span[contains(@class,'post-match-statistic-incident__score')]")))
+            result = element.text
+            print(result)
+        except BaseException as ex:
+            logger.info(ex)
         driver.close()
         driver.quit()

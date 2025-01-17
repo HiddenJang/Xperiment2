@@ -164,7 +164,8 @@ class DesktopApp(QMainWindow):
 
     def place_bet(self, scan_results: dict) -> None:
         """Сделать ставку на найденное событие"""
-        if self.browser_control_thread.isRunning() and \
+        if hasattr(self, 'browser_control_thread') and \
+                self.browser_control_thread.isRunning() and \
                 not self.browser_control.bet_in_progress and \
                 scan_results.get('Success'):
             BrowserControl.bet_params = self.get_autobet_settings()
