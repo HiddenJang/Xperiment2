@@ -106,7 +106,20 @@ class DesktopApp(QMainWindow):
 
     def check_active_bets(self) -> None:
         """Проверка наличия в реестре сделанных ставок, по которым не получен результат"""
+        message = "Проверка наличия размещенных ставок"
+        self.render_diagnostics(message)
+        logging.info(message)
+
         active_bets_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
+        if not active_bets_urls:
+            message = "Размещенные ставки в реестре отсутствуют"
+            self.render_diagnostics(message)
+            logging.info(message)
+            return
+        else:
+            message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
+            self.render_diagnostics(message)
+            logging.info(message)
         if hasattr(self, 'get_result_thread'):
             del self.get_result_trhread
         self.get_result_thread = QThread()
@@ -126,7 +139,7 @@ class DesktopApp(QMainWindow):
         self.ui.pushButton_startAutoBet.setDisabled(True)
 
         control_settings = self.browser_control_set_window.get_control_settings()
-        excluded_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
+        excluded_urls = [x.split('$$')[1].replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
         control_settings['excluded_urls'] = excluded_urls
 
         if hasattr(self, 'browser_control_thread'):
@@ -182,7 +195,8 @@ class DesktopApp(QMainWindow):
     def add_event_to_active_bets_list_and_xlsx(self, event_data) -> None:
         """Добавление собятия, на которое сделана ставка, в реестр настроек для последующего получения результата"""
         for bkmkr_data in event_data:
-            self.active_bets_list.setValue(bkmkr_data['url'], bkmkr_data)
+            key = f'{bkmkr_data["bookmaker"]}$${bkmkr_data["url"]}'
+            self.active_bets_list.setValue(key, bkmkr_data)
         if event_data:
             self.statistic_manager.insert_data(event_data)
 

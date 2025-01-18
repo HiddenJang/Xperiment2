@@ -357,6 +357,119 @@ p, li { white-space: pre-wrap; }
    <property name="lineWidth">
     <number>3</number>
    </property>
+   <widget class="QSpinBox" name="spinBox_authorizationPageLoadTimeout">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>100</y>
+      <width>65</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>9999</number>
+    </property>
+    <property name="value">
+     <number>5</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_authorizationPageLoadTimeout_1">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>54</y>
+      <width>191</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Таймаут загрузки страниц &lt;br/&gt;при беттинге&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_authorizationPageLoadTimeout_2">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>104</y>
+      <width>31</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>сек</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_resultPageLoadTimeout_2">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>184</y>
+      <width>31</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>сек</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox_resultPageLoadTimeout">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>180</y>
+      <width>65</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>9999</number>
+    </property>
+    <property name="value">
+     <number>5</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_resultPageLoadTimeout_1">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>134</y>
+      <width>191</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Таймаут загрузки страниц &lt;br/&gt;при получении результата&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QFrame" name="frame_autobetTimeoutSettings">
+    <property name="geometry">
+     <rect>
+      <x>243</x>
+      <y>46</y>
+      <width>230</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <property name="lineWidth">
+     <number>3</number>
+    </property>
+    <property name="midLineWidth">
+     <number>1</number>
+    </property>
+   </widget>
+   <zorder>frame_autobetTimeoutSettings</zorder>
+   <zorder>spinBox_authorizationPageLoadTimeout</zorder>
+   <zorder>label_authorizationPageLoadTimeout_1</zorder>
+   <zorder>label_authorizationPageLoadTimeout_2</zorder>
+   <zorder>label_resultPageLoadTimeout_2</zorder>
+   <zorder>spinBox_resultPageLoadTimeout</zorder>
+   <zorder>label_resultPageLoadTimeout_1</zorder>
   </widget>
   <zorder>frame</zorder>
   <zorder>buttonBox</zorder>

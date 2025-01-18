@@ -32,8 +32,6 @@ BOOKMAKERS = {'betboom': 'https://betboom.ru/',
 # directory (base dir /--/ browsers_control)
 WEBDRIVER_DIR = {'linux': BASE_DIR / "components/browsers_control/chromedriver-linux64/chromedriver",
                  'win32': BASE_DIR / "components\\browsers_control\\chromedriver\\chromedriver.exe"}
-# page loading timeout
-PAGE_LOAD_TIMEOUT = 5
 
 # Screenshots directory
 SCREENSHOTS_DIR = BASE_DIR / "screenshots"

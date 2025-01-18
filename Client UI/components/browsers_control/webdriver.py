@@ -16,7 +16,7 @@ class Driver:
     """Класс вебдрайвера для управления браузером"""
 
     @staticmethod
-    def get_driver(url, headless: bool = None) -> dict:
+    def get_driver(url: str = '', page_load_timout: int = 5, headless: bool = None) -> dict:
         """Создание объекта вебдрайвера"""
         webdriver_file_path = settings.WEBDRIVER_DIR.get(sys.platform)
         if not os.path.exists(webdriver_file_path):
@@ -36,7 +36,7 @@ class Driver:
         opts.add_experimental_option('detach', True)
         try:
             driver = webdriver.Chrome(options=opts, service=s)
-            driver.set_page_load_timeout(settings.PAGE_LOAD_TIMEOUT)
+            driver.set_page_load_timeout(page_load_timout)
             try:
                 driver.get(url=url)
             except TimeoutException:
