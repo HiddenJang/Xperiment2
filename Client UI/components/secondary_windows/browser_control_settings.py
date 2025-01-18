@@ -51,6 +51,8 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
                     states['auth_data'][bkmkr_name]['login'] = line_edit.text()
                 elif bkmkr_name in line_edit.objectName().lower() and 'password' in line_edit.objectName().lower():
                     states['auth_data'][bkmkr_name]['password'] = line_edit.text()
+        states['auth_data']['authorization_page_load_timeout'] = self.ui.spinBox_authorizationPageLoadTimeout.value()
+        states['auth_data']['result_page_load_timeout'] = self.ui.spinBox_resultPageLoadTimeout.value()
         return states
 
     def close_with_saving(self) -> None:
