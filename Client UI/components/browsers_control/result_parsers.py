@@ -23,7 +23,7 @@ class ResultParser(QObject):
         self.active_bets_urls = active_bets_urls
 
     def check_starter(self) -> str | None:
-        driver = webdriver.Driver.get_driver(page_load_timout=self.page_load_timeout, headless=True)
+        driver = webdriver.Driver.get_driver(page_load_timout=ResultParser.page_load_timeout, headless=True)
         if not driver['driver']:
             self.diag_signal.emit(driver['status'])
             return

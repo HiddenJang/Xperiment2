@@ -1,7 +1,6 @@
 import sys
 import logging
 import os
-import threading
 from datetime import datetime
 from pathlib import Path
 from PyQt5 import QtWidgets, QtCore
@@ -18,6 +17,7 @@ from components.secondary_windows.browser_control_settings import BrowserControl
 from components.secondary_windows.telegram_settings import TelegramSettings
 from components.templates.client_app_template import Ui_MainWindow_client
 from components.browsers_control.core import BrowserControl
+from components.browsers_control.websites_control_modules.interaction_controller import WebsiteController
 from components.browsers_control.result_parsers import ResultParser
 from components.telegram import TelegramService
 from components.statistic_management.statistic import StatisticManager
@@ -120,6 +120,8 @@ class DesktopApp(QMainWindow):
             message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
             self.render_diagnostics(message)
             logging.info(message)
+
+        ResultParser.page_load_timeout = self.browser_control_set_window.spinBox_resultPageLoadTimeout.value()
         if hasattr(self, 'get_result_thread'):
             del self.get_result_trhread
         self.get_result_thread = QThread()
@@ -141,6 +143,7 @@ class DesktopApp(QMainWindow):
         control_settings = self.browser_control_set_window.get_control_settings()
         excluded_urls = [x.split('$$')[1].replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
         control_settings['excluded_urls'] = excluded_urls
+        WebsiteController.page_load_timeout = self.browser_control_set_window.spinBox_authorizationPageLoadTimeout.value()
 
         if hasattr(self, 'browser_control_thread'):
             del self.browser_control_thread
@@ -314,6 +317,7 @@ class DesktopApp(QMainWindow):
 
     def open_browser_control_set_window(self) -> None:
         """Открытие окна настроек автоматического управления браузерами"""
+        self.browser_control_set_window.widget_states = self.browser_control_set_window.get_control_settings()
         self.browser_control_set_window.show()
         self.browser_control_set_window.exec_()
 
@@ -412,6 +416,9 @@ class DesktopApp(QMainWindow):
 
         for spin_box in self.server_set_window.findChildren(QtWidgets.QSpinBox):
             self.settings.setValue(spin_box.objectName(), spin_box.value())
+
+        for spin_box in self.browser_control_set_window.findChildren(QtWidgets.QSpinBox):
+            self.settings.setValue(spin_box.objectName(), spin_box.value())
         ## DoubleSpinBox ##
         for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
             self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
@@ -442,6 +449,10 @@ class DesktopApp(QMainWindow):
                     spin_box.setValue(int(self.settings.value(spin_box.objectName())))
 
             for spin_box in self.server_set_window.findChildren(QtWidgets.QSpinBox):
+                if self.settings.value(spin_box.objectName()):
+                    spin_box.setValue(int(self.settings.value(spin_box.objectName())))
+
+            for spin_box in self.browser_control_set_window.findChildren(QtWidgets.QSpinBox):
                 if self.settings.value(spin_box.objectName()):
                     spin_box.setValue(int(self.settings.value(spin_box.objectName())))
             ## DoubleSpinBox ##

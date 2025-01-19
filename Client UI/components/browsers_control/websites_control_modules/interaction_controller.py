@@ -46,7 +46,7 @@ class WebsiteController:
     def preload_and_authorize(self):
         """Открытие страницы БК и авторизация пользователя"""
         driver_dict = webdriver.Driver.get_driver(settings.BOOKMAKERS.get(self.bookmaker),
-                                                  page_load_timout=self.page_load_timeout)
+                                                  page_load_timout=WebsiteController.page_load_timeout)
         self.driver = driver_dict['driver']
         if not self.driver:
             self.__send_diag_message(f"Сайт {self.bookmaker} {driver_dict['status']}",

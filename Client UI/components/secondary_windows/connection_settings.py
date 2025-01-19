@@ -5,7 +5,6 @@ from ..templates.server_set_window_template import Ui_server_settings
 
 class ServerSettings(Ui_server_settings, QDialog):
     """Класс-обертка для окна настроек подключения к серверу"""
-
     widget_states = {}
 
     def __init__(self):

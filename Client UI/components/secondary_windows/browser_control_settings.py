@@ -13,6 +13,7 @@ logger = logging.getLogger('Client UI.components.secondary_windows.browser_contr
 class BrowserControlSettings(Ui_browser_control_settings, QDialog):
     """Класс-обертка для окна настроек автоматического управления браузерами"""
     diag_signal = QtCore.pyqtSignal(str)
+    widget_states = {}
 
     def __init__(self):
         super(BrowserControlSettings, self).__init__()
@@ -22,6 +23,7 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
 
     def add_functions(self) -> None:
         self.ui.buttonBox.rejected.connect(self.set_control_settings_from_env)
+        self.ui.buttonBox.rejected.connect(self.close_without_saving)
         self.ui.buttonBox.accepted.connect(self.close_with_saving)
 
     def set_control_settings_from_env(self) -> None:
@@ -62,6 +64,12 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
             env_file.write(f'BKMKR_SITES_AUTH_DATA={str(states["auth_data"])}')
         os.environ['BKMKR_SITES_AUTH_DATA'] = str(states["auth_data"])
 
+    def close_without_saving(self) -> None:
+        """Закрытие окна без сохранения изменений"""
+        self.ui.spinBox_authorizationPageLoadTimeout.setValue(self.widget_states['auth_data']['authorization_page_load_timeout'])
+        self.ui.spinBox_resultPageLoadTimeout.setValue(self.widget_states['auth_data']['result_page_load_timeout'])
+
     def closeEvent(self, event) -> None:
         self.set_control_settings_from_env()
+        self.close_without_saving()
         self.close()
