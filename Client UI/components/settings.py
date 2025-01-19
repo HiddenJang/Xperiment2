@@ -30,7 +30,7 @@ BOOKMAKERS = {'betboom': 'https://betboom.ru/',
 
 # Webdriver settings
 # directory (base dir /--/ browsers_control)
-WEBDRIVER_DIR = {'linux': BASE_DIR / "components/browsers_control/chromedriver-linux64/chromedriver",
+WEBDRIVER_DIR = {'linux': BASE_DIR / "components/browsers_control/chromedriver/chromedriver",
                  'win32': BASE_DIR / "components\\browsers_control\\chromedriver\\chromedriver.exe"}
 
 # Screenshots directory

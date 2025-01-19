@@ -1,7 +1,7 @@
 import logging
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, QThread
 from selenium.common import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -15,7 +15,7 @@ logger = logging.getLogger('Client UI.components.browsers_control.websites_contr
 
 class ResultParser(QObject):
     diag_signal = QtCore.pyqtSignal(str)
-    finish_signal = QtCore.pyqtSignal()
+    finish_signal = QtCore.pyqtSignal(dict)
     page_load_timeout = 5
 
     def __init__(self, active_bets_urls: list):
@@ -33,6 +33,13 @@ class ResultParser(QObject):
         for event_url in self.active_bets_urls:
             bookmaker = event_url.split('$$')[0]
             url = event_url.split('$$')[1]
+
+            if QThread.currentThread().isInterruptionRequested():
+                self.finish_signal.emit({'status': 'Поиск ранее сделанных ставок прерван пользователем',
+                                         'bookmaker': bookmaker,
+                                         'url': url,
+                                         'result': None})
+
             try:
                 func = getattr(self, bookmaker)
             except AttributeError as ex:
@@ -44,10 +51,15 @@ class ResultParser(QObject):
                 logger.info(f'Превышение времени ожидания открытия страницы {bookmaker} для получения результата. Попытка продолжить')
             result = func()
             if result:
-                return result
+                self.finish_signal.emit({'status': 'Поиск ранее сделанных ставок прерван пользователем',
+                                         'bookmaker': bookmaker,
+                                         'url': url,
+                                         'result': result})
 
         self.driver.close()
         self.driver.quit()
+        self.finish_signal.emit({'status': 'Не удалось получить результаты событий по ранее сделанным ставкам',
+                                 'result': None})
 
     def leon(self) -> str | None:
         """Получение результата события (в формате '2:3')"""

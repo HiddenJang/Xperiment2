@@ -26,6 +26,7 @@ class Driver:
                     'status': f'Webdriver отсутствует в директории {webdriver_file_path}. '
                                f'Необходимо скачать webdriver Chrome',
                     'ex': ''}
+
         s = Service(executable_path=webdriver_file_path)
         opts = Options()
         if headless:

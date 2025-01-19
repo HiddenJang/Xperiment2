@@ -12,7 +12,6 @@ logger = logging.getLogger('Client UI.components.secondary_windows.browser_contr
 
 class BrowserControlSettings(Ui_browser_control_settings, QDialog):
     """Класс-обертка для окна настроек автоматического управления браузерами"""
-    diag_signal = QtCore.pyqtSignal(str)
     widget_states = {}
 
     def __init__(self):
@@ -45,7 +44,7 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
 
     def get_control_settings(self) -> dict:
         """Получение состояний виджетов окна настроек управления браузерами"""
-        states = {'auth_data': {}}
+        states = {'auth_data': {}, 'timeouts': {}}
         for bkmkr_name in settings.BOOKMAKERS.keys():
             states['auth_data'][bkmkr_name] = {'login': '', 'password': ''}
             for line_edit in self.findChildren(QtWidgets.QLineEdit):
@@ -53,8 +52,8 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
                     states['auth_data'][bkmkr_name]['login'] = line_edit.text()
                 elif bkmkr_name in line_edit.objectName().lower() and 'password' in line_edit.objectName().lower():
                     states['auth_data'][bkmkr_name]['password'] = line_edit.text()
-        states['auth_data']['authorization_page_load_timeout'] = self.ui.spinBox_authorizationPageLoadTimeout.value()
-        states['auth_data']['result_page_load_timeout'] = self.ui.spinBox_resultPageLoadTimeout.value()
+        states['timeouts']['authorization_page_load_timeout'] = self.ui.spinBox_authorizationPageLoadTimeout.value()
+        states['timeouts']['result_page_load_timeout'] = self.ui.spinBox_resultPageLoadTimeout.value()
         return states
 
     def close_with_saving(self) -> None:

@@ -15,6 +15,7 @@ from components.secondary_windows.scan_result import ResultWindow
 from components.secondary_windows.connection_settings import ServerSettings
 from components.secondary_windows.browser_control_settings import BrowserControlSettings
 from components.secondary_windows.telegram_settings import TelegramSettings
+from components.secondary_windows.bets_checking import BetsChecking
 from components.templates.client_app_template import Ui_MainWindow_client
 from components.browsers_control.core import BrowserControl
 from components.browsers_control.websites_control_modules.interaction_controller import WebsiteController
@@ -52,6 +53,7 @@ class DesktopApp(QMainWindow):
         self.server_set_window = ServerSettings()
         self.browser_control_set_window = BrowserControlSettings()
         self.telegram_set_window = TelegramSettings()
+        self.bets_checking_window = BetsChecking()
         self.result_window_closed = True
         # загрузка установленных ранее пользователем состояний элементов GUI
         self.settings = QSettings('client_app', 'GuiSettings', self)
@@ -67,7 +69,7 @@ class DesktopApp(QMainWindow):
         self.request_server_status()
         # таймер опроса состояния потока автоматического управления браузером
         self.thread_status_timer = QtCore.QTimer()
-        # экземпляр менеджера ститистики для взаимодействия с файлом статистики xlsx
+        # экземпляр менеджера статистики для взаимодействия с файлом статистики xlsx
         self.statistic_manager = StatisticManager()
         # проверка наличия активных ставок, по которым не получен результат
         self.check_active_bets()
@@ -91,7 +93,6 @@ class DesktopApp(QMainWindow):
         self.server_set_window.ui.buttonBox.accepted.connect(self.restart_scheduler_status_job)
 
         self.ui.action_browserControlSettings.triggered.connect(self.open_browser_control_set_window)
-        self.browser_control_set_window.diag_signal.connect(self.render_diagnostics)
 
         self.ui.action_telegramSettings.triggered.connect(self.open_telegram_set_window)
 
@@ -106,22 +107,22 @@ class DesktopApp(QMainWindow):
 
     def check_active_bets(self) -> None:
         """Проверка наличия в реестре сделанных ставок, по которым не получен результат"""
-        message = "Проверка наличия размещенных ставок"
-        self.render_diagnostics(message)
-        logging.info(message)
 
         active_bets_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
         if not active_bets_urls:
-            message = "Размещенные ставки в реестре отсутствуют"
+            message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
             self.render_diagnostics(message)
             logging.info(message)
             return
         else:
             message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
-            self.render_diagnostics(message)
+            #self.render_diagnostics(message)
             logging.info(message)
+            self.open_bets_checking_window()
 
-        ResultParser.page_load_timeout = self.browser_control_set_window.spinBox_resultPageLoadTimeout.value()
+        control_settings = self.browser_control_set_window.get_control_settings()
+        ResultParser.page_load_timeout = control_settings['timeouts']['result_page_load_timeout']
+
         if hasattr(self, 'get_result_thread'):
             del self.get_result_trhread
         self.get_result_thread = QThread()
@@ -132,18 +133,21 @@ class DesktopApp(QMainWindow):
         self.result_parser.finish_signal.connect(self.get_result_thread.quit)
         self.get_result_thread.start()
 
+        self.bets_checking_window.skip_bets_checking_signal.connect(self.get_result_thread.requestInterruption)
+
     def preload_websites_and_authorize(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
         if not os.path.exists(settings.WEBDRIVER_DIR.get(sys.platform)):
-            logger.info(f"Webdriver не найден:  {settings.WEBDRIVER_DIR.get(sys.platform)} does not exist. Необходимо скачать двебдрайвер в указанную директорию")
-            self.render_diagnostics(f"Webdriver не найден:  {settings.WEBDRIVER_DIR.get(sys.platform)} does not exist. Необходимо скачать двебдрайвер в указанную директорию")
+            message = f"Webdriver не найден:  {settings.WEBDRIVER_DIR.get(sys.platform)} не существует. Необходимо скачать двебдрайвер в указанную директорию"
+            logger.info(message)
+            self.render_diagnostics(message)
             return
         self.ui.pushButton_startAutoBet.setDisabled(True)
 
         control_settings = self.browser_control_set_window.get_control_settings()
         excluded_urls = [x.split('$$')[1].replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
         control_settings['excluded_urls'] = excluded_urls
-        WebsiteController.page_load_timeout = self.browser_control_set_window.spinBox_authorizationPageLoadTimeout.value()
+        WebsiteController.page_load_timeout = control_settings['timeouts']['authorization_page_load_timeout']
 
         if hasattr(self, 'browser_control_thread'):
             del self.browser_control_thread
@@ -326,6 +330,11 @@ class DesktopApp(QMainWindow):
         self.telegram_set_window.widget_states = self.telegram_set_window.get_telegram_settings()
         self.telegram_set_window.show()
         self.telegram_set_window.exec_()
+
+    def open_bets_checking_window(self) -> None:
+        """Открытие окна ожидания получения результата ранее сделанных ставок"""
+        self.bets_checking_window.show()
+        self.bets_checking_window.exec_()
 
     def enable_telegram_messages(self) -> None:
         """Включение/отключение отправки сообщений в telegram"""
