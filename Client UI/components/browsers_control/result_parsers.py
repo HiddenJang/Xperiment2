@@ -8,7 +8,6 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from . import webdriver
-from .. import settings
 
 logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.interaction_controller')
 
@@ -23,6 +22,7 @@ class ResultParser(QObject):
         self.active_bets_urls = active_bets_urls
 
     def check_starter(self) -> str | None:
+        results = {}
         driver = webdriver.Driver.get_driver(page_load_timout=ResultParser.page_load_timeout, headless=True)
         if not driver['driver']:
             self.diag_signal.emit(driver['status'])
@@ -35,10 +35,7 @@ class ResultParser(QObject):
             url = event_url.split('$$')[1]
 
             if QThread.currentThread().isInterruptionRequested():
-                self.finish_signal.emit({'status': 'Поиск ранее сделанных ставок прерван пользователем',
-                                         'bookmaker': bookmaker,
-                                         'url': url,
-                                         'result': None})
+                self.finish_signal.emit({'status': 'Поиск ранее сделанных ставок прерван пользователем', 'results': {}})
 
             try:
                 func = getattr(self, bookmaker)
@@ -51,15 +48,19 @@ class ResultParser(QObject):
                 logger.info(f'Превышение времени ожидания открытия страницы {bookmaker} для получения результата. Попытка продолжить')
             result = func()
             if result:
-                self.finish_signal.emit({'status': 'Поиск ранее сделанных ставок прерван пользователем',
-                                         'bookmaker': bookmaker,
-                                         'url': url,
-                                         'result': result})
+                results[event_url] = result
 
         self.driver.close()
         self.driver.quit()
-        self.finish_signal.emit({'status': 'Не удалось получить результаты событий по ранее сделанным ставкам',
-                                 'result': None})
+        if not results:
+            self.finish_signal.emit({'status': 'Не удалось получить результаты событий по ранее сделанным ставкам',
+                                     'results': {}})
+        elif len(results) != len(self.active_bets_urls):
+            self.finish_signal.emit({'status': 'Результаты событий получены не по всем ранее сделанным ставкам',
+                                     'results': results})
+        else:
+            self.finish_signal.emit({'status': 'Результаты событий получены по всем ранее сделанным ставкам',
+                                     'results': results})
 
     def leon(self) -> str | None:
         """Получение результата события (в формате '2:3')"""

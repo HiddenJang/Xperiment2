@@ -69,8 +69,6 @@ class DesktopApp(QMainWindow):
         self.request_server_status()
         # таймер опроса состояния потока автоматического управления браузером
         self.thread_status_timer = QtCore.QTimer()
-        # экземпляр менеджера статистики для взаимодействия с файлом статистики xlsx
-        self.statistic_manager = StatisticManager()
         # проверка наличия активных ставок, по которым не получен результат
         self.check_active_bets()
 
@@ -129,7 +127,7 @@ class DesktopApp(QMainWindow):
         self.result_parser = ResultParser(active_bets_urls)
         self.result_parser.moveToThread(self.get_result_thread)
         self.get_result_thread.started.connect(self.result_parser.check_starter)
-        self.result_parser.finish_signal.connect(lambda: print('get_result_thread завершен'))
+        self.result_parser.finish_signal.connect(self.process_event_results)
         self.result_parser.finish_signal.connect(self.get_result_thread.quit)
         self.get_result_thread.start()
 
@@ -205,20 +203,31 @@ class DesktopApp(QMainWindow):
             key = f'{bkmkr_data["bookmaker"]}$${bkmkr_data["url"]}'
             self.active_bets_list.setValue(key, bkmkr_data)
         if event_data:
-            self.statistic_manager.insert_data(event_data)
+            if hasattr(self, 'write_event_data_thread'):
+                del self.write_event_data_thread
+            self.write_event_data_thread = QThread()
+            self.statistic_manager = StatisticManager(event_data)
+            self.statistic_manager.moveToThread(self.write_event_data_thread)
+            self.write_event_data_thread.started.connect(self.statistic_manager.insert_data)
+            self.statistic_manager.diag_signal.connect(self.render_diagnostics)
+            self.statistic_manager.finish_signal.connect(self.write_event_data_thread.quit)
+            self.write_event_data_thread.start()
 
-    def write_event_result_to_xlsx(self, event_data: list) -> None:
-        """Запуск процесса получения и записи результатов события в файл xlsx"""
-        if event_data:
-            if hasattr(self, 'result_extraction_thread'):
-                del self.result_extraction_thread
-            self.result_extraction_thread = QThread()
-            self.bet_result_extractor = BetResultExtractor(event_data)
-            self.bet_result_extractor.moveToThread(self.result_extraction_thread)
-            self.result_extraction_thread.started.connect(self.bet_result_extractor.write_event_result)
-            self.bet_result_extractor.diag_signal.connect(self.render_diagnostics)
-            self.bet_result_extractor.results_extracted_signal.connect(self.result_extraction_thread.quit)
-            self.result_extraction_thread.start()
+    def process_event_results(self, events_results: dict) -> None:
+        """Обработка результатов событий, на которые сделаны ставки и запись их в файл стаитстики xlsx"""
+        logger.info(events_results['status'])
+        self.render_diagnostics(events_results['status'])
+
+        if events_results['results']:
+            if hasattr(self, 'write_results_thread'):
+                del self.write_results_thread
+            self.write_results_thread = QThread()
+            self.statistic_manager_results = StatisticManager(events_results['results'])
+            self.statistic_manager_results.moveToThread(self.write_results_thread)
+            self.write_results_thread.started.connect(self.statistic_manager_results.insert_results)
+            self.statistic_manager_results.diag_signal.connect(self.render_diagnostics)
+            self.statistic_manager_results.finish_signal.connect(self.write_results_thread.quit)
+            self.write_results_thread.start()
 
     ###### Test connection slots ######
 

@@ -2,6 +2,8 @@ import os
 import logging
 from time import sleep
 
+from PyQt5 import QtCore
+from PyQt5.QtCore import QObject
 from openpyxl import Workbook
 from openpyxl import load_workbook
 from openpyxl.styles import colors, Alignment
@@ -12,8 +14,11 @@ from openpyxl.styles import PatternFill
 logger = logging.getLogger('Client UI.components.statistic_management.statistic')
 
 
-class StatisticManager:
+class StatisticManager(QObject):
     """Формирование статистики и запись в файл xlsx"""
+    diag_signal = QtCore.pyqtSignal(str)
+    finish_signal = QtCore.pyqtSignal(dict)
+
     columns = ("№  ", "Команды", "Дата", "ТМ/Коэфф.", "ТБ/Коэфф.", "Скриншот", "Ссылка", "Ставка", "Баланс до",
                "Баланс после", "Время размещения", "Сумма голов", "Результат", "Баланс")
     font = 'Calibri'
@@ -22,9 +27,13 @@ class StatisticManager:
     double = Side(border_style="double", color="000000")
     imitation_start_balance = 10000
 
+    def __init__(self, event_data: list = None, results: dict = None):
+        super(StatisticManager, self).__init__()
+        self.event_data = event_data
+        self.results = results
 
-    def insert_data(self, event_data: list):
-        """Заполнение данными документа xlsx"""
+    def create_or_open(self) -> Workbook | None:
+        """Создание директории для файла статистики и файла статистики если отсутствуют"""
         if not os.path.exists(settings.STATS_DIR):
             os.mkdir(settings.STATS_DIR)
 
@@ -51,18 +60,23 @@ class StatisticManager:
 
             ws_imitation = wb.copy_worksheet(ws_betting)
             ws_imitation.title = "Имитация ставок"
-
+            return wb
         else:
             for _ in range(5):
                 try:
                     wb = load_workbook(settings.STATS_FILE_NAME)
-                    break
+                    return wb
                 except BaseException as ex:
                     logger.info(f'Ошибка открытия файла статистики, {ex}')
                     if _ == 4:
                         logger.info(f'Не удалось получить доступ к файлу статистики, {ex}')
-                        return
                     sleep(0.5)
+
+    def insert_data(self, event_data: list):
+        """Заполнение данными документа xlsx"""
+        wb = self.create_or_open()
+        if not wb:
+            return
 
         if event_data[0]['bet_imitation']:
             ws = wb["Имитация ставок"]
@@ -118,6 +132,10 @@ class StatisticManager:
 
         wb.save(settings.STATS_FILE_NAME)
         TelegramService.send_xlsx(settings.STATS_FILE_NAME)
+
+    def insert_results(self) -> None:
+        """Внесение результатов событий на которые были сделаны ставки"""
+        print(event_data)
 
 
 if __name__ == '__main__':
