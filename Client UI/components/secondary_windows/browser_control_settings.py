@@ -65,8 +65,8 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
 
     def close_without_saving(self) -> None:
         """Закрытие окна без сохранения изменений"""
-        self.ui.spinBox_authorizationPageLoadTimeout.setValue(self.widget_states['auth_data']['authorization_page_load_timeout'])
-        self.ui.spinBox_resultPageLoadTimeout.setValue(self.widget_states['auth_data']['result_page_load_timeout'])
+        self.ui.spinBox_authorizationPageLoadTimeout.setValue(self.widget_states['timeouts']['authorization_page_load_timeout'])
+        self.ui.spinBox_resultPageLoadTimeout.setValue(self.widget_states['timeouts']['result_page_load_timeout'])
 
     def closeEvent(self, event) -> None:
         self.set_control_settings_from_env()
