@@ -101,10 +101,14 @@ class DesktopApp(QMainWindow):
         if self.ui.checkBox_telegramMessageSwitch.isChecked():
             self.enable_telegram_messages()
 
+        self.bets_checking_window.ui.pushButton_skipBetsCheking.clicked.connect(
+            lambda: self.render_diagnostics("Поиск ранее размещенных ставок пропущен пользователем"))
+
     ###### Auto betting ######
 
     def check_active_bets(self) -> None:
-        """Проверка наличия в реестре сделанных ставок, по которым не получен результат"""
+        """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
+            вид данных active_bets_urls=str(bookmaker$$url)"""
 
         active_bets_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
         if not active_bets_urls:
@@ -122,16 +126,16 @@ class DesktopApp(QMainWindow):
         ResultParser.page_load_timeout = control_settings['timeouts']['result_page_load_timeout']
 
         if hasattr(self, 'get_result_thread'):
-            del self.get_result_trhread
+            del self.get_result_thread
+
         self.get_result_thread = QThread()
         self.result_parser = ResultParser(active_bets_urls)
         self.result_parser.moveToThread(self.get_result_thread)
         self.get_result_thread.started.connect(self.result_parser.check_starter)
-        self.result_parser.finish_signal.connect(self.process_event_results)
+        self.result_parser.finish_signal.connect(self.process_and_insert_event_results)
         self.result_parser.finish_signal.connect(self.get_result_thread.quit)
         self.get_result_thread.start()
-
-        self.bets_checking_window.skip_bets_checking_signal.connect(self.get_result_thread.requestInterruption)
+        self.bets_checking_window.ui.pushButton_skipBetsCheking.clicked.connect(self.get_result_thread.requestInterruption)
 
     def preload_websites_and_authorize(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
@@ -206,23 +210,31 @@ class DesktopApp(QMainWindow):
             if hasattr(self, 'write_event_data_thread'):
                 del self.write_event_data_thread
             self.write_event_data_thread = QThread()
-            self.statistic_manager = StatisticManager(event_data)
+            self.statistic_manager = StatisticManager(event_data=event_data)
             self.statistic_manager.moveToThread(self.write_event_data_thread)
             self.write_event_data_thread.started.connect(self.statistic_manager.insert_data)
             self.statistic_manager.diag_signal.connect(self.render_diagnostics)
             self.statistic_manager.finish_signal.connect(self.write_event_data_thread.quit)
             self.write_event_data_thread.start()
 
-    def process_event_results(self, events_results: dict) -> None:
-        """Обработка результатов событий, на которые сделаны ставки и запись их в файл стаитстики xlsx"""
+    def process_and_insert_event_results(self, events_results: dict) -> None:
+        """Обработка результатов событий, на которые сделаны ставки и запись их в файл стаитстики xlsx,
+        вид данных event_result_key=str(bookmaker$$url)"""
         logger.info(events_results['status'])
         self.render_diagnostics(events_results['status'])
 
         if events_results['results']:
+            results_keys = events_results['results'].keys()
+            for event_result_key in results_keys:
+                try:
+                    events_results['results'][event_result_key]['event_data'] = self.active_bets_list.value(event_result_key)
+                except BaseException as ex:
+                    logger.info(ex)
+
             if hasattr(self, 'write_results_thread'):
                 del self.write_results_thread
             self.write_results_thread = QThread()
-            self.statistic_manager_results = StatisticManager(events_results['results'])
+            self.statistic_manager_results = StatisticManager(results=events_results['results'])
             self.statistic_manager_results.moveToThread(self.write_results_thread)
             self.write_results_thread.started.connect(self.statistic_manager_results.insert_results)
             self.statistic_manager_results.diag_signal.connect(self.render_diagnostics)

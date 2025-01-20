@@ -65,9 +65,9 @@
    <widget class="QPushButton" name="pushButton_skipBetsCheking">
     <property name="geometry">
      <rect>
-      <x>178</x>
+      <x>168</x>
       <y>56</y>
-      <width>121</width>
+      <width>141</width>
       <height>23</height>
      </rect>
     </property>

@@ -9,7 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from . import webdriver
 
-logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.interaction_controller')
+logger = logging.getLogger('Client UI.components.browsers_control.result_parsers')
 
 
 class ResultParser(QObject):
@@ -48,7 +48,7 @@ class ResultParser(QObject):
                 logger.info(f'Превышение времени ожидания открытия страницы {bookmaker} для получения результата. Попытка продолжить')
             result = func()
             if result:
-                results[event_url] = result
+                results[event_url] = {'result': result}
 
         self.driver.close()
         self.driver.quit()

@@ -17,7 +17,7 @@ logger = logging.getLogger('Client UI.components.statistic_management.statistic'
 class StatisticManager(QObject):
     """Формирование статистики и запись в файл xlsx"""
     diag_signal = QtCore.pyqtSignal(str)
-    finish_signal = QtCore.pyqtSignal(dict)
+    finish_signal = QtCore.pyqtSignal()
 
     columns = ("№  ", "Команды", "Дата", "ТМ/Коэфф.", "ТБ/Коэфф.", "Скриншот", "Ссылка", "Ставка", "Баланс до",
                "Баланс после", "Время размещения", "Сумма голов", "Результат", "Баланс")
@@ -67,75 +67,99 @@ class StatisticManager(QObject):
                     wb = load_workbook(settings.STATS_FILE_NAME)
                     return wb
                 except BaseException as ex:
-                    logger.info(f'Ошибка открытия файла статистики, {ex}')
+                    message = 'Ошибка открытия файла статистики'
+                    self.diag_signal.emit(message)
+                    logger.info(f'{message}: {ex}')
                     if _ == 4:
-                        logger.info(f'Не удалось получить доступ к файлу статистики, {ex}')
+                        message = 'Не удалось получить доступ к файлу статистики'
+                        self.diag_signal.emit(message)
+                        logger.info(f'{message}: {ex}')
                     sleep(0.5)
 
-    def insert_data(self, event_data: list):
+    def insert_data(self):
         """Заполнение данными документа xlsx"""
         wb = self.create_or_open()
         if not wb:
+            self.finish_signal.emit()
             return
+        try:
+            if self.event_data[0]['bet_imitation']:
+                ws = wb["Имитация ставок"]
+            else:
+                ws = wb["Ставки на деньги"]
 
-        if event_data[0]['bet_imitation']:
-            ws = wb["Имитация ставок"]
-        else:
-            ws = wb["Ставки на деньги"]
+            event_nums = []
+            for row in ws.iter_rows(min_row=2, max_col=1, max_row=len(ws['A'])):
+                for cell in row:
+                    if cell.value:
+                        event_nums.append(int(cell.value))
+            if event_nums:
+                event_num = max(event_nums) + 1
+            else:
+                event_num = 1
 
-        event_nums = []
-        for row in ws.iter_rows(min_row=2, max_col=1, max_row=len(ws['A'])):
-            for cell in row:
-                if cell.value:
-                    event_nums.append(int(cell.value))
-        if event_nums:
-            event_num = max(event_nums) + 1
-        else:
-            event_num = 1
+            for data in self.event_data:
+                empty_row_num = len(ws['A']) + 1
+                ws.cell(row=empty_row_num, column=1).value = event_num
+                ws.cell(row=empty_row_num, column=2).value = data['teams']
+                ws.cell(row=empty_row_num, column=3).value = data['date']
+                if data['total_koeff_type'] == 'under':
+                    ws.cell(row=empty_row_num, column=4).value = data['total_koeff']
+                    ws.cell(row=empty_row_num, column=5).value = '-'
+                else:
+                    ws.cell(row=empty_row_num, column=4).value = '-'
+                    ws.cell(row=empty_row_num, column=5).value = data['total_koeff']
+                try:
+                    screenshot_name = data['screenshot_name'].split('/')[-1]
+                except BaseException:
+                    screenshot_name = data['screenshot_name']
+                ws.cell(row=empty_row_num, column=6).value = screenshot_name
+                ws.cell(row=empty_row_num, column=7).hyperlink = data['url']
+                ws.cell(row=empty_row_num, column=7).value = data['url']
+                ws.cell(row=empty_row_num, column=8).value = data['bet_size']
+                if data['bet_imitation'] and event_num == 1:
+                    ws.cell(row=empty_row_num, column=9).value = self.imitation_start_balance
+                    ws.cell(row=empty_row_num, column=10).value = self.imitation_start_balance - float(data['bet_size'])
+                elif data['bet_imitation'] and event_num > 1:
+                    ws.cell(row=empty_row_num, column=9).value = ws.cell(row=empty_row_num-3, column=14).value
+                    ws.cell(row=empty_row_num, column=10).value = ws.cell(row=empty_row_num-3, column=14).value - float(data['bet_size'])
+                else:
+                    ws.cell(row=empty_row_num, column=9).value = data['start_balance']
+                    ws.cell(row=empty_row_num, column=10).value = data['balance_after_bet']
+                ws.cell(row=empty_row_num, column=11).value = data['betting_time']
+                ws.cell(row=empty_row_num, column=14).value = ws.cell(row=empty_row_num, column=10).value
 
-        for data in event_data:
             empty_row_num = len(ws['A']) + 1
-            ws.cell(row=empty_row_num, column=1).value = event_num
-            ws.cell(row=empty_row_num, column=2).value = data['teams']
-            ws.cell(row=empty_row_num, column=3).value = data['date']
-            if data['total_koeff_type'] == 'under':
-                ws.cell(row=empty_row_num, column=4).value = data['total_koeff']
-                ws.cell(row=empty_row_num, column=5).value = '-'
-            else:
-                ws.cell(row=empty_row_num, column=4).value = '-'
-                ws.cell(row=empty_row_num, column=5).value = data['total_koeff']
-            try:
-                screenshot_name = data['screenshot_name'].split('/')[-1]
-            except BaseException:
-                screenshot_name = data['screenshot_name']
-            ws.cell(row=empty_row_num, column=6).value = screenshot_name
-            ws.cell(row=empty_row_num, column=7).hyperlink = data['url']
-            ws.cell(row=empty_row_num, column=7).value = data['url']
-            ws.cell(row=empty_row_num, column=8).value = data['bet_size']
-            if data['bet_imitation'] and event_num == 1:
-                ws.cell(row=empty_row_num, column=9).value = self.imitation_start_balance
-                ws.cell(row=empty_row_num, column=10).value = self.imitation_start_balance - float(data['bet_size'])
-            elif data['bet_imitation'] and event_num > 1:
-                ws.cell(row=empty_row_num, column=9).value = ws.cell(row=empty_row_num-3, column=14).value
-                ws.cell(row=empty_row_num, column=10).value = ws.cell(row=empty_row_num-3, column=14).value - float(data['bet_size'])
-            else:
-                ws.cell(row=empty_row_num, column=9).value = data['start_balance']
-                ws.cell(row=empty_row_num, column=10).value = data['balance_after_bet']
-            ws.cell(row=empty_row_num, column=11).value = data['betting_time']
-            ws.cell(row=empty_row_num, column=14).value = ws.cell(row=empty_row_num, column=10).value
+            for col in range(1, len(self.columns)+1):
+                cell = ws.cell(row=empty_row_num, column=col)
+                cell.fill = PatternFill(fgColor="000000", fill_type="solid")
+                cell.border = Border(top=self.double, bottom=self.double, left=self.thins, right=self.thins)
 
-        empty_row_num = len(ws['A']) + 1
-        for col in range(1, len(self.columns)+1):
-            cell = ws.cell(row=empty_row_num, column=col)
-            cell.fill = PatternFill(fgColor="000000", fill_type="solid")
-            cell.border = Border(top=self.double, bottom=self.double, left=self.thins, right=self.thins)
+            wb.save(settings.STATS_FILE_NAME)
+            message = f'Данные по сделанной ставке успешно записаны в файл статистики {settings.STATS_FILE_NAME}'
+            logger.info(message)
+            TelegramService.send_xlsx(settings.STATS_FILE_NAME)
+        except BaseException as ex:
+            message = f'Ошибка при записи данных по сделанной ставке в файл статистики {settings.STATS_FILE_NAME}'
+            logger.info(f'{message}: {ex}')
 
-        wb.save(settings.STATS_FILE_NAME)
-        TelegramService.send_xlsx(settings.STATS_FILE_NAME)
+        self.diag_signal.emit(message)
+        self.finish_signal.emit()
 
     def insert_results(self) -> None:
         """Внесение результатов событий на которые были сделаны ставки"""
-        print(event_data)
+        print(self.results)
+        wb = self.create_or_open()
+        if not wb:
+            self.finish_signal.emit()
+            return
+        try:
+            if self.event_data[0]['bet_imitation']:
+                ws = wb["Имитация ставок"]
+            else:
+                ws = wb["Ставки на деньги"]
+        except BaseException as ex:
+            logger.info(ex)
 
 
 if __name__ == '__main__':

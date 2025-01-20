@@ -7,7 +7,6 @@ from . import settings
 
 def init_logger(name):
     """Инициализация логгера"""
-
     if not os.path.exists(settings.LOGS_PATH):
         os.mkdir(settings.LOGS_PATH)
 

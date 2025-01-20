@@ -33,7 +33,7 @@ class Ui_bets_checking(object):
         self.label_waitBetsResult.setGeometry(QtCore.QRect(60, 10, 361, 41))
         self.label_waitBetsResult.setObjectName("label_waitBetsResult")
         self.pushButton_skipBetsCheking = QtWidgets.QPushButton(self.frame)
-        self.pushButton_skipBetsCheking.setGeometry(QtCore.QRect(178, 56, 121, 23))
+        self.pushButton_skipBetsCheking.setGeometry(QtCore.QRect(168, 56, 141, 23))
         self.pushButton_skipBetsCheking.setObjectName("pushButton_skipBetsCheking")
 
         self.retranslateUi(bets_checking)
