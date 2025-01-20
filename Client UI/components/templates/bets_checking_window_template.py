@@ -15,7 +15,7 @@ class Ui_bets_checking(object):
     def setupUi(self, bets_checking):
         bets_checking.setObjectName("bets_checking")
         bets_checking.setWindowModality(QtCore.Qt.ApplicationModal)
-        bets_checking.resize(493, 104)
+        bets_checking.resize(493, 121)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -24,16 +24,16 @@ class Ui_bets_checking(object):
         bets_checking.setMaximumSize(QtCore.QSize(493, 200))
         bets_checking.setModal(True)
         self.frame = QtWidgets.QFrame(bets_checking)
-        self.frame.setGeometry(QtCore.QRect(5, 5, 480, 91))
+        self.frame.setGeometry(QtCore.QRect(5, 5, 480, 111))
         self.frame.setFrameShape(QtWidgets.QFrame.Box)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setLineWidth(3)
         self.frame.setObjectName("frame")
         self.label_waitBetsResult = QtWidgets.QLabel(self.frame)
-        self.label_waitBetsResult.setGeometry(QtCore.QRect(60, 10, 361, 41))
+        self.label_waitBetsResult.setGeometry(QtCore.QRect(30, 10, 431, 61))
         self.label_waitBetsResult.setObjectName("label_waitBetsResult")
         self.pushButton_skipBetsCheking = QtWidgets.QPushButton(self.frame)
-        self.pushButton_skipBetsCheking.setGeometry(QtCore.QRect(168, 56, 141, 23))
+        self.pushButton_skipBetsCheking.setGeometry(QtCore.QRect(168, 78, 141, 23))
         self.pushButton_skipBetsCheking.setObjectName("pushButton_skipBetsCheking")
 
         self.retranslateUi(bets_checking)
@@ -42,8 +42,8 @@ class Ui_bets_checking(object):
     def retranslateUi(self, bets_checking):
         _translate = QtCore.QCoreApplication.translate
         bets_checking.setWindowTitle(_translate("bets_checking", "Поиск сделанных ставок"))
-        self.label_waitBetsResult.setText(_translate("bets_checking", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Производится поиск ранее сделанных ставок и <br/>получение результатов событий, ожидайте...</span></p></body></html>"))
-        self.pushButton_skipBetsCheking.setText(_translate("bets_checking", "Пропустить поиск"))
+        self.label_waitBetsResult.setText(_translate("bets_checking", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">В реестре обнаружены данные ранее сделанных ставок. <br/>Производится получение результатов для записи <br/>в файл статистики, ожидайте...</span></p></body></html>"))
+        self.pushButton_skipBetsCheking.setText(_translate("bets_checking", "Пропустить"))
 
 
 if __name__ == "__main__":

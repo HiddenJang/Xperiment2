@@ -120,7 +120,6 @@ class DesktopApp(QMainWindow):
             message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
             #self.render_diagnostics(message)
             logging.info(message)
-            self.open_bets_checking_window()
 
         control_settings = self.browser_control_set_window.get_control_settings()
         ResultParser.page_load_timeout = control_settings['timeouts']['result_page_load_timeout']
@@ -136,6 +135,7 @@ class DesktopApp(QMainWindow):
         self.result_parser.finish_signal.connect(self.get_result_thread.quit)
         self.get_result_thread.start()
         self.bets_checking_window.ui.pushButton_skipBetsCheking.clicked.connect(self.get_result_thread.requestInterruption)
+        self.open_bets_checking_window()
 
     def preload_websites_and_authorize(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""

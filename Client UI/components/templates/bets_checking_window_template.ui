@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>493</width>
-    <height>104</height>
+    <height>121</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -37,7 +37,7 @@
      <x>5</x>
      <y>5</y>
      <width>480</width>
-     <height>91</height>
+     <height>111</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -52,27 +52,27 @@
    <widget class="QLabel" name="label_waitBetsResult">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>30</x>
       <y>10</y>
-      <width>361</width>
-      <height>41</height>
+      <width>431</width>
+      <height>61</height>
      </rect>
     </property>
     <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Производится поиск ранее сделанных ставок и &lt;br/&gt;получение результатов событий, ожидайте...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;В реестре обнаружены данные ранее сделанных ставок. &lt;br/&gt;Производится получение результатов для записи &lt;br/&gt;в файл статистики, ожидайте...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_skipBetsCheking">
     <property name="geometry">
      <rect>
       <x>168</x>
-      <y>56</y>
+      <y>78</y>
       <width>141</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
-     <string>Пропустить поиск</string>
+     <string>Пропустить</string>
     </property>
    </widget>
   </widget>

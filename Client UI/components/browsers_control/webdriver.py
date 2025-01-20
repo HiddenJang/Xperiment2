@@ -38,6 +38,8 @@ class Driver:
         try:
             driver = webdriver.Chrome(options=opts, service=s)
             driver.set_page_load_timeout(page_load_timout)
+            if not url:
+                return {'driver': driver, 'status': 'Webdriver успешно подключен', 'ex': ''}
             try:
                 driver.get(url=url)
             except TimeoutException:
