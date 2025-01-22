@@ -13,7 +13,6 @@ logger = logging.getLogger('Client UI.components.browsers_control.result_parsers
 
 
 class ResultParser(QObject):
-    diag_signal = QtCore.pyqtSignal(str)
     finish_signal = QtCore.pyqtSignal(dict)
     page_load_timeout = 5
 
@@ -21,11 +20,12 @@ class ResultParser(QObject):
         super(ResultParser, self).__init__()
         self.active_bets_urls = active_bets_urls
 
-    def check_starter(self) -> str | None:
+    def start(self) -> str | None:
+        """Открытие страниц с результатом и получение результатов событий"""
         results = {}
-        driver = webdriver.Driver.get_driver(page_load_timout=ResultParser.page_load_timeout, headless=True)
+        driver = webdriver.Driver.get_driver(page_load_timout=ResultParser.page_load_timeout)
         if not driver['driver']:
-            self.diag_signal.emit(driver['status'])
+            self.finish_signal.emit({'status': driver['status'], 'results': {}})
             return
         else:
             self.driver = driver['driver']
@@ -35,8 +35,10 @@ class ResultParser(QObject):
             url = event_url.split('$$')[1]
 
             if QThread.currentThread().isInterruptionRequested():
-                self.finish_signal.emit({'status': 'Поиск ранее сделанных ставок прерван пользователем', 'results': {}})
-
+                self.driver.close()
+                self.driver.quit()
+                self.finish_signal.emit({'status': 'Поиск ранее сделанных ставок пропущен пользователем', 'results': {}})
+                return
             try:
                 func = getattr(self, bookmaker)
             except AttributeError as ex:
@@ -66,7 +68,7 @@ class ResultParser(QObject):
         """Получение результата события (в формате '2:3')"""
 
         try:
-            element = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//span[contains(@class,'post-match-statistic-incident__score')]")))
+            element = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, "//span[contains(@class,'post-match-statistic-incident__score')]")))
             result = element.text
             return result
         except BaseException as ex:

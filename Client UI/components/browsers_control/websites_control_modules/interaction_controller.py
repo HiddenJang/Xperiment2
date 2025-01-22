@@ -14,7 +14,8 @@ logger = logging.getLogger('Client UI.components.browsers_control.websites_contr
 
 class WebsiteController:
     excluded_urls = []
-    page_load_timeout = 5
+    authorization_page_load_timeout = 5
+    bet_page_load_timeout = 5
 
     def __init__(self, common_auth_data: dict,
                  thread_pause_event: threading.Event,
@@ -46,7 +47,7 @@ class WebsiteController:
     def preload_and_authorize(self):
         """Открытие страницы БК и авторизация пользователя"""
         driver_dict = webdriver.Driver.get_driver(settings.BOOKMAKERS.get(self.bookmaker),
-                                                  page_load_timout=WebsiteController.page_load_timeout)
+                                                  page_load_timout=WebsiteController.authorization_page_load_timeout)
         self.driver = driver_dict['driver']
         if not self.driver:
             self.__send_diag_message(f"Сайт {self.bookmaker} {driver_dict['status']}",
@@ -83,6 +84,7 @@ class WebsiteController:
         self.__send_diag_message(f"Запущен процесс размещения ставки {self.bookmaker}")
 
         try:
+            self.driver.set_page_load_timeout(WebsiteController.bet_page_load_timeout)
             self.driver.get(url=self.event_data.get("url"))
         except TimeoutException:
             self.__send_diag_message(f'Превышение времени ожидания открытия страницы события {self.bookmaker}. Попытка продолжить', send_telegram=False)

@@ -383,7 +383,7 @@ p, li { white-space: pre-wrap; }
      </rect>
     </property>
     <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Таймаут загрузки страниц &lt;br/&gt;при беттинге&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Таймаут загрузки страниц &lt;br/&gt;при авторизации&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_authorizationPageLoadTimeout_2">
@@ -403,7 +403,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>330</x>
-      <y>184</y>
+      <y>255</y>
       <width>31</width>
       <height>17</height>
      </rect>
@@ -416,7 +416,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>180</y>
+      <y>251</y>
       <width>65</width>
       <height>26</height>
      </rect>
@@ -432,7 +432,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>134</y>
+      <y>205</y>
       <width>191</width>
       <height>41</height>
      </rect>
@@ -447,7 +447,7 @@ p, li { white-space: pre-wrap; }
       <x>243</x>
       <y>46</y>
       <width>230</width>
-      <height>171</height>
+      <height>241</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -462,6 +462,48 @@ p, li { white-space: pre-wrap; }
     <property name="midLineWidth">
      <number>1</number>
     </property>
+    <widget class="QLabel" name="label_betPageLoadTimeout_2">
+     <property name="geometry">
+      <rect>
+       <x>88</x>
+       <y>131</y>
+       <width>31</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>сек</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_betPageLoadTimeout_1">
+     <property name="geometry">
+      <rect>
+       <x>18</x>
+       <y>81</y>
+       <width>191</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Таймаут загрузки страниц &lt;br/&gt;при беттинге&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBox_betPageLoadTimeout">
+     <property name="geometry">
+      <rect>
+       <x>18</x>
+       <y>127</y>
+       <width>65</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="maximum">
+      <number>9999</number>
+     </property>
+     <property name="value">
+      <number>5</number>
+     </property>
+    </widget>
    </widget>
    <zorder>frame_autobetTimeoutSettings</zorder>
    <zorder>spinBox_authorizationPageLoadTimeout</zorder>

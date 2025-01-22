@@ -53,6 +53,7 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
                 elif bkmkr_name in line_edit.objectName().lower() and 'password' in line_edit.objectName().lower():
                     states['auth_data'][bkmkr_name]['password'] = line_edit.text()
         states['timeouts']['authorization_page_load_timeout'] = self.ui.spinBox_authorizationPageLoadTimeout.value()
+        states['timeouts']['bet_page_load_timeout'] = self.ui.spinBox_betPageLoadTimeout.value()
         states['timeouts']['result_page_load_timeout'] = self.ui.spinBox_resultPageLoadTimeout.value()
         return states
 
@@ -66,6 +67,7 @@ class BrowserControlSettings(Ui_browser_control_settings, QDialog):
     def close_without_saving(self) -> None:
         """Закрытие окна без сохранения изменений"""
         self.ui.spinBox_authorizationPageLoadTimeout.setValue(self.widget_states['timeouts']['authorization_page_load_timeout'])
+        self.ui.spinBox_authorizationPageLoadTimeout.setValue(self.widget_states['timeouts']['bet_page_load_timeout'])
         self.ui.spinBox_resultPageLoadTimeout.setValue(self.widget_states['timeouts']['result_page_load_timeout'])
 
     def closeEvent(self, event) -> None:

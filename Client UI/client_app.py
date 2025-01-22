@@ -80,6 +80,7 @@ class DesktopApp(QMainWindow):
         self.ui.pushButton_startScan.clicked.connect(self.start_scan)
         self.ui.pushButton_startScan.clicked.connect(self.open_results_window)
         self.ui.pushButton_stopScan.clicked.connect(self.stop_scan)
+        self.ui.pushButton_cleanRegistry.clicked.connect(self.clean_bet_registry)
 
         self.result_window.closeResultWindow.connect(self.result_window_close_slot)
         self.result_window.closeResultWindow.connect(self.stop_scan)
@@ -100,9 +101,6 @@ class DesktopApp(QMainWindow):
         self.ui.checkBox_telegramMessageSwitch.clicked.connect(self.enable_telegram_messages)
         if self.ui.checkBox_telegramMessageSwitch.isChecked():
             self.enable_telegram_messages()
-
-        self.bets_checking_window.ui.pushButton_skipBetsCheking.clicked.connect(
-            lambda: self.render_diagnostics("Поиск ранее размещенных ставок пропущен пользователем"))
 
     ###### Auto betting ######
 
@@ -130,7 +128,7 @@ class DesktopApp(QMainWindow):
         self.get_result_thread = QThread()
         self.result_parser = ResultParser(active_bets_urls)
         self.result_parser.moveToThread(self.get_result_thread)
-        self.get_result_thread.started.connect(self.result_parser.check_starter)
+        self.get_result_thread.started.connect(self.result_parser.start)
         self.result_parser.finish_signal.connect(self.process_and_insert_event_results)
         self.result_parser.finish_signal.connect(self.get_result_thread.quit)
         self.get_result_thread.start()
@@ -149,7 +147,7 @@ class DesktopApp(QMainWindow):
         control_settings = self.browser_control_set_window.get_control_settings()
         excluded_urls = [x.split('$$')[1].replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
         control_settings['excluded_urls'] = excluded_urls
-        WebsiteController.page_load_timeout = control_settings['timeouts']['authorization_page_load_timeout']
+        WebsiteController.authorization_page_load_timeout = control_settings['timeouts']['authorization_page_load_timeout']
 
         if hasattr(self, 'browser_control_thread'):
             del self.browser_control_thread
@@ -190,6 +188,8 @@ class DesktopApp(QMainWindow):
                 self.browser_control_thread.isRunning() and \
                 not self.browser_control.bet_in_progress and \
                 scan_results.get('Success'):
+            control_settings = self.browser_control_set_window.get_control_settings()
+            WebsiteController.bet_page_load_timeout = control_settings['timeouts']['bet_page_load_timeout']
             BrowserControl.bet_params = self.get_autobet_settings()
             self.browser_control.start_betting(scan_results['Success'])
 
@@ -220,6 +220,7 @@ class DesktopApp(QMainWindow):
     def process_and_insert_event_results(self, events_results: dict) -> None:
         """Обработка результатов событий, на которые сделаны ставки и запись их в файл стаитстики xlsx,
         вид данных event_result_key=str(bookmaker$$url)"""
+        self.bets_checking_window.close()
         logger.info(events_results['status'])
         self.render_diagnostics(events_results['status'])
 
@@ -393,6 +394,13 @@ class DesktopApp(QMainWindow):
             self.render_diagnostics("Сканирование остановлено пользователем")
         self.deactivate_elements(False)
 
+    def clean_bet_registry(self) -> None:
+        """Очистка реестра сделанных ставок"""
+        self.active_bets_list.clear()
+        message = "Реестр сделанных ставок очищен пользователем"
+        self.render_diagnostics(message)
+        logger.info(message)
+
     ###### Rendering #####
 
     def render_diagnostics(self, info: str) -> None:
@@ -505,6 +513,8 @@ class DesktopApp(QMainWindow):
         except BaseException as ex:
             logger.info("Ошибка при загрузке установленных ранее состояний GUI:", ex)
 
+    ###### Other #####
+
     def create_screenshot_dir(self):
         """Создание папки для скриншотов"""
         if not os.path.exists(settings.SCREENSHOTS_DIR):
@@ -514,6 +524,7 @@ class DesktopApp(QMainWindow):
         self.save_settings()
         self.scheduler.shutdown(wait=False)
         self.result_window.close()
+        self.close_browsers()
         self.close()
 
 

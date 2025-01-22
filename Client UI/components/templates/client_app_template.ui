@@ -660,17 +660,20 @@
       <string>Первый букмекер</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton_enableBetSet">
+    <widget class="QPushButton" name="pushButton_cleanRegistry">
      <property name="geometry">
       <rect>
-       <x>88</x>
-       <y>156</y>
-       <width>91</width>
+       <x>58</x>
+       <y>254</y>
+       <width>181</width>
        <height>23</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(255, 84, 84);</string>
+     </property>
      <property name="text">
-      <string>Применить</string>
+      <string>Очистить реестр ставок</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_betSizeSecond">
