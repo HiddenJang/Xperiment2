@@ -19,7 +19,7 @@ from components.secondary_windows.bets_checking import BetsChecking
 from components.templates.client_app_template import Ui_MainWindow_client
 from components.browsers_control.core import BrowserControl
 from components.browsers_control.websites_control_modules.interaction_controller import WebsiteController
-from components.browsers_control.result_parsers import ResultParser
+from components.browsers_control.result_parsers import SeleniumParser, ApiResponseParser
 from components.telegram import TelegramService
 from components.statistic_management.statistic import StatisticManager
 
@@ -71,6 +71,7 @@ class DesktopApp(QMainWindow):
         self.thread_status_timer = QtCore.QTimer()
         # проверка наличия активных ставок, по которым не получен результат
         self.check_active_bets()
+        self.result_parsing_finished = False
 
     ###### Add handling functions #####
 
@@ -103,37 +104,6 @@ class DesktopApp(QMainWindow):
             self.enable_telegram_messages()
 
     ###### Auto betting ######
-
-    def check_active_bets(self) -> None:
-        """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
-            вид данных active_bets_urls=str(bookmaker$$url)"""
-
-        active_bets_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
-        if not active_bets_urls:
-            message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
-            self.render_diagnostics(message)
-            logging.info(message)
-            return
-        else:
-            message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
-            #self.render_diagnostics(message)
-            logging.info(message)
-
-        control_settings = self.browser_control_set_window.get_control_settings()
-        ResultParser.page_load_timeout = control_settings['timeouts']['result_page_load_timeout']
-
-        if hasattr(self, 'get_result_thread'):
-            del self.get_result_thread
-
-        self.get_result_thread = QThread()
-        self.result_parser = ResultParser(active_bets_urls)
-        self.result_parser.moveToThread(self.get_result_thread)
-        self.get_result_thread.started.connect(self.result_parser.start)
-        self.result_parser.finish_signal.connect(self.process_and_insert_event_results)
-        self.result_parser.finish_signal.connect(self.get_result_thread.quit)
-        self.get_result_thread.start()
-        self.bets_checking_window.ui.pushButton_skipBetsCheking.clicked.connect(self.get_result_thread.requestInterruption)
-        self.open_bets_checking_window()
 
     def preload_websites_and_authorize(self) -> None:
         """Запуск алгоритма автоматического размещения ставок"""
@@ -201,8 +171,10 @@ class DesktopApp(QMainWindow):
                                                                      'min_koeff': self.ui.doubleSpinBox_minKsecondBkmkr.value()},
                 'bet_imitation': self.ui.checkBox_betImitation.isChecked()}
 
+    ###### Results processing ######
+
     def add_event_to_active_bets_list_and_xlsx(self, event_data) -> None:
-        """Добавление собятия, на которое сделана ставка, в реестр настроек для последующего получения результата"""
+        """Добавление события, на которое сделана ставка, в реестр настроек для последующего получения результата"""
         for bkmkr_data in event_data:
             key = f'{bkmkr_data["bookmaker"]}$${bkmkr_data["url"]}'
             self.active_bets_list.setValue(key, bkmkr_data)
@@ -217,8 +189,63 @@ class DesktopApp(QMainWindow):
             self.statistic_manager.finish_signal.connect(self.write_event_data_thread.quit)
             self.write_event_data_thread.start()
 
-    def process_and_insert_event_results(self, events_results: dict) -> None:
-        """Обработка результатов событий, на которые сделаны ставки и запись их в файл стаитстики xlsx,
+    def check_active_bets(self, parsing_type: str = 'api') -> None:
+        """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
+            вид данных active_bets_urls=str(bookmaker$$url)"""
+        active_bets_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
+        if not active_bets_urls:
+            message = "Завершен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
+            self.render_diagnostics(message)
+            logging.info(message)
+            return
+        elif parsing_type == 'api':
+            message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
+            logging.info(message)
+        else:
+            message = "Попытка получить недостающие результаты по раннее размещенным ставкам используя Selenium"
+            self.render_diagnostics(message)
+            logging.info(message)
+
+        if parsing_type == 'api':
+            self.result_parsing_finished = False
+            active_bets_data = [self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()]
+            self.result_parser = ApiResponseParser(active_bets_data)
+        elif parsing_type == 'selenium':
+            self.result_parsing_finished = True
+            control_settings = self.browser_control_set_window.get_control_settings()
+            SeleniumParser.page_load_timeout = control_settings['timeouts']['result_page_load_timeout']
+            self.result_parser = SeleniumParser(active_bets_urls)
+
+        self.start_check_thread()
+
+    def start_check_thread(self) -> None:
+        """Запуск парсеров результатов событий в отдельном потоке"""
+        if hasattr(self, 'get_result_thread'):
+            del self.get_result_thread
+        self.get_result_thread = QThread()
+        self.result_parser.moveToThread(self.get_result_thread)
+        self.get_result_thread.started.connect(self.result_parser.start)
+        self.result_parser.finish_signal.connect(self.process_parser_results)
+        self.result_parser.finish_signal.connect(self.get_result_thread.quit)
+        self.get_result_thread.start()
+        self.bets_checking_window.ui.pushButton_skipBetsCheking.clicked.connect(self.get_result_thread.requestInterruption)
+        self.open_bets_checking_window()
+
+    def process_parser_results(self, events_results: dict) -> None:
+        """Оценка полноты полученных результатов и запуск функции записи в файл статистики"""
+        if events_results['results']:
+            for result_key in events_results['results'].keys():
+                try:
+                    self.active_bets_list.remove(result_key)
+                except BaseException as ex:
+                    logger.info(ex)
+            self.insert_event_results(events_results)
+
+            if self.active_bets_list.allKeys() and not self.result_parsing_finished:
+                self.check_active_bets(parsing_type='selenium')
+
+    def insert_event_results(self, events_results: dict) -> None:
+        """Запись результатов событий, на которые сделаны ставки в файл стаитстики xlsx,
         вид данных event_result_key=str(bookmaker$$url)"""
         self.bets_checking_window.close()
         logger.info(events_results['status'])

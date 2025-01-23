@@ -141,9 +141,7 @@ class BetboomParser:
                 'countryCode': None,
             }
             async with session.post(url=COUNTRY_LIST_URL, json=json_data, headers=HEADERS) as r:
-                print(r)
                 countries_list = await r.text()
-            print('flag04', countries_list)
 
             countries_data_list = {}
             for country in json.loads(countries_list):

@@ -28,6 +28,8 @@ BOOKMAKERS = {'betboom': 'https://betboom.ru/',
               'olimp': 'https://www.olimp.bet/',
               'xstavka': 'https://1xstavka.ru/'}
 
+RESULT_API_URL = {'olimp': 'https://www.olimp.bet/api/results'}
+
 # Webdriver settings
 # directory (base dir /--/ browsers_control)
 WEBDRIVER_DIR = {'linux': BASE_DIR / "components/browsers_control/chromedriver/chromedriver",
