@@ -59,6 +59,7 @@ class OlimpParser:
                 self.__game_type = "5"
             case "IceHockey":
                 self.__game_type = "2"
+        self.scan_params = scan_params
         self.__market = scan_params['market']
         self.__betline = scan_params['betline']
         self.__region = scan_params['region']
@@ -151,6 +152,8 @@ class OlimpParser:
             processed_event_data = self.__get_markets(event_data)
             if not processed_event_data.get('runners'):
                 continue
+            processed_event_data['game_type'] = self.scan_params['game_type']
+            processed_event_data['game_type_num'] = self.__game_type
             output_data.append(processed_event_data)
 
         return output_data

@@ -92,31 +92,35 @@ class ApiResponseParser(QObject):
         asyncio.run(self.start_async_func())
 
     async def start_async_func(self) -> list:
-        results = {}
+        results_data = {'status': 'Результаты событий получены по всем ранее сделанным ставкам',
+                        'results': {}}
         tasks = []
         async with aiohttp.ClientSession() as session:
             for event_data in self.active_bets_data:
-                bookmaker = event_data["bookmaker"]
-                date = event_data["date"]
-                api_url = settings.RESULT_API_URL.get(bookmaker)
 
                 try:
-                    func = getattr(self, bookmaker)
+                    func = getattr(self, event_data["bookmaker"])
                 except AttributeError as ex:
                     logger.info(ex)
                     continue
 
-                task = asyncio.create_task(func(session, api_url, date))
+                task = asyncio.create_task(func(session, event_data))
                 tasks.append(task)
             results = await asyncio.gather(*tasks)
+        print(results)
+        for result in results:
+
         return results
 
     async def olimp(self,
                     session: aiohttp.ClientSession,
-                    api_url: str,
-                    date: str,
-                    sport_type: int = 1) -> str | None:
+                    event_data: dict) -> str | None:
         """Получение результата события (в формате '2:3')"""
+        print(event_data)
+        date = event_data["date"]
+        #sport_type = int(event_data["sport_type_num"])
+        sport_type = 1
+        api_url = settings.RESULT_API_URL.get(event_data["bookmaker"])
         json_data = {
             'time_shift': -240,
             'id': sport_type,
@@ -148,7 +152,6 @@ class ApiResponseParser(QObject):
         }
         async with session.post(url=api_url, json=json_data, headers=headers) as response:
             result = await response.text()
-        print(result)
         return result
 
 

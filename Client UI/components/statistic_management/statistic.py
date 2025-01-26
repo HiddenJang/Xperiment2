@@ -19,8 +19,8 @@ class StatisticManager(QObject):
     diag_signal = QtCore.pyqtSignal(str)
     finish_signal = QtCore.pyqtSignal()
 
-    columns = ("№  ", "Команды", "Дата", "ТМ/Коэфф.", "ТБ/Коэфф.", "Скриншот", "Ссылка", "Ставка", "Баланс до",
-               "Баланс после", "Время размещения", "Сумма голов", "Результат", "Баланс")
+    columns = ("№  ", "Команды", "Вид спорта", "Дата", "ТМ/Коэфф.", "ТБ/Коэфф.", "Скриншот", "Ссылка", "Ставка",
+               "Баланс до", "Баланс после", "Время размещения", "Сумма голов", "Результат", "Баланс")
     font = 'Calibri'
     font_size = 12
     thins = Side(border_style="thin", color="000000")
@@ -51,12 +51,12 @@ class StatisticManager(QObject):
                 ws_betting.column_dimensions[cell.column_letter].width = new_width_col
                 ws_betting.column_dimensions[cell.column_letter].alignment = Alignment(horizontal="center")
 
-            ws_betting.column_dimensions['F'].alignment = Alignment(horizontal="left")
             ws_betting.column_dimensions['G'].alignment = Alignment(horizontal="left")
+            ws_betting.column_dimensions['H'].alignment = Alignment(horizontal="left")
             ws_betting.column_dimensions['B'].width = 30
-            ws_betting.column_dimensions['C'].width = 12
-            ws_betting.column_dimensions['F'].width = 30
+            ws_betting.column_dimensions['D'].width = 12
             ws_betting.column_dimensions['G'].width = 30
+            ws_betting.column_dimensions['H'].width = 30
 
             ws_imitation = wb.copy_worksheet(ws_betting)
             ws_imitation.title = "Имитация ставок"
@@ -102,32 +102,33 @@ class StatisticManager(QObject):
                 empty_row_num = len(ws['A']) + 1
                 ws.cell(row=empty_row_num, column=1).value = event_num
                 ws.cell(row=empty_row_num, column=2).value = data['teams']
-                ws.cell(row=empty_row_num, column=3).value = data['date']
+                ws.cell(row=empty_row_num, column=3).value = data['game_type']
+                ws.cell(row=empty_row_num, column=4).value = data['date']
                 if data['total_koeff_type'] == 'under':
-                    ws.cell(row=empty_row_num, column=4).value = data['total_koeff']
-                    ws.cell(row=empty_row_num, column=5).value = '-'
-                else:
-                    ws.cell(row=empty_row_num, column=4).value = '-'
                     ws.cell(row=empty_row_num, column=5).value = data['total_koeff']
+                    ws.cell(row=empty_row_num, column=6).value = '-'
+                else:
+                    ws.cell(row=empty_row_num, column=5).value = '-'
+                    ws.cell(row=empty_row_num, column=6).value = data['total_koeff']
                 try:
                     screenshot_name = data['screenshot_name'].split('/')[-1]
                 except BaseException:
                     screenshot_name = data['screenshot_name']
-                ws.cell(row=empty_row_num, column=6).value = screenshot_name
-                ws.cell(row=empty_row_num, column=7).hyperlink = data['url']
-                ws.cell(row=empty_row_num, column=7).value = data['url']
-                ws.cell(row=empty_row_num, column=8).value = data['bet_size']
+                ws.cell(row=empty_row_num, column=7).value = screenshot_name
+                ws.cell(row=empty_row_num, column=8).hyperlink = data['url']
+                ws.cell(row=empty_row_num, column=8).value = data['url']
+                ws.cell(row=empty_row_num, column=9).value = data['bet_size']
                 if data['bet_imitation'] and event_num == 1:
-                    ws.cell(row=empty_row_num, column=9).value = self.imitation_start_balance
-                    ws.cell(row=empty_row_num, column=10).value = self.imitation_start_balance - float(data['bet_size'])
+                    ws.cell(row=empty_row_num, column=10).value = self.imitation_start_balance
+                    ws.cell(row=empty_row_num, column=11).value = self.imitation_start_balance - float(data['bet_size'])
                 elif data['bet_imitation'] and event_num > 1:
-                    ws.cell(row=empty_row_num, column=9).value = ws.cell(row=empty_row_num-3, column=14).value
-                    ws.cell(row=empty_row_num, column=10).value = ws.cell(row=empty_row_num-3, column=14).value - float(data['bet_size'])
+                    ws.cell(row=empty_row_num, column=10).value = ws.cell(row=empty_row_num-3, column=15).value
+                    ws.cell(row=empty_row_num, column=11).value = ws.cell(row=empty_row_num-3, column=15).value - float(data['bet_size'])
                 else:
-                    ws.cell(row=empty_row_num, column=9).value = data['start_balance']
-                    ws.cell(row=empty_row_num, column=10).value = data['balance_after_bet']
-                ws.cell(row=empty_row_num, column=11).value = data['betting_time']
-                ws.cell(row=empty_row_num, column=14).value = ws.cell(row=empty_row_num, column=10).value
+                    ws.cell(row=empty_row_num, column=10).value = data['start_balance']
+                    ws.cell(row=empty_row_num, column=11).value = data['balance_after_bet']
+                ws.cell(row=empty_row_num, column=12).value = data['betting_time']
+                ws.cell(row=empty_row_num, column=15).value = ws.cell(row=empty_row_num, column=11).value
 
             empty_row_num = len(ws['A']) + 1
             for col in range(1, len(self.columns)+1):
@@ -168,7 +169,8 @@ if __name__ == '__main__':
     class settings:
         STATS_DIR = BASE_DIR / "statistic"
         STATS_FILE_NAME = STATS_DIR / "statistic.xlsx"
-    event_data = [{'balance_after_bet': 90,
+    event_data = [{'game_type': 'Soccer',
+                   'balance_after_bet': 90,
                    'betting_time': '100',
                    'screenshot_name': 'D:/screenshots/leon.png',
                    'bet_imitation': True,
@@ -181,7 +183,8 @@ if __name__ == '__main__':
                    'teams': 'ЦСКА - Спартак',
                    'bookmaker': 'leon',
                    'date': '2025-01-12'},
-                  {'balance_after_bet': 110,
+                  {'game_type': 'Soccer',
+                   'balance_after_bet': 110,
                    'betting_time': '80',
                    'screenshot_name': 'D:/screenshots/olimp.png',
                    'bet_imitation': True,
@@ -194,8 +197,10 @@ if __name__ == '__main__':
                    'teams': 'ЦСКА - Спартак',
                    'bookmaker': 'olimp',
                    'date': '2025-01-12'}]
-    statistic = StatisticManager()
-    statistic.insert_data(event_data)
+    results = {}
+    statistic = StatisticManager(event_data, results=results)
+    statistic.insert_data()
+    statistic.insert_results()
 else:
     from .. import settings
     from ..telegram import TelegramService

@@ -195,6 +195,8 @@ class LeonParser:
             ###################################
 
             processed_event_data['url'] = event_url
+            processed_event_data['game_type'] = self.__game_type
+            processed_event_data['game_type_num'] = '-'
             output_data.append(processed_event_data)
         return output_data
 

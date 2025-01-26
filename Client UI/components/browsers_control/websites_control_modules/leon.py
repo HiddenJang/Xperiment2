@@ -101,6 +101,8 @@ class SiteInteraction:
         total_nominal = list(event_data['runners'].keys())[0]
         total_koeff_type = list(event_data['runners'][total_nominal].keys())[0]
 
+        self.bet_data_for_stats['game_type'] = event_data["game_type"]
+        self.bet_data_for_stats['game_type_num'] = event_data["game_type_num"]
         self.bet_data_for_stats['bookmaker'] = bookmaker
         self.bet_data_for_stats['teams'] = event_data["teams"]
         self.bet_data_for_stats['url'] = event_data["url"]

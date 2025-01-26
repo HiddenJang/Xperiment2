@@ -194,7 +194,7 @@ class DesktopApp(QMainWindow):
             вид данных active_bets_urls=str(bookmaker$$url)"""
         active_bets_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
         if not active_bets_urls:
-            message = "Завершен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
+            message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
             self.render_diagnostics(message)
             logging.info(message)
             return
@@ -207,6 +207,7 @@ class DesktopApp(QMainWindow):
             logging.info(message)
 
         if parsing_type == 'api':
+            self.open_bets_checking_window()
             self.result_parsing_finished = False
             active_bets_data = [self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()]
             self.result_parser = ApiResponseParser(active_bets_data)
@@ -225,13 +226,12 @@ class DesktopApp(QMainWindow):
         self.get_result_thread = QThread()
         self.result_parser.moveToThread(self.get_result_thread)
         self.get_result_thread.started.connect(self.result_parser.start)
-        self.result_parser.finish_signal.connect(self.process_parser_results)
+        self.result_parser.finish_signal.connect(self.process_parsing_results)
         self.result_parser.finish_signal.connect(self.get_result_thread.quit)
         self.get_result_thread.start()
         self.bets_checking_window.ui.pushButton_skipBetsCheking.clicked.connect(self.get_result_thread.requestInterruption)
-        self.open_bets_checking_window()
 
-    def process_parser_results(self, events_results: dict) -> None:
+    def process_parsing_results(self, events_results: dict) -> None:
         """Оценка полноты полученных результатов и запуск функции записи в файл статистики"""
         if events_results['results']:
             for result_key in events_results['results'].keys():
@@ -243,11 +243,12 @@ class DesktopApp(QMainWindow):
 
             if self.active_bets_list.allKeys() and not self.result_parsing_finished:
                 self.check_active_bets(parsing_type='selenium')
+            else:
+                self.bets_checking_window.close()
 
     def insert_event_results(self, events_results: dict) -> None:
         """Запись результатов событий, на которые сделаны ставки в файл стаитстики xlsx,
         вид данных event_result_key=str(bookmaker$$url)"""
-        self.bets_checking_window.close()
         logger.info(events_results['status'])
         self.render_diagnostics(events_results['status'])
 
