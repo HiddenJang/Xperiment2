@@ -5,6 +5,7 @@ import aiohttp
 from PyQt5 import QtCore
 from PyQt5.QtCore import QObject, QThread
 from selenium.common import TimeoutException
+from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -20,9 +21,9 @@ class SeleniumParser(QObject):
     finish_signal = QtCore.pyqtSignal(dict)
     page_load_timeout = 5
 
-    def __init__(self, active_bets_urls: list):
+    def __init__(self, active_bets_data: list):
         super(SeleniumParser, self).__init__()
-        self.active_bets_urls = active_bets_urls
+        self.active_bets_data = active_bets_data
 
     def start(self) -> str | None:
         """Открытие страниц с результатом и получение результатов событий"""
@@ -34,9 +35,9 @@ class SeleniumParser(QObject):
         else:
             self.driver = driver['driver']
 
-        for event_url in self.active_bets_urls:
-            bookmaker = event_url.split('$$')[0]
-            url = event_url.split('$$')[1]
+        for event_data in self.active_bets_data:
+            bookmaker = event_data['bookmaker']
+            url = event_data['url']
 
             if QThread.currentThread().isInterruptionRequested():
                 self.driver.close()
@@ -48,33 +49,57 @@ class SeleniumParser(QObject):
             except AttributeError as ex:
                 logger.info(ex)
                 continue
-            try:
-                self.driver.get(url)
-            except TimeoutException:
-                logger.info(f'Превышение времени ожидания открытия страницы {bookmaker} для получения результата. Попытка продолжить')
-            result = func()
+
+            result = func(event_data)
             if result:
-                results[event_url] = {'result': result}
+                results[url] = {'result': result}
 
         self.driver.close()
         self.driver.quit()
         if not results:
             self.finish_signal.emit({'status': 'Не удалось получить результаты событий по ранее сделанным ставкам',
                                      'results': {}})
-        elif len(results) != len(self.active_bets_urls):
+        elif len(results) != len(self.active_bets_data):
             self.finish_signal.emit({'status': 'Результаты событий получены не по всем ранее сделанным ставкам',
                                      'results': results})
         else:
             self.finish_signal.emit({'status': 'Результаты событий получены по всем ранее сделанным ставкам',
                                      'results': results})
 
-    def leon(self) -> str | None:
+    def leon(self, event_data: dict) -> str | None:
         """Получение результата события (в формате '2:3')"""
-
+        try:
+            self.driver.get(event_data['url'])
+        except TimeoutException:
+            logger.info(
+                f'Превышение времени ожидания открытия страницы {event_data["bookmaker"]} для получения результата. Попытка продолжить')
+            return
         try:
             element = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, "//span[contains(@class,'post-match-statistic-incident__score')]")))
-            result = element.text
-            return result
+            event_result = element.text
+            return event_result
+        except BaseException as ex:
+            logger.info(ex)
+
+    def olimp(self, event_data: dict) -> str | None:
+        """Получение результата события (в формате '2:3')"""
+        try:
+            bookmaker = event_data['bookmaker']
+            date = event_data['date']
+            sport_type_num = event_data['sport_type_num']
+            teams = event_data['teams']
+            url = settings.RESULTS_URL[bookmaker] % (sport_type_num, date, date)
+            try:
+                self.driver.get(url)
+            except TimeoutException:
+                logger.info(
+                    f'Превышение времени ожидания открытия страницы {bookmaker} для получения результата. Попытка продолжить')
+                return
+            for _ in range(20):
+                self.driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+            page_data = self.driver.find_element(By.ID, 'content').text.split('\n')
+            event_result = page_data[page_data.index(teams) + 1].split(' ')[0]
+            return event_result
         except BaseException as ex:
             logger.info(ex)
 
@@ -89,15 +114,16 @@ class ApiResponseParser(QObject):
 
     def start(self) -> None:
         """Запуск"""
-        asyncio.run(self.start_async_func())
+        return
+        asyncio.run(self.start_async())
 
-    async def start_async_func(self) -> list:
+    async def start_async(self) -> list:
         results_data = {'status': 'Результаты событий получены по всем ранее сделанным ставкам',
                         'results': {}}
         tasks = []
         async with aiohttp.ClientSession() as session:
             for event_data in self.active_bets_data:
-
+                print(event_data)
                 try:
                     func = getattr(self, event_data["bookmaker"])
                 except AttributeError as ex:
@@ -108,7 +134,7 @@ class ApiResponseParser(QObject):
                 tasks.append(task)
             results = await asyncio.gather(*tasks)
         print(results)
-        for result in results:
+        # for result in results:
 
         return results
 
@@ -155,5 +181,51 @@ class ApiResponseParser(QObject):
         return result
 
 
+## Input example
+# {'balance_after_bet': '198',
+#  'bet_imitation': True,
+#  'bet_size': 22,
+#  'betting_time': 8.484900951385498,
+#  'bookmaker': 'olimp',
+#  'date': '2025-01-22',
+#  'screenshot_name': '/usr/pythonProjects/Xperiment2/Client UI/screenshots/olimp-2025-01-22 20-25-38.731788.png',
+#  'start_balance': '198',
+#  'teams': 'Аль-Гарафа - Аль-Ахли Доха',
+#  'total_koeff': 1.95,
+#  'total_koeff_type': 'over',
+#  'total_nominal': '3',
+#  'url': 'https://www.olimp.bet/line/1/675327/81514787'}
+
 ## Out example
-## {'leon$$https://leon.ru/bets/soccer/europe/uefa-europa-league/1970324845367328-besiktas-jk-athletic-bilbao': {'result': '4:1', 'event_data': {'balance_after_bet': '103', 'bet_imitation': True, 'bet_size': 22, 'betting_time': 16.43402099609375, 'bookmaker': 'leon', 'date': '2025-01-22', 'screenshot_name': '/usr/pythonProjects/Xperiment2/Client UI/screenshots/leon-2025-01-22 20-02-15.844436.png', 'start_balance': '103', 'teams': 'Бешикташ - Атлетик Бильбао', 'total_koeff': 1.7, 'total_koeff_type': 'under', 'total_nominal': '3', 'url': 'https://leon.ru/bets/soccer/europe/uefa-europa-league/1970324845367328-besiktas-jk-athletic-bilbao'}}, 'leon$$https://leon.ru/bets/soccer/qatar/stars-league/1970324845592137-al-gharafa-sc-al-ahli': {'result': '2:0', 'event_data': {'balance_after_bet': '103', 'bet_imitation': True, 'bet_size': 22, 'betting_time': 12.209675073623657, 'bookmaker': 'leon', 'date': '2025-01-22', 'screenshot_name': '/usr/pythonProjects/Xperiment2/Client UI/screenshots/leon-2025-01-22 20-25-38.747639.png', 'start_balance': '103', 'teams': 'Аль-Гарафа - Аль-Ахли', 'total_koeff': 1.75, 'total_koeff_type': 'under', 'total_nominal': '3', 'url': 'https://leon.ru/bets/soccer/qatar/stars-league/1970324845592137-al-gharafa-sc-al-ahli'}}}
+# {'leon$$https://leon.ru/bets/soccer/europe/uefa-europa-league/1970324845367328-besiktas-jk-athletic-bilbao':
+#      {'result': '4:1',
+#       'event_data':
+#           {'balance_after_bet': '103',
+#            'bet_imitation': True,
+#            'bet_size': 22,
+#            'betting_time': 16.43402099609375,
+#            'bookmaker': 'leon',
+#            'date': '2025-01-22',
+#            'screenshot_name': '/usr/pythonProjects/Xperiment2/Client UI/screenshots/leon-2025-01-22 20-02-15.844436.png',
+#            'start_balance': '103',
+#            'teams': 'Бешикташ - Атлетик Бильбао',
+#            'total_koeff': 1.7,
+#            'total_koeff_type': 'under',
+#            'total_nominal': '3',
+#            'url': 'https://leon.ru/bets/soccer/europe/uefa-europa-league/1970324845367328-besiktas-jk-athletic-bilbao'}},
+#      'leon$$https://leon.ru/bets/soccer/qatar/stars-league/1970324845592137-al-gharafa-sc-al-ahli':
+#          {'result': '2:0', 'event_data':
+#              {'balance_after_bet': '103',
+#               'bet_imitation': True,
+#               'bet_size': 22,
+#               'betting_time': 12.209675073623657,
+#               'bookmaker': 'leon',
+#               'date': '2025-01-22',
+#               'screenshot_name': '/usr/pythonProjects/Xperiment2/Client UI/screenshots/leon-2025-01-22 20-25-38.747639.png',
+#               'start_balance': '103',
+#               'teams': 'Аль-Гарафа - Аль-Ахли',
+#               'total_koeff': 1.75,
+#               'total_koeff_type': 'under',
+#               'total_nominal': '3',
+#               'url': 'https://leon.ru/bets/soccer/qatar/stars-league/1970324845592137-al-gharafa-sc-al-ahli'}}
+#  }

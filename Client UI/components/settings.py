@@ -28,7 +28,7 @@ BOOKMAKERS = {'betboom': 'https://betboom.ru/',
               'olimp': 'https://www.olimp.bet/',
               'xstavka': 'https://1xstavka.ru/'}
 
-RESULT_API_URL = {'olimp': 'https://www.olimp.bet/api/results'}
+RESULTS_URL = {'olimp': 'https://www.olimp.bet/results?sportId=%d&startDate=%s&endDate=%s&shouldSearchByChamps=false'}
 
 # Webdriver settings
 # directory (base dir /--/ browsers_control)

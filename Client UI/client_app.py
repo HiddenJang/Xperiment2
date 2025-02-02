@@ -192,8 +192,9 @@ class DesktopApp(QMainWindow):
     def check_active_bets(self, parsing_type: str = 'api') -> None:
         """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
             вид данных active_bets_urls=str(bookmaker$$url)"""
-        active_bets_urls = [x.replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
-        if not active_bets_urls:
+        active_bets_data = [self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()]
+        print(active_bets_data)
+        if not active_bets_data:
             message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
             self.render_diagnostics(message)
             logging.info(message)
@@ -209,13 +210,12 @@ class DesktopApp(QMainWindow):
         if parsing_type == 'api':
             self.open_bets_checking_window()
             self.result_parsing_finished = False
-            active_bets_data = [self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()]
             self.result_parser = ApiResponseParser(active_bets_data)
         elif parsing_type == 'selenium':
             self.result_parsing_finished = True
             control_settings = self.browser_control_set_window.get_control_settings()
             SeleniumParser.page_load_timeout = control_settings['timeouts']['result_page_load_timeout']
-            self.result_parser = SeleniumParser(active_bets_urls)
+            self.result_parser = SeleniumParser(active_bets_data)
 
         self.start_check_thread()
 

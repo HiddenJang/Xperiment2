@@ -4,13 +4,19 @@ import sys
 
 from selenium.common import TimeoutException
 
-from .. import settings
+#from .. import settings
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
 logger = logging.getLogger('Client UI.components.browsers_control.webdriver')
 
+
+class settings:
+    from pathlib import Path
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+    WEBDRIVER_DIR = {'linux': BASE_DIR / "components/browsers_control/chromedriver/chromedriver",
+                     'win32': BASE_DIR / "components\\browsers_control\\chromedriver\\chromedriver.exe"}
 
 class Driver:
     """Класс вебдрайвера для управления браузером"""
