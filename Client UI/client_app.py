@@ -193,7 +193,7 @@ class DesktopApp(QMainWindow):
         """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
             вид данных active_bets_urls=str(bookmaker$$url)"""
         active_bets_data = [self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()]
-        print(active_bets_data)
+        #print(active_bets_data)
         if not active_bets_data:
             message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
             self.render_diagnostics(message)
@@ -202,16 +202,15 @@ class DesktopApp(QMainWindow):
         elif parsing_type == 'api':
             message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
             logging.info(message)
+
+            self.result_parsing_finished = False
+            self.result_parser = ApiResponseParser(active_bets_data)
+
         else:
             message = "Попытка получить недостающие результаты по раннее размещенным ставкам используя Selenium"
             self.render_diagnostics(message)
             logging.info(message)
 
-        if parsing_type == 'api':
-            self.open_bets_checking_window()
-            self.result_parsing_finished = False
-            self.result_parser = ApiResponseParser(active_bets_data)
-        elif parsing_type == 'selenium':
             self.result_parsing_finished = True
             control_settings = self.browser_control_set_window.get_control_settings()
             SeleniumParser.page_load_timeout = control_settings['timeouts']['result_page_load_timeout']
@@ -233,7 +232,9 @@ class DesktopApp(QMainWindow):
 
     def process_parsing_results(self, events_results: dict) -> None:
         """Оценка полноты полученных результатов и запуск функции записи в файл статистики"""
+        self.render_diagnostics(events_results['status'])
         if events_results['results']:
+            print(events_results)
             for result_key in events_results['results'].keys():
                 try:
                     self.active_bets_list.remove(result_key)
@@ -241,10 +242,10 @@ class DesktopApp(QMainWindow):
                     logger.info(ex)
             self.insert_event_results(events_results)
 
-            if self.active_bets_list.allKeys() and not self.result_parsing_finished:
-                self.check_active_bets(parsing_type='selenium')
-            else:
-                self.bets_checking_window.close()
+        if self.active_bets_list.allKeys() and not self.result_parsing_finished:
+            self.check_active_bets(parsing_type='selenium')
+        else:
+            self.bets_checking_window.close()
 
     def insert_event_results(self, events_results: dict) -> None:
         """Запись результатов событий, на которые сделаны ставки в файл стаитстики xlsx,
