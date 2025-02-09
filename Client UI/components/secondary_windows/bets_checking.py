@@ -14,3 +14,4 @@ class BetsChecking(Ui_bets_checking, QDialog):
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowCloseButtonHint)
         self.ui.pushButton_skipBetsCheking.clicked.connect(self.close)
 
+

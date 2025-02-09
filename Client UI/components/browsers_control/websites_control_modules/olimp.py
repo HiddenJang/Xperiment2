@@ -67,8 +67,18 @@ class SiteInteraction:
         """Авторизация пользователя"""
         login = common_auth_data['auth_data']['login']
         password = common_auth_data['auth_data']['password']
+        # попытка закрыть окно промо
+        try:
+            self.driver.find_element(By.XPATH, "//div[contains(@class, 'box-promotion')]/button[@class='close']").click()
+        except BaseException:
+            pass
         # нажатие кнопки ВХОД
         WebDriverWait(self.driver, 60).until(EC.visibility_of_element_located((By.XPATH, "//button[contains(@class, 'signIn')]"))).click()
+        # попытка закрыть окно промо
+        try:
+            self.driver.find_element(By.XPATH, "//div[contains(@class, 'box-promotion')]/button[@class='close']").click()
+        except BaseException:
+            pass
         # ввод ЛОГИНА
         element = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']")))
         element.click()

@@ -4,7 +4,7 @@ import asyncio
 import aiohttp
 from PyQt5 import QtCore
 from PyQt5.QtCore import QObject, QThread
-from selenium.common import TimeoutException
+from selenium.common import TimeoutException, WebDriverException
 from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -73,6 +73,9 @@ class SeleniumParser(QObject):
         except TimeoutException:
             logger.info(
                 f'Превышение времени ожидания открытия страницы {event_data["bookmaker"]} для получения результата. Попытка продолжить')
+            return
+        except WebDriverException as ex:
+            logger.info(f'Ошибка открытия страницы {event_data["bookmaker"]}: {ex}')
             return
         try:
             element = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, "//span[contains(@class,'post-match-statistic-incident__score')]")))

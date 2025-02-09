@@ -193,6 +193,7 @@ class DesktopApp(QMainWindow):
         """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
             вид данных active_bets_urls=str(bookmaker$$url)"""
         active_bets_data = [self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()]
+
         #print(active_bets_data)
         if not active_bets_data:
             message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
@@ -205,7 +206,6 @@ class DesktopApp(QMainWindow):
 
             self.result_parsing_finished = False
             self.result_parser = ApiResponseParser(active_bets_data)
-
         else:
             message = "Попытка получить недостающие результаты по раннее размещенным ставкам используя Selenium"
             self.render_diagnostics(message)
@@ -229,6 +229,8 @@ class DesktopApp(QMainWindow):
         self.result_parser.finish_signal.connect(self.get_result_thread.quit)
         self.get_result_thread.start()
         self.bets_checking_window.ui.pushButton_skipBetsCheking.clicked.connect(self.get_result_thread.requestInterruption)
+        if not self.bets_checking_window.isVisible():
+            self.open_bets_checking_window()
 
     def process_parsing_results(self, events_results: dict) -> None:
         """Оценка полноты полученных результатов и запуск функции записи в файл статистики"""
@@ -246,6 +248,9 @@ class DesktopApp(QMainWindow):
             self.check_active_bets(parsing_type='selenium')
         else:
             self.bets_checking_window.close()
+            message = "Завершен процесс получения данных о результатах событий с ранее размещенными ставками"
+            self.render_diagnostics(message)
+            logging.info(message)
 
     def insert_event_results(self, events_results: dict) -> None:
         """Запись результатов событий, на которые сделаны ставки в файл стаитстики xlsx,

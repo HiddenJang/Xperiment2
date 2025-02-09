@@ -2,7 +2,7 @@ import logging
 import os.path
 import sys
 
-from selenium.common import TimeoutException
+from selenium.common import TimeoutException, WebDriverException
 
 #from .. import settings
 from selenium import webdriver

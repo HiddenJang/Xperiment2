@@ -15,7 +15,7 @@ if os.path.exists(ENV_PATH):
 FORMAT = "%(asctime)s -- %(name)s -- %(lineno)s -- %(levelname)s -- %(message)s"
 LOGS_PATH = BASE_DIR / "logs"
 FILENAME = LOGS_PATH / "gui_logs.log"
-LOGLEVEL = "DEBUG"
+LOGLEVEL = "ERROR"
 MAX_BYTES_FILE_SIZE = 300000
 LOG_FILES_COUNT = 10
 
