@@ -115,7 +115,9 @@ class DesktopApp(QMainWindow):
         self.ui.pushButton_startAutoBet.setDisabled(True)
 
         control_settings = self.browser_control_set_window.get_control_settings()
-        excluded_urls = [x.split('$$')[1].replace('https:/', 'https://') for x in self.active_bets_list.allKeys()]
+        excluded_urls = sum([x.replace('https:/', 'https://').split('$$') for x in self.active_bets_list.allKeys()], [])
+        print('excluded_urls=', excluded_urls)
+
         control_settings['excluded_urls'] = excluded_urls
         WebsiteController.authorization_page_load_timeout = control_settings['timeouts']['authorization_page_load_timeout']
 
@@ -175,10 +177,10 @@ class DesktopApp(QMainWindow):
 
     def add_event_to_active_bets_list_and_xlsx(self, event_data) -> None:
         """Добавление события, на которое сделана ставка, в реестр настроек для последующего получения результата"""
-        for bkmkr_data in event_data:
-            key = f'{bkmkr_data["bookmaker"]}$${bkmkr_data["url"]}'
-            self.active_bets_list.setValue(key, bkmkr_data)
         if event_data:
+            key = f'{event_data[0]["url"]}$${event_data[1]["url"]}'
+            self.active_bets_list.setValue(key, event_data)
+
             if hasattr(self, 'write_event_data_thread'):
                 del self.write_event_data_thread
             self.write_event_data_thread = QThread()
@@ -192,9 +194,8 @@ class DesktopApp(QMainWindow):
     def check_active_bets(self, parsing_type: str = 'api') -> None:
         """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
             вид данных active_bets_urls=str(bookmaker$$url)"""
-        active_bets_data = [self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()]
+        active_bets_data = {x: self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()}
 
-        #print(active_bets_data)
         if not active_bets_data:
             message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
             self.render_diagnostics(message)
