@@ -116,7 +116,6 @@ class DesktopApp(QMainWindow):
 
         control_settings = self.browser_control_set_window.get_control_settings()
         excluded_urls = sum([x.replace('https:/', 'https://').split('$$') for x in self.active_bets_list.allKeys()], [])
-        print('excluded_urls=', excluded_urls)
 
         control_settings['excluded_urls'] = excluded_urls
         WebsiteController.authorization_page_load_timeout = control_settings['timeouts']['authorization_page_load_timeout']
@@ -236,14 +235,15 @@ class DesktopApp(QMainWindow):
     def process_parsing_results(self, events_results: dict) -> None:
         """Оценка полноты полученных результатов и запуск функции записи в файл статистики"""
         self.render_diagnostics(events_results['status'])
+        logger.info(events_results['status'])
+
         if events_results['results']:
-            print(events_results)
             for result_key in events_results['results'].keys():
                 try:
                     self.active_bets_list.remove(result_key)
                 except BaseException as ex:
                     logger.info(ex)
-            self.insert_event_results(events_results)
+            self.insert_event_results(events_results['results'])
 
         if self.active_bets_list.allKeys() and not self.result_parsing_finished:
             self.check_active_bets(parsing_type='selenium')
@@ -256,26 +256,16 @@ class DesktopApp(QMainWindow):
     def insert_event_results(self, events_results: dict) -> None:
         """Запись результатов событий, на которые сделаны ставки в файл стаитстики xlsx,
         вид данных event_result_key=str(bookmaker$$url)"""
-        logger.info(events_results['status'])
-        self.render_diagnostics(events_results['status'])
+        if hasattr(self, 'write_results_thread'):
+            del self.write_results_thread
 
-        if events_results['results']:
-            results_keys = events_results['results'].keys()
-            for event_result_key in results_keys:
-                try:
-                    events_results['results'][event_result_key]['event_data'] = self.active_bets_list.value(event_result_key)
-                except BaseException as ex:
-                    logger.info(ex)
-
-            if hasattr(self, 'write_results_thread'):
-                del self.write_results_thread
-            self.write_results_thread = QThread()
-            self.statistic_manager_results = StatisticManager(results=events_results['results'])
-            self.statistic_manager_results.moveToThread(self.write_results_thread)
-            self.write_results_thread.started.connect(self.statistic_manager_results.insert_results)
-            self.statistic_manager_results.diag_signal.connect(self.render_diagnostics)
-            self.statistic_manager_results.finish_signal.connect(self.write_results_thread.quit)
-            self.write_results_thread.start()
+        self.write_results_thread = QThread()
+        self.statistic_manager_results = StatisticManager(results=events_results)
+        self.statistic_manager_results.moveToThread(self.write_results_thread)
+        self.write_results_thread.started.connect(self.statistic_manager_results.insert_results)
+        self.statistic_manager_results.diag_signal.connect(self.render_diagnostics)
+        self.statistic_manager_results.finish_signal.connect(self.write_results_thread.quit)
+        self.write_results_thread.start()
 
     ###### Test connection slots ######
 

@@ -76,7 +76,7 @@ class StatisticManager(QObject):
                         logger.info(f'{message}: {ex}')
                     sleep(0.5)
 
-    def insert_data(self):
+    def insert_data(self) -> None:
         """Заполнение данными документа xlsx"""
         wb = self.create_or_open()
         if not wb:
@@ -105,11 +105,11 @@ class StatisticManager(QObject):
                 ws.cell(row=empty_row_num, column=3).value = data['game_type']
                 ws.cell(row=empty_row_num, column=4).value = data['date']
                 if data['total_koeff_type'] == 'under':
-                    ws.cell(row=empty_row_num, column=5).value = data['total_koeff']
+                    ws.cell(row=empty_row_num, column=5).value = f"{data['total_nominal']}/{data['total_koeff']}"
                     ws.cell(row=empty_row_num, column=6).value = '-'
                 else:
                     ws.cell(row=empty_row_num, column=5).value = '-'
-                    ws.cell(row=empty_row_num, column=6).value = data['total_koeff']
+                    ws.cell(row=empty_row_num, column=6).value = f"{data['total_nominal']}/{data['total_koeff']}"
                 try:
                     screenshot_name = data['screenshot_name'].split('/')[-1]
                 except BaseException:
@@ -143,6 +143,7 @@ class StatisticManager(QObject):
         except BaseException as ex:
             message = f'Ошибка при записи данных по сделанной ставке в файл статистики {settings.STATS_FILE_NAME}'
             logger.info(f'{message}: {ex}')
+            TelegramService.send_text(message)
 
         self.diag_signal.emit(message)
         self.finish_signal.emit()
@@ -155,12 +156,38 @@ class StatisticManager(QObject):
             self.finish_signal.emit()
             return
         try:
-            if self.event_data[0]['bet_imitation']:
+            any_event_data = list(self.results.values())[0].get('event_data')
+            if any_event_data[0]['bet_imitation']:
                 ws = wb["Имитация ставок"]
             else:
                 ws = wb["Ставки на деньги"]
         except BaseException as ex:
             logger.info(ex)
+            return
+        try:
+            for event_key, event_result in self.results.items():
+                url_1 = event_key.replace('https:/', 'https://').split('$$')[0]
+                url_2 = event_key.replace('https:/', 'https://').split('$$')[1]
+                result = event_result.get('result')
+                goals_sum = sum(list(map(int, result.split(':'))))
+
+                for row in range(1, len(ws['A'])):
+                    if (ws.cell(row=row, column=8).value == url_1 or ws.cell(row=row, column=8).value == url_2) \
+                            and not ws.cell(row=row, column=14).value:
+                        ws.cell(row=row, column=14).value = result
+                        ws.cell(row=row, column=13).value = goals_sum
+
+            wb.save(settings.STATS_FILE_NAME)
+            message = f'Результаты по сделанным ставкам успешно записаны в файл статистики {settings.STATS_FILE_NAME}'
+            logger.info(message)
+            TelegramService.send_xlsx(settings.STATS_FILE_NAME)
+        except BaseException as ex:
+            message = f'Ошибка при записи результатов событий по которым сделаны ставки в файл статистики {settings.STATS_FILE_NAME}'
+            logger.info(f'{message}: {ex}')
+            TelegramService.send_text(message)
+
+        self.diag_signal.emit(message)
+        self.finish_signal.emit()
 
 
 if __name__ == '__main__':
