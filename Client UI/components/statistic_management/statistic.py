@@ -150,7 +150,6 @@ class StatisticManager(QObject):
 
     def insert_results(self) -> None:
         """Внесение результатов событий на которые были сделаны ставки"""
-        print(self.results)
         wb = self.create_or_open()
         if not wb:
             self.finish_signal.emit()
@@ -163,6 +162,7 @@ class StatisticManager(QObject):
                 ws = wb["Ставки на деньги"]
         except BaseException as ex:
             logger.info(ex)
+            self.finish_signal.emit()
             return
         try:
             for event_key, event_result in self.results.items():

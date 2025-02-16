@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow, QLabel
-from PyQt5.QtCore import QThread, QSettings
+from PyQt5.QtCore import QThread, QSettings, QObject
 from apscheduler.schedulers.qt import QtScheduler
 
 from components import settings
@@ -30,6 +30,17 @@ os.chdir(file_path)
 ## Инициализация логгера ##
 logger_init.init_logger('Client UI')
 logger = logging.getLogger('Client UI.client_app')
+
+
+class ExtractTimer(QObject):
+    finish_signal = QtCore.pyqtSignal()
+
+    def __init__(self):
+        super(ExtractTimer, self).__init__()
+
+    def time_out_slot(self) -> None:
+        print('extract timer finished')
+        self.finish_signal.emit()
 
 
 class DesktopApp(QMainWindow):
@@ -69,6 +80,8 @@ class DesktopApp(QMainWindow):
         self.request_server_status()
         # таймер опроса состояния потока автоматического управления браузером
         self.thread_status_timer = QtCore.QTimer()
+        # запуск периодической задачи получения результатов по размещенным ставкам
+        self.start_result_extraction_scheduler()
         # проверка наличия активных ставок, по которым не получен результат
         self.check_active_bets()
         self.result_parsing_finished = False
@@ -190,6 +203,9 @@ class DesktopApp(QMainWindow):
             self.statistic_manager.finish_signal.connect(self.write_event_data_thread.quit)
             self.write_event_data_thread.start()
 
+            if not self.scheduler.get_job('result_extraction_job'):
+                self.start_result_extraction_scheduler()
+
     def check_active_bets(self, parsing_type: str = 'api') -> None:
         """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
             вид данных active_bets_urls=str(bookmaker$$url)"""
@@ -199,6 +215,10 @@ class DesktopApp(QMainWindow):
             message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
             self.render_diagnostics(message)
             logging.info(message)
+            if self.scheduler.get_job('scan_job'):
+                self.scheduler.get_job('scan_job').resume()
+            if self.scheduler.get_job('result_extraction_job'):
+                self.scheduler.get_job('result_extraction_job').remove()
             return
         elif parsing_type == 'api':
             message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
@@ -237,6 +257,11 @@ class DesktopApp(QMainWindow):
         self.render_diagnostics(events_results['status'])
         logger.info(events_results['status'])
 
+        if self.get_result_thread.isInterruptionRequested():
+            if self.scheduler.get_job('scan_job'):
+                self.scheduler.get_job('scan_job').resume()
+            return
+
         if events_results['results']:
             for result_key in events_results['results'].keys():
                 try:
@@ -252,6 +277,8 @@ class DesktopApp(QMainWindow):
             message = "Завершен процесс получения данных о результатах событий с ранее размещенными ставками"
             self.render_diagnostics(message)
             logging.info(message)
+            if self.scheduler.get_job('scan_job'):
+                self.scheduler.get_job('scan_job').resume()
 
     def insert_event_results(self, events_results: dict) -> None:
         """Запись результатов событий, на которые сделаны ставки в файл стаитстики xlsx,
@@ -266,6 +293,19 @@ class DesktopApp(QMainWindow):
         self.statistic_manager_results.diag_signal.connect(self.render_diagnostics)
         self.statistic_manager_results.finish_signal.connect(self.write_results_thread.quit)
         self.write_results_thread.start()
+
+    def start_result_extraction_scheduler(self) -> None:
+        """Запуск планировщика для переодического запроса результатов событий в которых сделаны ставки"""
+        self.extract_timer = ExtractTimer()
+        self.extract_timer.finish_signal.connect(self.check_active_bets)
+        if self.scheduler.get_job('scan_job'):
+            self.extract_timer.finish_signal.connect(self.scheduler.get_job('scan_job').pause)
+        self.scheduler.add_job(self.extract_timer.time_out_slot,
+                               'interval',
+                               seconds=60,
+                               id='result_extraction_job',
+                               coalesce=True,
+                               max_instances=1)
 
     ###### Test connection slots ######
 
