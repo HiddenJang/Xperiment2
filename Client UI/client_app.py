@@ -297,9 +297,9 @@ class DesktopApp(QMainWindow):
     def start_result_extraction_scheduler(self) -> None:
         """Запуск планировщика для переодического запроса результатов событий в которых сделаны ставки"""
         self.extract_timer = ExtractTimer()
-        self.extract_timer.finish_signal.connect(self.check_active_bets)
         if self.scheduler.get_job('scan_job'):
             self.extract_timer.finish_signal.connect(self.scheduler.get_job('scan_job').pause)
+        self.extract_timer.finish_signal.connect(self.check_active_bets)
         self.scheduler.add_job(self.extract_timer.time_out_slot,
                                'interval',
                                seconds=60,
