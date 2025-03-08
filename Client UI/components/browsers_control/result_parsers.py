@@ -49,7 +49,6 @@ class SeleniumParser(QObject):
                 except AttributeError as ex:
                     logger.info(ex)
                     continue
-
                 result = func(bkmkr_data)
                 if result:
                     results[event_key] = {'result': result, 'event_data': event_data}
@@ -103,6 +102,9 @@ class SeleniumParser(QObject):
             for _ in range(20):
                 self.driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
             page_data = self.driver.find_element(By.ID, 'content').text.split('\n')
+            if teams not in page_data:
+                logger.info(f'События {teams} нет в списке завершенных событий {bookmaker}')
+                return
             event_result = page_data[page_data.index(teams) + 1].split(' ')[0]
             return event_result
         except BaseException as ex:

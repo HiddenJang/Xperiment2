@@ -302,7 +302,7 @@ class DesktopApp(QMainWindow):
         self.extract_timer.finish_signal.connect(self.check_active_bets)
         self.scheduler.add_job(self.extract_timer.time_out_slot,
                                'interval',
-                               seconds=60,
+                               seconds=self.ui.spinBox_resultExtractionTimeout.value(),
                                id='result_extraction_job',
                                coalesce=True,
                                max_instances=1)
