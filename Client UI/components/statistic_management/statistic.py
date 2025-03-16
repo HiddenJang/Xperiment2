@@ -59,6 +59,12 @@ class StatisticManager(QObject):
             ws_betting.column_dimensions['G'].width = 30
             ws_betting.column_dimensions['H'].width = 30
 
+            # заливка таблицы текущего баланса
+            for col in range(len(self.columns) - 1, len(self.columns) + 1):
+                cell = ws_betting.cell(row=1, column=col)
+                cell.fill = PatternFill(fgColor="fff794", fill_type="solid")
+                cell.border = Border(top=self.double, bottom=self.double, left=self.double, right=self.double)
+
             ws_imitation = wb.copy_worksheet(ws_betting)
             ws_imitation.title = "Имитация ставок"
             return wb
@@ -160,11 +166,21 @@ class StatisticManager(QObject):
                 ws.cell(row=empty_row_num, column=15).value = f"-{data['bet_size']}"
                 ws.cell(row=empty_row_num, column=16).value = data['bookmaker']
 
+            # заливка разделительной линии
             empty_row_num = len(ws['A']) + 1
             for col in range(1, len(self.columns)-1):
                 cell = ws.cell(row=empty_row_num, column=col)
                 cell.fill = PatternFill(fgColor="000000", fill_type="solid")
                 cell.border = Border(top=self.double, bottom=self.double, left=self.thins, right=self.thins)
+
+            # заливка таблицы текущего баланса
+            for col in range(len(self.columns) - 1, len(self.columns) + 1):
+                for row in range(2, len(ws['Q'])):
+                    cell = ws.cell(row=row, column=col)
+                    if not cell.value:
+                        continue
+                    cell.fill = PatternFill(fgColor="fff794", fill_type="solid")
+                    cell.border = Border(top=self.double, bottom=self.double, left=self.double, right=self.double)
 
             wb.save(settings.STATS_FILE_NAME)
             message = f'Данные по сделанной ставке успешно записаны в файл статистики {settings.STATS_FILE_NAME}'
