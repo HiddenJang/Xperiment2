@@ -7,7 +7,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QObject
 
 from .. import settings
-from .websites_control_modules.interaction_controller import WebsiteController, ResultExtractor
+from .websites_control_modules.interaction_controller import WebsiteController
 
 
 logger = logging.getLogger('Client UI.components.browsers_control.core')

@@ -39,7 +39,6 @@ class ExtractTimer(QObject):
         super(ExtractTimer, self).__init__()
 
     def time_out_slot(self) -> None:
-        print('extract timer finished')
         self.finish_signal.emit()
 
 
@@ -599,5 +598,6 @@ if __name__ == "__main__":
         w = DesktopApp()
         w.show()
         sys.exit(app.exec_())
+        pass
     except BaseException as ex:
         logger.error(f'Ошибка цикла отображения MainWindow, {ex}')

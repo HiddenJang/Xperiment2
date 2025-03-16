@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDialog
 
 from ..templates.browser_control_window_template import Ui_browser_control_settings
