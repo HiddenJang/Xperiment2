@@ -20,7 +20,8 @@ class StatisticManager(QObject):
     finish_signal = QtCore.pyqtSignal()
 
     columns = ("№  ", "Команды", "Вид спорта", "Дата", "ТМ/Коэфф.", "ТБ/Коэфф.", "Скриншот", "Ссылка", "Ставка",
-               "Баланс до", "Баланс после", "Время размещения", "Сумма голов", "Результат", "Баланс")
+               "Баланс до", "Баланс после", "Время размещения", "Сумма голов", "Результат", "Доход", "Букмекер",
+               "Букмекер", "Текущий баланс")
     font = 'Calibri'
     font_size = 12
     thins = Side(border_style="thin", color="000000")
@@ -121,17 +122,46 @@ class StatisticManager(QObject):
                 if data['bet_imitation'] and event_num == 1:
                     ws.cell(row=empty_row_num, column=10).value = self.imitation_start_balance
                     ws.cell(row=empty_row_num, column=11).value = self.imitation_start_balance - float(data['bet_size'])
+                    for bkmkr_name_cell, cur_balance_cell in zip(ws['Q'], ws['R']):
+                        if bkmkr_name_cell.value == data['bookmaker']:
+                            cur_balance_cell.value = self.imitation_start_balance - float(data['bet_size'])
+                            break
+                        elif not bkmkr_name_cell.value:
+                            bkmkr_name_cell.value = data['bookmaker']
+                            cur_balance_cell.value = self.imitation_start_balance - float(data['bet_size'])
+                            break
+
                 elif data['bet_imitation'] and event_num > 1:
-                    ws.cell(row=empty_row_num, column=10).value = ws.cell(row=empty_row_num-3, column=15).value
-                    ws.cell(row=empty_row_num, column=11).value = ws.cell(row=empty_row_num-3, column=15).value - float(data['bet_size'])
+                    for bkmkr_name_cell, cur_balance_cell in zip(ws['Q'], ws['R']):
+                        if bkmkr_name_cell.value == data['bookmaker']:
+                            ws.cell(row=empty_row_num, column=10).value = cur_balance_cell.value
+                            ws.cell(row=empty_row_num, column=11).value = cur_balance_cell.value - float(data['bet_size'])
+                            cur_balance_cell.value = cur_balance_cell.value - float(data['bet_size'])
+                            break
+                        elif not bkmkr_name_cell.value:
+                            ws.cell(row=empty_row_num, column=10).value = self.imitation_start_balance
+                            ws.cell(row=empty_row_num, column=11).value = self.imitation_start_balance - float(data['bet_size'])
+                            bkmkr_name_cell.value = data['bookmaker']
+                            cur_balance_cell.value = self.imitation_start_balance - float(data['bet_size'])
+                            break
                 else:
                     ws.cell(row=empty_row_num, column=10).value = data['start_balance']
                     ws.cell(row=empty_row_num, column=11).value = data['balance_after_bet']
+                    for bkmkr_name_cell, cur_balance_cell in zip(ws['Q'], ws['R']):
+                        if bkmkr_name_cell.value == data['bookmaker']:
+                            cur_balance_cell.value = data['balance_after_bet']
+                            break
+                        elif not bkmkr_name_cell.value:
+                            bkmkr_name_cell.value = data['bookmaker']
+                            cur_balance_cell.value = data['balance_after_bet']
+                            break
+
                 ws.cell(row=empty_row_num, column=12).value = data['betting_time']
                 ws.cell(row=empty_row_num, column=15).value = f"-{data['bet_size']}"
+                ws.cell(row=empty_row_num, column=16).value = data['bookmaker']
 
             empty_row_num = len(ws['A']) + 1
-            for col in range(1, len(self.columns)+1):
+            for col in range(1, len(self.columns)-1):
                 cell = ws.cell(row=empty_row_num, column=col)
                 cell.fill = PatternFill(fgColor="000000", fill_type="solid")
                 cell.border = Border(top=self.double, bottom=self.double, left=self.thins, right=self.thins)
@@ -199,6 +229,11 @@ class StatisticManager(QObject):
                         for col in range(1, len(self.columns) + 1):
                             cell = ws.cell(row=row, column=col)
                             cell.fill = PatternFill(fgColor=fgColor, fill_type="solid")
+
+                        for bkmkr_name_cell, cur_balance_cell in zip(ws['Q'], ws['R']):
+                            if bkmkr_name_cell.value == ws.cell(row=row, column=16).value:
+                                cur_balance_cell.value = cur_balance_cell.value + float(ws.cell(row=row, column=15).value)
+                                break
 
             wb.save(settings.STATS_FILE_NAME)
             message = f'Результаты по сделанным ставкам успешно записаны в файл статистики {settings.STATS_FILE_NAME}'

@@ -14,3 +14,4 @@ config/
 /Client UI/components/browsers_control/chromedriver/LICENSE.chromedriver
 /Client UI/statistic/statistic.xlsx
 /Client UI/components/browsers_control/test.py
+/Client UI/statistic/test.py
