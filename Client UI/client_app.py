@@ -275,7 +275,7 @@ class DesktopApp(QMainWindow):
             self.bets_checking_window.close()
             message = "Завершен процесс получения данных о результатах событий с ранее размещенными ставками"
             self.render_diagnostics(message)
-            logging.info(message)
+            logger.info(message)
             if self.scheduler.get_job('scan_job'):
                 self.scheduler.get_job('scan_job').resume()
 
