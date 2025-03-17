@@ -1,7 +1,6 @@
 import os
 import logging
 from logging import handlers
-
 from . import settings
 
 

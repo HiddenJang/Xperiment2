@@ -80,7 +80,7 @@ class DesktopApp(QMainWindow):
         # таймер опроса состояния потока автоматического управления браузером
         self.thread_status_timer = QtCore.QTimer()
         # запуск периодической задачи получения результатов по размещенным ставкам
-        self.start_result_extraction_scheduler()
+        #self.start_result_extraction_scheduler()
         # проверка наличия активных ставок, по которым не получен результат
         self.check_active_bets()
         self.result_parsing_finished = False
@@ -213,7 +213,7 @@ class DesktopApp(QMainWindow):
         if not active_bets_data:
             message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
             self.render_diagnostics(message)
-            logging.info(message)
+            logger.info(message)
             if self.scheduler.get_job('scan_job'):
                 self.scheduler.get_job('scan_job').resume()
             if self.scheduler.get_job('result_extraction_job'):
@@ -221,14 +221,14 @@ class DesktopApp(QMainWindow):
             return
         elif parsing_type == 'api':
             message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
-            logging.info(message)
+            logger.info(message)
 
             self.result_parsing_finished = False
             self.result_parser = ApiResponseParser(active_bets_data)
         else:
             message = "Попытка получить недостающие результаты по раннее размещенным ставкам используя Selenium"
             self.render_diagnostics(message)
-            logging.info(message)
+            logger.info(message)
 
             self.result_parsing_finished = True
             control_settings = self.browser_control_set_window.get_control_settings()
@@ -598,6 +598,5 @@ if __name__ == "__main__":
         w = DesktopApp()
         w.show()
         sys.exit(app.exec_())
-        pass
     except BaseException as ex:
         logger.error(f'Ошибка цикла отображения MainWindow, {ex}')
