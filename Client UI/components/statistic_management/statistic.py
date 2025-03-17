@@ -227,7 +227,7 @@ class StatisticManager(QObject):
                         if total_under_col_data and total_under_col_data != '-':
                             total_nominal = float(total_under_col_data.replace(',', '.').split('/')[0])
                             total_coeff = float(total_under_col_data.replace(',', '.').split('/')[1])
-                            if goals_sum > total_nominal:
+                            if goals_sum < total_nominal:
                                 ws.cell(row=row, column=15).value = float(ws.cell(row=row, column=15).value) + \
                                                                     total_coeff * float(ws.cell(row=row, column=9).value)
                                 fgColor = "39CB05"
@@ -236,18 +236,21 @@ class StatisticManager(QObject):
                         else:
                             total_nominal = float(total_over_col_data.replace(',', '.').split('/')[0])
                             total_coeff = float(total_over_col_data.replace(',', '.').split('/')[1])
-                            if goals_sum < total_nominal:
+                            if goals_sum > total_nominal:
                                 ws.cell(row=row, column=15).value = float(ws.cell(row=row, column=15).value) + \
                                                                     total_coeff * float(ws.cell(row=row, column=9).value)
                                 fgColor = "39CB05"
                             else:
                                 fgColor = "fe0101"
-                        for col in range(1, len(self.columns) + 1):
+
+                        # заливка красным или зеленым строки в зависимости от итогового результата
+                        for col in range(1, len(self.columns) - 1):
                             cell = ws.cell(row=row, column=col)
                             cell.fill = PatternFill(fgColor=fgColor, fill_type="solid")
 
+                        # подсчет итоговых балансов
                         for bkmkr_name_cell, cur_balance_cell in zip(ws['Q'], ws['R']):
-                            if bkmkr_name_cell.value == ws.cell(row=row, column=16).value:
+                            if bkmkr_name_cell.value == ws.cell(row=row, column=16).value and float(ws.cell(row=row, column=15).value) > 0:
                                 cur_balance_cell.value = cur_balance_cell.value + float(ws.cell(row=row, column=15).value)
                                 break
 
