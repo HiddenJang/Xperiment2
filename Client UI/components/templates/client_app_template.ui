@@ -638,7 +638,7 @@
      <property name="geometry">
       <rect>
        <x>59</x>
-       <y>190</y>
+       <y>132</y>
        <width>181</width>
        <height>25</height>
       </rect>
@@ -651,9 +651,9 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>111</y>
+       <y>86</y>
        <width>131</width>
-       <height>16</height>
+       <height>15</height>
       </rect>
      </property>
      <property name="text">
@@ -663,8 +663,8 @@
     <widget class="QPushButton" name="pushButton_cleanRegistry">
      <property name="geometry">
       <rect>
-       <x>58</x>
-       <y>254</y>
+       <x>59</x>
+       <y>196</y>
        <width>181</width>
        <height>23</height>
       </rect>
@@ -680,9 +680,9 @@
      <property name="geometry">
       <rect>
        <x>144</x>
-       <y>111</y>
+       <y>86</y>
        <width>131</width>
-       <height>16</height>
+       <height>15</height>
       </rect>
      </property>
      <property name="text">
@@ -693,9 +693,9 @@
      <property name="geometry">
       <rect>
        <x>164</x>
-       <y>130</y>
+       <y>105</y>
        <width>70</width>
-       <height>20</height>
+       <height>19</height>
       </rect>
      </property>
      <property name="maximum">
@@ -705,8 +705,8 @@
     <widget class="QPushButton" name="pushButton_closeBrowsers">
      <property name="geometry">
       <rect>
-       <x>88</x>
-       <y>224</y>
+       <x>74</x>
+       <y>166</y>
        <width>151</width>
        <height>21</height>
       </rect>
@@ -722,9 +722,9 @@
      <property name="geometry">
       <rect>
        <x>81</x>
-       <y>90</y>
+       <y>65</y>
        <width>101</width>
-       <height>16</height>
+       <height>15</height>
       </rect>
      </property>
      <property name="text">
@@ -735,9 +735,9 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>51</y>
+       <y>44</y>
        <width>281</width>
-       <height>16</height>
+       <height>15</height>
       </rect>
      </property>
      <property name="text">
@@ -748,9 +748,9 @@
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>130</y>
+       <y>105</y>
        <width>70</width>
-       <height>20</height>
+       <height>19</height>
       </rect>
      </property>
      <property name="maximum">
@@ -760,24 +760,24 @@
       <number>10</number>
      </property>
     </widget>
-    <widget class="QLabel" name="label_resultExtractionTimeout">
+    <widget class="QLabel" name="label_resultExtractionTimeout_1">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>301</y>
+       <y>311</y>
        <width>231</width>
        <height>16</height>
       </rect>
      </property>
      <property name="text">
-      <string>Интервал проверки результатов</string>
+      <string>Проверка результатов каждые</string>
      </property>
     </widget>
     <widget class="QSpinBox" name="spinBox_resultExtractionTimeout">
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>320</y>
+       <y>330</y>
        <width>70</width>
        <height>20</height>
       </rect>
@@ -790,6 +790,58 @@
      </property>
      <property name="displayIntegerBase">
       <number>10</number>
+     </property>
+    </widget>
+    <widget class="Line" name="line">
+     <property name="geometry">
+      <rect>
+       <x>14</x>
+       <y>265</y>
+       <width>270</width>
+       <height>3</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_resultExtractionTimeout_2">
+     <property name="geometry">
+      <rect>
+       <x>105</x>
+       <y>330</y>
+       <width>31</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>сек</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_setBetTimers">
+     <property name="geometry">
+      <rect>
+       <x>16</x>
+       <y>282</y>
+       <width>161</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Установка таймеров</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_openBetStatistic">
+     <property name="geometry">
+      <rect>
+       <x>55</x>
+       <y>230</y>
+       <width>191</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Открыть файл статистики</string>
      </property>
     </widget>
    </widget>

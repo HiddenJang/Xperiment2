@@ -1,6 +1,7 @@
 import sys
 import logging
 import os
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from PyQt5 import QtWidgets, QtCore
@@ -80,7 +81,7 @@ class DesktopApp(QMainWindow):
         # таймер опроса состояния потока автоматического управления браузером
         self.thread_status_timer = QtCore.QTimer()
         # запуск периодической задачи получения результатов по размещенным ставкам
-        #self.start_result_extraction_scheduler()
+        self.extract_timer = ExtractTimer()
         # проверка наличия активных ставок, по которым не получен результат
         self.check_active_bets()
         self.result_parsing_finished = False
@@ -115,10 +116,12 @@ class DesktopApp(QMainWindow):
         if self.ui.checkBox_telegramMessageSwitch.isChecked():
             self.enable_telegram_messages()
 
+        self.ui.pushButton_openBetStatistic.clicked.connect(lambda: os.system(settings.STATS_FILE_NAME))
+
     ###### Auto betting ######
 
     def preload_websites_and_authorize(self) -> None:
-        """Запуск алгоритма автоматического размещения ставок"""
+        """Запуск алгоритма загрузки сайтов и авторизации"""
         if not os.path.exists(settings.WEBDRIVER_DIR.get(sys.platform)):
             message = f"Webdriver не найден:  {settings.WEBDRIVER_DIR.get(sys.platform)} не существует. Необходимо скачать двебдрайвер в указанную директорию"
             logger.info(message)
@@ -278,6 +281,10 @@ class DesktopApp(QMainWindow):
             logger.info(message)
             if self.scheduler.get_job('scan_job'):
                 self.scheduler.get_job('scan_job').resume()
+            if self.active_bets_list.allKeys():
+                self.start_result_extraction_scheduler()
+            elif self.scheduler.get_job('result_extraction_job'):
+                self.scheduler.get_job('result_extraction_job').remove()
 
     def insert_event_results(self, events_results: dict) -> None:
         """Запись результатов событий, на которые сделаны ставки в файл стаитстики xlsx,
@@ -295,16 +302,15 @@ class DesktopApp(QMainWindow):
 
     def start_result_extraction_scheduler(self) -> None:
         """Запуск планировщика для переодического запроса результатов событий в которых сделаны ставки"""
-        self.extract_timer = ExtractTimer()
-        if self.scheduler.get_job('scan_job'):
-            self.extract_timer.finish_signal.connect(self.scheduler.get_job('scan_job').pause)
         self.extract_timer.finish_signal.connect(self.check_active_bets)
-        self.scheduler.add_job(self.extract_timer.time_out_slot,
-                               'interval',
-                               seconds=self.ui.spinBox_resultExtractionTimeout.value(),
-                               id='result_extraction_job',
-                               coalesce=True,
-                               max_instances=1)
+        if not self.scheduler.get_job('result_extraction_job'):
+            self.scheduler.add_job(self.extract_timer.time_out_slot,
+                                   'interval',
+                                   seconds=self.ui.spinBox_resultExtractionTimeout.value(),
+                                   id='result_extraction_job',
+                                   coalesce=True,
+                                   max_instances=1)
+            logger.info("Задача по периодическому опросу результатов событий запущена...")
 
     ###### Test connection slots ######
 
@@ -444,8 +450,10 @@ class DesktopApp(QMainWindow):
                                id='scan_job',
                                coalesce=True,
                                max_instances=1)
+        self.extract_timer.finish_signal.connect(self.scheduler.get_job('scan_job').pause)
         self.scanner.scan_result_signal.connect(self.render_scan_result)
         self.scanner.scan_result_signal.connect(self.place_bet)
+        logger.info("Сканирование запущено...")
         self.render_diagnostics("Сканирование запущено...")
 
     def stop_scan(self) -> None:
@@ -454,6 +462,8 @@ class DesktopApp(QMainWindow):
         if hasattr(self, 'scanner'):
             self.scanner.interruption_requested = True
         if self.scheduler.get_job('scan_job'):
+            self.extract_timer.finish_signal.disconnect()
+            self.extract_timer.finish_signal.connect(self.check_active_bets)
             self.scheduler.get_job('scan_job').remove()
             self.render_diagnostics("Сканирование остановлено пользователем")
         self.deactivate_elements(False)
