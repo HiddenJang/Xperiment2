@@ -116,11 +116,7 @@ class DesktopApp(QMainWindow):
         if self.ui.checkBox_telegramMessageSwitch.isChecked():
             self.enable_telegram_messages()
 
-        self.ui.pushButton_openBetStatistic.clicked.connect(self.start_stat)
-
-    def start_stat(self):
-        os.system(f'chmod 777 {settings.STATS_FILE_NAME}')
-        subprocess.run(settings.STATS_FILE_NAME)
+        self.ui.pushButton_openBetStatistic.clicked.connect(self.open_stat_file)
 
     ###### Auto betting ######
 
@@ -478,6 +474,18 @@ class DesktopApp(QMainWindow):
         message = "Реестр сделанных ставок очищен пользователем"
         self.render_diagnostics(message)
         logger.info(message)
+
+    @staticmethod
+    def open_stat_file() -> None:
+        """Открытие файла статистики"""
+        try:
+            if sys.platform == 'linux':
+                os.system(f'chmod 777 {settings.STATS_FILE_NAME}')
+                os.system(f'/usr/bin/libreoffice {settings.STATS_FILE_NAME}')
+            else:
+                os.startfile(settings.STATS_FILE_NAME)
+        except BaseException as ex:
+            logger.error(f'Не удалось открыть файл статистики: {ex}')
 
     ###### Rendering #####
 

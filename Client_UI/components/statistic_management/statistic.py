@@ -272,7 +272,7 @@ if __name__ == '__main__':
     BASE_DIR = Path(__file__).resolve().parent.parent
     class settings:
         STATS_DIR = BASE_DIR / "statistic"
-        STATS_FILE_NAME = STATS_DIR / "statistic.xlsx"
+        STATS_FILE_NAME = STATS_DIR / "statistic_1.xlsx"
     event_data = [{'game_type': 'Soccer',
                    'balance_after_bet': 90,
                    'betting_time': '100',
