@@ -10,7 +10,7 @@ from .. import settings
 from .websites_control_modules.interaction_controller import WebsiteController
 
 
-logger = logging.getLogger('Client UI.components.browsers_control.core')
+logger = logging.getLogger('Client_UI.components.browsers_control.core')
 
 
 class BrowserControl(QObject):

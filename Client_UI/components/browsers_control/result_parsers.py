@@ -13,7 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from . import webdriver
 from .. import settings
 
-logger = logging.getLogger('Client UI.components.browsers_control.result_parsers')
+logger = logging.getLogger('Client_UI.components.browsers_control.result_parsers')
 
 
 class SeleniumParser(QObject):
@@ -205,7 +205,7 @@ class ApiResponseParser(QObject):
 #  'betting_time': 8.484900951385498,
 #  'bookmaker': 'olimp',
 #  'date': '2025-01-22',
-#  'screenshot_name': '/usr/pythonProjects/Xperiment2/Client UI/screenshots/olimp-2025-01-22 20-25-38.731788.png',
+#  'screenshot_name': '/usr/pythonProjects/Xperiment2/Client_UI/screenshots/olimp-2025-01-22 20-25-38.731788.png',
 #  'start_balance': '198',
 #  'teams': 'Аль-Гарафа - Аль-Ахли Доха',
 #  'total_koeff': 1.95,
@@ -223,7 +223,7 @@ class ApiResponseParser(QObject):
 #            'betting_time': 16.43402099609375,
 #            'bookmaker': 'leon',
 #            'date': '2025-01-22',
-#            'screenshot_name': '/usr/pythonProjects/Xperiment2/Client UI/screenshots/leon-2025-01-22 20-02-15.844436.png',
+#            'screenshot_name': '/usr/pythonProjects/Xperiment2/Client_UI/screenshots/leon-2025-01-22 20-02-15.844436.png',
 #            'start_balance': '103',
 #            'teams': 'Бешикташ - Атлетик Бильбао',
 #            'total_koeff': 1.7,
@@ -238,7 +238,7 @@ class ApiResponseParser(QObject):
 #               'betting_time': 12.209675073623657,
 #               'bookmaker': 'leon',
 #               'date': '2025-01-22',
-#               'screenshot_name': '/usr/pythonProjects/Xperiment2/Client UI/screenshots/leon-2025-01-22 20-25-38.747639.png',
+#               'screenshot_name': '/usr/pythonProjects/Xperiment2/Client_UI/screenshots/leon-2025-01-22 20-25-38.747639.png',
 #               'start_balance': '103',
 #               'teams': 'Аль-Гарафа - Аль-Ахли',
 #               'total_koeff': 1.75,

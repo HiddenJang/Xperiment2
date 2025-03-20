@@ -6,7 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
-logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.betboom')
+logger = logging.getLogger('Client_UI.components.browsers_control.websites_control_modules.betboom')
 
 
 def preload(driver: selenium.webdriver, login: str, password: str) -> None:

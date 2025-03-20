@@ -4,9 +4,12 @@ venv/
 *.log
 *.sqlite3
 *tests.py
+*test.py
+*.xlsx
 logs/
 media/
 config/
-/Client UI/screenshots/
-/Client UI/statistic/
-/Client UI/components/browsers_control/chromedriver/
+/Client_UI/screenshots/
+/Client_UI/statistic/
+/Client_UI/components/browsers_control/chromedriver/
+

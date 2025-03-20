@@ -29,8 +29,8 @@ file_path = Path(__file__).resolve().parent
 os.chdir(file_path)
 
 ## Инициализация логгера ##
-logger_init.init_logger('Client UI')
-logger = logging.getLogger('Client UI.client_app')
+logger_init.init_logger('Client_UI')
+logger = logging.getLogger('Client_UI.client_app')
 
 
 class ExtractTimer(QObject):
@@ -116,7 +116,11 @@ class DesktopApp(QMainWindow):
         if self.ui.checkBox_telegramMessageSwitch.isChecked():
             self.enable_telegram_messages()
 
-        self.ui.pushButton_openBetStatistic.clicked.connect(lambda: os.system(settings.STATS_FILE_NAME))
+        self.ui.pushButton_openBetStatistic.clicked.connect(self.start_stat)
+
+    def start_stat(self):
+        os.system(f'chmod 777 {settings.STATS_FILE_NAME}')
+        subprocess.run(settings.STATS_FILE_NAME)
 
     ###### Auto betting ######
 

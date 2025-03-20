@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QDialog
 from ..templates.browser_control_window_template import Ui_browser_control_settings
 from .. import settings
 
-logger = logging.getLogger('Client UI.components.secondary_windows.browser_control_settings')
+logger = logging.getLogger('Client_UI.components.secondary_windows.browser_control_settings')
 
 
 class BrowserControlSettings(Ui_browser_control_settings, QDialog):

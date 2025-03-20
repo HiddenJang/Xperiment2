@@ -9,7 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
-logger = logging.getLogger('Client UI.components.browsers_control.webdriver')
+logger = logging.getLogger('Client_UI.components.browsers_control.webdriver')
 
 
 class Driver:

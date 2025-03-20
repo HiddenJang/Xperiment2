@@ -11,7 +11,7 @@ from openpyxl.styles import Border, Side
 from openpyxl.styles import Font, Color
 from openpyxl.styles import PatternFill
 
-logger = logging.getLogger('Client UI.components.statistic_management.statistic')
+logger = logging.getLogger('Client_UI.components.statistic_management.statistic')
 
 
 class StatisticManager(QObject):

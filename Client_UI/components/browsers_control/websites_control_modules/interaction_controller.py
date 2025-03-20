@@ -9,7 +9,7 @@ from .. import webdriver
 from ... import settings
 from ...telegram import TelegramService
 
-logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.interaction_controller')
+logger = logging.getLogger('Client_UI.components.browsers_control.websites_control_modules.interaction_controller')
 
 
 class WebsiteController:

@@ -12,7 +12,7 @@ from selenium.webdriver.common.by import By
 from ... import settings
 from ...telegram import TelegramService
 
-logger = logging.getLogger('Client UI.components.browsers_control.websites_control_modules.leon')
+logger = logging.getLogger('Client_UI.components.browsers_control.websites_control_modules.leon')
 
 
 class SiteInteraction:

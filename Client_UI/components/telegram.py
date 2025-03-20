@@ -1,7 +1,7 @@
 import requests
 import logging
 
-logger = logging.getLogger('Client UI.components.telegram')
+logger = logging.getLogger('Client_UI.components.telegram')
 
 
 class TelegramService:
