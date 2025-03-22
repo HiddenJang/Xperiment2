@@ -1,3 +1,4 @@
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog
 
 from ..templates.timers_window_template import Ui_timers_settings
@@ -6,6 +7,7 @@ from ..templates.timers_window_template import Ui_timers_settings
 class TimersSettings(Ui_timers_settings, QDialog):
     """Класс-обертка для окна настройки таймеров алгоритма размещения ставок"""
     widget_states = {}
+    close_sig = QtCore.pyqtSignal(dict)
 
     def __init__(self):
         super(TimersSettings, self).__init__()
@@ -15,6 +17,7 @@ class TimersSettings(Ui_timers_settings, QDialog):
 
     def add_functions(self) -> None:
         self.ui.buttonBox.rejected.connect(self.close_without_saving)
+        self.ui.buttonBox.accepted.connect(lambda: self.close_sig.emit(self.get_bet_timeouts_settings()))
 
     def get_bet_timeouts_settings(self) -> dict:
         """Получение состояний виджетов окна настроек управления браузерами"""
@@ -30,4 +33,5 @@ class TimersSettings(Ui_timers_settings, QDialog):
 
     def closeEvent(self, event) -> None:
         self.close_without_saving()
+        self.close_sig.emit(self.get_bet_timeouts_settings())
         self.close()

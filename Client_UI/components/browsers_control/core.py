@@ -20,6 +20,8 @@ class BrowserControl(QObject):
     bet_finish_signal = QtCore.pyqtSignal(list)
     write_results_finish_signal = QtCore.pyqtSignal()
     bet_params = {}
+    timeouts = {"bet_preparing_timeout": 10000,
+                "bet_last_test_timeout": 5000}
 
     def __init__(self, control_settings: dict):
         super(BrowserControl, self).__init__()
@@ -159,7 +161,7 @@ class BrowserControl(QObject):
             second_thread_bet_event.set()
 
             if not self.last_test_timer.isActive():
-                self.last_test_timer.singleShot(5000, lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
+                self.last_test_timer.singleShot(self.timeouts['bet_last_test_timeout'], lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
 
             first_last_test_completed = self.started_threads[first_bkmkr_name]['controller_instance'].last_test_completed
             second_last_test_completed = self.started_threads[second_bkmkr_name]['controller_instance'].last_test_completed
@@ -172,7 +174,7 @@ class BrowserControl(QObject):
                 second_thread_last_test_event.set()
 
         elif (first_prepared_for_bet or second_prepared_for_bet) and not self.preparing_interval_timer.isActive():
-            self.preparing_interval_timer.singleShot(10000, lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
+            self.preparing_interval_timer.singleShot(self.timeouts['bet_preparing_timeout'], lambda: self.__stop_betting(first_bkmkr_name, second_bkmkr_name))
 
     def __stop_betting(self, first_bkmkr_name: str, second_bkmkr_name: str):
         """Прерывание процесса размещения ставки при отсутствии готовности одного из букмекеров"""

@@ -122,6 +122,8 @@ class DesktopApp(QMainWindow):
 
         self.ui.pushButton_openBetStatistic.clicked.connect(self.open_stat_file)
 
+        self.timers_window.close_sig.connect(self.set_bet_timeouts)
+
     ###### Auto betting ######
 
     def preload_websites_and_authorize(self) -> None:
@@ -308,9 +310,10 @@ class DesktopApp(QMainWindow):
         """Запуск планировщика для переодического запроса результатов событий в которых сделаны ставки"""
         self.extract_timer.finish_signal.connect(self.check_active_bets)
         if not self.scheduler.get_job('result_extraction_job'):
+            timeout_settings = self.timers_window.get_bet_timeouts_settings()
             self.scheduler.add_job(self.extract_timer.time_out_slot,
                                    'interval',
-                                   seconds=self.ui.spinBox_resultExtractionTimeout.value(),
+                                   seconds=timeout_settings["result_extraction_interval"],
                                    id='result_extraction_job',
                                    coalesce=True,
                                    max_instances=1)
@@ -437,6 +440,11 @@ class DesktopApp(QMainWindow):
         self.timers_window.widget_states = self.timers_window.get_bet_timeouts_settings()
         self.timers_window.show()
         self.timers_window.exec_()
+
+    @staticmethod
+    def set_bet_timeouts(timeouts: dict) -> None:
+        """Установка значений таймеров, задействованных в алгоритме размещения ставок"""
+        BrowserControl.timeouts = timeouts
 
     def enable_telegram_messages(self) -> None:
         """Включение/отключение отправки сообщений в telegram"""
