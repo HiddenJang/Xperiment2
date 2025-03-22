@@ -15,6 +15,7 @@ from components.connection_service import Scanner
 from components.secondary_windows.scan_result import ResultWindow
 from components.secondary_windows.connection_settings import ServerSettings
 from components.secondary_windows.browser_control_settings import BrowserControlSettings
+from components.secondary_windows.timers_window import TimersSettings
 from components.secondary_windows.telegram_settings import TelegramSettings
 from components.secondary_windows.bets_checking import BetsChecking
 from components.templates.client_app_template import Ui_MainWindow_client
@@ -63,6 +64,7 @@ class DesktopApp(QMainWindow):
         self.result_window = ResultWindow()
         self.server_set_window = ServerSettings()
         self.browser_control_set_window = BrowserControlSettings()
+        self.timers_window = TimersSettings()
         self.telegram_set_window = TelegramSettings()
         self.bets_checking_window = BetsChecking()
         self.result_window_closed = True
@@ -106,6 +108,8 @@ class DesktopApp(QMainWindow):
         self.server_set_window.ui.buttonBox.accepted.connect(self.restart_scheduler_status_job)
 
         self.ui.action_browserControlSettings.triggered.connect(self.open_browser_control_set_window)
+
+        self.ui.pushButton_setBetTimers.clicked.connect(self.open_timers_window)
 
         self.ui.action_telegramSettings.triggered.connect(self.open_telegram_set_window)
 
@@ -428,6 +432,12 @@ class DesktopApp(QMainWindow):
         self.bets_checking_window.show()
         self.bets_checking_window.exec_()
 
+    def open_timers_window(self) -> None:
+        """Открытие окна настроек подключения к серверу"""
+        self.timers_window.widget_states = self.timers_window.get_bet_timeouts_settings()
+        self.timers_window.show()
+        self.timers_window.exec_()
+
     def enable_telegram_messages(self) -> None:
         """Включение/отключение отправки сообщений в telegram"""
         if self.ui.checkBox_telegramMessageSwitch.isChecked():
@@ -543,6 +553,9 @@ class DesktopApp(QMainWindow):
 
         for spin_box in self.browser_control_set_window.findChildren(QtWidgets.QSpinBox):
             self.settings.setValue(spin_box.objectName(), spin_box.value())
+
+        for spin_box in self.timers_window.findChildren(QtWidgets.QSpinBox):
+            self.settings.setValue(spin_box.objectName(), spin_box.value())
         ## DoubleSpinBox ##
         for double_spin_box in self.ui.desktopClient.findChildren(QtWidgets.QDoubleSpinBox):
             self.settings.setValue(double_spin_box.objectName(), double_spin_box.value())
@@ -577,6 +590,10 @@ class DesktopApp(QMainWindow):
                     spin_box.setValue(int(self.settings.value(spin_box.objectName())))
 
             for spin_box in self.browser_control_set_window.findChildren(QtWidgets.QSpinBox):
+                if self.settings.value(spin_box.objectName()):
+                    spin_box.setValue(int(self.settings.value(spin_box.objectName())))
+
+            for spin_box in self.timers_window.findChildren(QtWidgets.QSpinBox):
                 if self.settings.value(spin_box.objectName()):
                     spin_box.setValue(int(self.settings.value(spin_box.objectName())))
             ## DoubleSpinBox ##

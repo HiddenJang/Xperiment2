@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>timers_settings</class>
+ <widget class="QDialog" name="timers_settings">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>381</width>
+    <height>219</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Настройки таймеров</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <widget class="QSpinBox" name="spinBox_betPreparingTimeout">
+   <property name="geometry">
+    <rect>
+     <x>16</x>
+     <y>36</y>
+     <width>65</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="maximum">
+    <number>9999</number>
+   </property>
+   <property name="value">
+    <number>10</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_betPreparingTimeout_1">
+   <property name="geometry">
+    <rect>
+     <x>16</x>
+     <y>14</y>
+     <width>211</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Таймаут подготовки к ставке</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_betLastTestTimeout_1">
+   <property name="geometry">
+    <rect>
+     <x>16</x>
+     <y>68</y>
+     <width>321</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Таймаут последней проверки перед ставкой</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_betLastTestTimeout">
+   <property name="geometry">
+    <rect>
+     <x>16</x>
+     <y>90</y>
+     <width>65</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="maximum">
+    <number>9999</number>
+   </property>
+   <property name="value">
+    <number>5</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_betPreparingTimeout_2">
+   <property name="geometry">
+    <rect>
+     <x>86</x>
+     <y>40</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>сек</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_betLastTestTimeout_2">
+   <property name="geometry">
+    <rect>
+     <x>86</x>
+     <y>94</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>сек</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_resultExtractionInterval">
+   <property name="geometry">
+    <rect>
+     <x>16</x>
+     <y>143</y>
+     <width>65</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="maximum">
+    <number>9999</number>
+   </property>
+   <property name="value">
+    <number>6000</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_resultExtractionInterval_2">
+   <property name="geometry">
+    <rect>
+     <x>86</x>
+     <y>147</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>сек</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_resultExtractionInterval_1">
+   <property name="geometry">
+    <rect>
+     <x>16</x>
+     <y>121</y>
+     <width>311</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Запрос результатов событий через каждые</string>
+   </property>
+  </widget>
+  <widget class="QFrame" name="frame_timersSettings">
+   <property name="geometry">
+    <rect>
+     <x>2</x>
+     <y>4</y>
+     <width>375</width>
+     <height>211</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Box</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <property name="lineWidth">
+    <number>3</number>
+   </property>
+   <property name="midLineWidth">
+    <number>1</number>
+   </property>
+   <widget class="QDialogButtonBox" name="buttonBox">
+    <property name="geometry">
+     <rect>
+      <x>16</x>
+      <y>171</y>
+      <width>341</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+    <property name="standardButtons">
+     <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+    </property>
+    <property name="centerButtons">
+     <bool>true</bool>
+    </property>
+   </widget>
+  </widget>
+  <zorder>frame_timersSettings</zorder>
+  <zorder>spinBox_betPreparingTimeout</zorder>
+  <zorder>label_betPreparingTimeout_1</zorder>
+  <zorder>label_betLastTestTimeout_1</zorder>
+  <zorder>spinBox_betLastTestTimeout</zorder>
+  <zorder>label_betPreparingTimeout_2</zorder>
+  <zorder>label_betLastTestTimeout_2</zorder>
+  <zorder>spinBox_resultExtractionInterval</zorder>
+  <zorder>label_resultExtractionInterval_2</zorder>
+  <zorder>label_resultExtractionInterval_1</zorder>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>timers_settings</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>timers_settings</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
