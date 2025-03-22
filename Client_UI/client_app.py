@@ -1,7 +1,6 @@
 import sys
 import logging
 import os
-import subprocess
 from datetime import datetime
 from pathlib import Path
 from PyQt5 import QtWidgets, QtCore
@@ -123,6 +122,7 @@ class DesktopApp(QMainWindow):
         self.ui.pushButton_openBetStatistic.clicked.connect(self.open_stat_file)
 
         self.timers_window.close_sig.connect(self.set_bet_timeouts)
+        self.timers_window.restart_scheduler_sig.connect(self.change_result_extraction_scheduler_interval)
 
     ###### Auto betting ######
 
@@ -250,12 +250,14 @@ class DesktopApp(QMainWindow):
         """Запуск парсеров результатов событий в отдельном потоке"""
         if hasattr(self, 'get_result_thread'):
             del self.get_result_thread
+
         self.get_result_thread = QThread()
         self.result_parser.moveToThread(self.get_result_thread)
         self.get_result_thread.started.connect(self.result_parser.start)
         self.result_parser.finish_signal.connect(self.process_parsing_results)
         self.result_parser.finish_signal.connect(self.get_result_thread.quit)
         self.get_result_thread.start()
+
         self.bets_checking_window.ui.pushButton_skipBetsCheking.clicked.connect(self.get_result_thread.requestInterruption)
         if not self.bets_checking_window.isVisible():
             self.open_bets_checking_window()
@@ -268,6 +270,7 @@ class DesktopApp(QMainWindow):
         if self.get_result_thread.isInterruptionRequested():
             if self.scheduler.get_job('scan_job'):
                 self.scheduler.get_job('scan_job').resume()
+            self.start_result_extraction_scheduler()
             return
 
         if events_results['results']:
@@ -307,7 +310,7 @@ class DesktopApp(QMainWindow):
         self.write_results_thread.start()
 
     def start_result_extraction_scheduler(self) -> None:
-        """Запуск планировщика для переодического запроса результатов событий в которых сделаны ставки"""
+        """Запуск планировщика для переодического запроса результатов событий на которые сделаны ставки"""
         self.extract_timer.finish_signal.connect(self.check_active_bets)
         if not self.scheduler.get_job('result_extraction_job'):
             timeout_settings = self.timers_window.get_bet_timeouts_settings()
@@ -318,6 +321,14 @@ class DesktopApp(QMainWindow):
                                    coalesce=True,
                                    max_instances=1)
             logger.info("Задача по периодическому опросу результатов событий запущена...")
+
+    def change_result_extraction_scheduler_interval(self, timeouts) -> None:
+        """Изменение интервала планировщика переодического запроса результатов событий, на которые сделаны ставки"""
+        if self.scheduler.get_job('result_extraction_job'):
+            self.scheduler.reschedule_job(job_id='result_extraction_job',
+                                          trigger='interval',
+                                          seconds=timeouts["result_extraction_interval"],)
+            logger.info("Интервал запуска задачи по периодическому опросу результатов событий изменен...")
 
     ###### Test connection slots ######
 
