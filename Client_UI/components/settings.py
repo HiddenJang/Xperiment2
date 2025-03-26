@@ -28,6 +28,9 @@ BOOKMAKERS = {'betboom': 'https://betboom.ru/',
               'olimp': 'https://www.olimp.bet/',
               'xstavka': 'https://1xstavka.ru/'}
 
+# Result extraction settings
+RESULT_EXTRACTION_CLASSES = {'API': 'ApiResponseParser',
+                             'SELENIUM': 'SeleniumParser'}
 RESULTS_URL = {'olimp': 'https://www.olimp.bet/results?sportId=%d&startDate=%s&endDate=%s&shouldSearchByChamps=false'}
 
 # Webdriver settings

@@ -20,6 +20,7 @@ from components.secondary_windows.bets_checking import BetsChecking
 from components.templates.client_app_template import Ui_MainWindow_client
 from components.browsers_control.core import BrowserControl
 from components.browsers_control.websites_control_modules.interaction_controller import WebsiteController
+from components.browsers_control import result_parsers
 from components.browsers_control.result_parsers import SeleniumParser, ApiResponseParser
 from components.telegram import TelegramService
 from components.statistic_management.statistic import StatisticManager
@@ -84,7 +85,7 @@ class DesktopApp(QMainWindow):
         # запуск периодической задачи получения результатов по размещенным ставкам
         self.extract_timer = ExtractTimer()
         # проверка наличия активных ставок, по которым не получен результат
-        self.check_active_bets()
+        self.start_result_extraction()
         self.result_parsing_finished = False
 
     ###### Add handling functions #####
@@ -193,7 +194,7 @@ class DesktopApp(QMainWindow):
                                                                      'min_koeff': self.ui.doubleSpinBox_minKsecondBkmkr.value()},
                 'bet_imitation': self.ui.checkBox_betImitation.isChecked()}
 
-    ###### Results processing ######
+    ###### Results extraction and processing ######
 
     def add_event_to_active_bets_list_and_xlsx(self, event_data) -> None:
         """Добавление события, на которое сделана ставка, в реестр настроек для последующего получения результата"""
@@ -214,35 +215,61 @@ class DesktopApp(QMainWindow):
             if not self.scheduler.get_job('result_extraction_job'):
                 self.start_result_extraction_scheduler()
 
-    def check_active_bets(self, parsing_type: str = 'api') -> None:
-        """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
-            вид данных active_bets_urls=str(bookmaker$$url)"""
-        active_bets_data = {x: self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()}
+    def __finish_result_extraction(self, message: str, remove_job: bool = True) -> None:
+        """Завершение процесса получения результатов событий на которые сделаны ставки"""
+        self.bets_checking_window.close()
+        self.render_diagnostics(message)
+        logger.info(message)
+        if self.scheduler.get_job('scan_job'):
+            self.scheduler.get_job('scan_job').resume()
+        if self.scheduler.get_job('result_extraction_job') and remove_job:
+            self.scheduler.get_job('result_extraction_job').remove()
 
+    def start_result_extraction(self) -> None:
+        """Запуск проверки наличия в реестре сделанных ставок, по которым не получен результат и извлечение результатов"""
+        self.extraction_classes = settings.RESULT_EXTRACTION_CLASSES
+
+        if self.extraction_classes:
+            self.check_active_bets()
+        else:
+            message = "Поиск сведений о ранее размещенных ставках прерван: отсутствуют методы получения результатов"
+            self.__finish_result_extraction(message)
+
+    def check_active_bets(self) -> None:
+        """Проверка наличия в реестре сделанных ставок, по которым не получен результат,
+            и запуск методов извлечения результатов"""
+        if not self.extraction_classes:
+            message = "Процесс получения данных о результатах событий с ранее размещенными ставками завершен. " \
+                      "Результаты получены не по всем сделанным ставкам"
+            self.__finish_result_extraction(message)
+            if not self.scheduler.get_job('result_extraction_job'):
+                self.start_result_extraction_scheduler()
+            return
+
+        active_bets_data = {x: self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()}  # вид данных active_bets_urls=str(bookmaker$$url)
         if not active_bets_data:
             message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
-            self.render_diagnostics(message)
-            logger.info(message)
-            if self.scheduler.get_job('scan_job'):
-                self.scheduler.get_job('scan_job').resume()
-            if self.scheduler.get_job('result_extraction_job'):
-                self.scheduler.get_job('result_extraction_job').remove()
+            self.__finish_result_extraction(message)
             return
-        elif parsing_type == 'api':
-            message = "В реестре присутствуют сведения о раннее размещенных ставках. Производится получение данных о результатах событий"
-            logger.info(message)
-
-            self.result_parsing_finished = False
-            self.result_parser = ApiResponseParser(active_bets_data)
         else:
-            message = "Попытка получить недостающие результаты по раннее размещенным ставкам используя Selenium"
+            message = "В реестре присутствуют сведения о раннее размещенных ставках"
             self.render_diagnostics(message)
             logger.info(message)
 
-            self.result_parsing_finished = True
+        pars_method_name = list(self.extraction_classes.items())[0][0]
+        pars_class = list(self.extraction_classes.items())[0][1]
+        del self.extraction_classes[pars_method_name]
+
+        message = f"Получение данных о результатах событий ({pars_method_name})"
+        logger.info(message)
+
+        ResultExtractionClass = getattr(result_parsers, pars_class)
+
+        if pars_method_name == 'SELENIUM':
             control_settings = self.browser_control_set_window.get_control_settings()
-            SeleniumParser.page_load_timeout = control_settings['timeouts']['result_page_load_timeout']
-            self.result_parser = SeleniumParser(active_bets_data)
+            ResultExtractionClass.page_load_timeout = control_settings['timeouts']['result_page_load_timeout']
+
+        self.result_parser = ResultExtractionClass(active_bets_data)
 
         self.start_check_thread()
 
@@ -270,7 +297,8 @@ class DesktopApp(QMainWindow):
         if self.get_result_thread.isInterruptionRequested():
             if self.scheduler.get_job('scan_job'):
                 self.scheduler.get_job('scan_job').resume()
-            self.start_result_extraction_scheduler()
+            if not self.scheduler.get_job('result_extraction_job'):
+                self.start_result_extraction_scheduler()
             return
 
         if events_results['results']:
@@ -281,19 +309,13 @@ class DesktopApp(QMainWindow):
                     logger.info(ex)
             self.insert_event_results(events_results['results'])
 
-        if self.active_bets_list.allKeys() and not self.result_parsing_finished:
-            self.check_active_bets(parsing_type='selenium')
-        else:
+        if not self.active_bets_list.allKeys():
             self.bets_checking_window.close()
-            message = "Завершен процесс получения данных о результатах событий с ранее размещенными ставками"
-            self.render_diagnostics(message)
-            logger.info(message)
-            if self.scheduler.get_job('scan_job'):
-                self.scheduler.get_job('scan_job').resume()
-            if self.active_bets_list.allKeys():
-                self.start_result_extraction_scheduler()
-            elif self.scheduler.get_job('result_extraction_job'):
-                self.scheduler.get_job('result_extraction_job').remove()
+            message = "Завершен процесс получения данных о результатах событий с ранее размещенными ставками. " \
+                      "Данные получены по всем сделанным ставкам"
+            self.__finish_result_extraction(message)
+        else:
+            self.check_active_bets()
 
     def insert_event_results(self, events_results: dict) -> None:
         """Запись результатов событий, на которые сделаны ставки в файл стаитстики xlsx,
@@ -311,7 +333,7 @@ class DesktopApp(QMainWindow):
 
     def start_result_extraction_scheduler(self) -> None:
         """Запуск планировщика для переодического запроса результатов событий на которые сделаны ставки"""
-        self.extract_timer.finish_signal.connect(self.check_active_bets)
+        self.extract_timer.finish_signal.connect(self.start_result_extraction)
         if not self.scheduler.get_job('result_extraction_job'):
             timeout_settings = self.timers_window.get_bet_timeouts_settings()
             self.scheduler.add_job(self.extract_timer.time_out_slot,
