@@ -21,7 +21,6 @@ class TimersSettings(Ui_timers_settings, QDialog):
         self.ui.buttonBox.accepted.connect(lambda: self.restart_scheduler_sig.emit(self.get_bet_timeouts_settings()))
         self.ui.buttonBox.accepted.connect(lambda: self.close_sig.emit(self.get_bet_timeouts_settings()))
 
-
     def get_bet_timeouts_settings(self) -> dict:
         """Получение состояний виджетов окна настроек управления браузерами"""
         return {'bet_preparing_timeout': self.ui.spinBox_betPreparingTimeout.value(),
