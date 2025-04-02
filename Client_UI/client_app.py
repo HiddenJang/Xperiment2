@@ -282,7 +282,6 @@ class DesktopApp(QMainWindow):
 
     def start_result_extraction_scheduler(self) -> None:
         """Запуск планировщика для периодического запроса результатов событий на которые сделаны ставки"""
-        self.extract_timer.finish_signal.connect(self.start_result_extraction)
         if not self.scheduler.get_job('result_extraction_job'):
             timeout_settings = self.timers_window.get_bet_timeouts_settings()
             self.scheduler.add_job(self.start_result_extraction,
