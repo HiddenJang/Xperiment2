@@ -214,21 +214,19 @@ class DesktopApp(QMainWindow):
 
         if self.scheduler.get_job('result_extraction_job') and remove_job:
             self.scheduler.get_job('result_extraction_job').remove()
-        elif not self.scheduler.get_job('result_extraction_job'):
+        elif not self.scheduler.get_job('result_extraction_job') and not remove_job:
             self.start_result_extraction_scheduler()
 
-    #### НАПИСАТЬ КОД ДЛЯ УДАЛЕНИЯ СОБЫТИЙ ИЗ РЕЕСТРА ПО КОТОРЫМ ПОЛУЧЕНЫ РЕЗУЛЬТАТЫ!!!!
     def start_result_extraction(self) -> None:
         """Запуск проверки наличия в реестре сделанных ставок, по которым не получен результат и извлечение результатов"""
         extraction_classes = settings.RESULT_EXTRACTION_CLASSES
-        active_bets_data = {x: self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()}  # вид данных active_bets_urls=str(bookmaker$$url)
         control_settings = self.browser_control_set_window.get_control_settings()
 
         if not extraction_classes:
             message = "Поиск сведений о ранее размещенных ставках прерван: отсутствуют методы получения результатов"
             self.finish_result_extraction(message)
             return
-        elif not active_bets_data:
+        elif not self.active_bets_list.allKeys():
             message = "Проведен поиск сведений о ранее размещенных ставках. Размещенные ставки в реестре отсутствуют"
             self.finish_result_extraction(message)
             return
@@ -237,7 +235,7 @@ class DesktopApp(QMainWindow):
             self.render_diagnostics(message)
             logger.info(message)
 
-            self.result_extractor = ResultExtractor(extraction_classes, active_bets_data, control_settings)
+            self.result_extractor = ResultExtractor(extraction_classes, self.active_bets_list, control_settings)
 
             if hasattr(self, 'get_result_thread'):
                 del self.get_result_thread
@@ -279,6 +277,9 @@ class DesktopApp(QMainWindow):
         self.statistic_manager_results.diag_signal.connect(self.render_diagnostics)
         self.statistic_manager_results.finish_signal.connect(self.write_results_thread.quit)
         self.write_results_thread.start()
+
+        if self.active_bets_list.allKeys() and not self.scheduler.get_job('result_extraction_job'):
+            self.start_result_extraction_scheduler()
 
     def start_result_extraction_scheduler(self) -> None:
         """Запуск планировщика для периодического запроса результатов событий на которые сделаны ставки"""

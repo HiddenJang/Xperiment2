@@ -1,7 +1,7 @@
 import logging
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QObject, QThread
+from PyQt5.QtCore import QObject, QThread, QSettings
 
 from ..browsers_control import result_parsers_sync
 
@@ -13,10 +13,11 @@ class ResultExtractor(QObject):
     diag_signal = QtCore.pyqtSignal(str)
     finish_signal = QtCore.pyqtSignal(dict)
 
-    def __init__(self, extraction_classes: dict, active_bets_data: dict, control_settings: dict) -> None:
+    def __init__(self, extraction_classes: dict, active_bets_list: QSettings, control_settings: dict) -> None:
         super(ResultExtractor, self).__init__()
         self.extraction_classes = extraction_classes
-        self.active_bets_data = active_bets_data
+        self.active_bets_list = active_bets_list
+        self.active_bets_data = {x: self.active_bets_list.value(x) for x in self.active_bets_list.allKeys()}  # вид данных active_bets_urls=str(bookmaker$$url)
         self.control_settings = control_settings
         self.all_extracted_results = {}
 
@@ -62,11 +63,11 @@ class ResultExtractor(QObject):
 
         for result_key in results.keys():
             try:
-                del self.active_bets_data[result_key]
+                self.active_bets_list.remove(result_key)
             except BaseException as ex:
                 logger.info(ex)
 
-        if not self.active_bets_data:
+        if not self.active_bets_list.allKeys():
             message = "Завершен процесс получения данных о результатах событий с ранее размещенными ставками. " \
                       "Данные получены по всем сделанным ставкам"
             logger.info(message)
